@@ -2,6 +2,7 @@ package org.shda;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -27,38 +28,59 @@ public class DashboardActivity extends AppCompatActivity {
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
-        // Security check: If no session exists, boot them back to login
+        // 1. SaaS Security Check
         if (session.getCommunityId() == null) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
 
-        // Set Dynamic Name at the top of the dashboard
+        // 2. Set Dynamic Community Name & Shloka
         TextView tvTitle = findViewById(R.id.tvDashboardTitle);
         tvTitle.setText(session.getCommunityName());
-
         setupDynamicShloka();
 
-        // Logout Logic
+        // 3. Role-Based Access Control (RBAC)
+        // This ensures the SaaS stays secure for different user levels
+        String userRole = session.getRole();
+        applyPermissions(userRole);
+
+        // 4. Navigation & Click Listeners
+        setupNavigation();
+
+        // 5. Logout Logic
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
             session.logout();
             startActivity(new Intent(this, LoginActivity.class));
             finish();
         });
+    }
 
-        // Click listeners for the 4 CRM Modules
+    private void applyPermissions(String role) {
+        if (role.equals("MEMBER")) {
+            // Members can only see Utsav/Events
+            findViewById(R.id.cardMembers).setVisibility(View.GONE);
+            findViewById(R.id.cardDonations).setVisibility(View.GONE);
+            findViewById(R.id.cardComms).setVisibility(View.GONE);
+            findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
+        } else if (role.equals("MANAGER")) {
+            // Managers can manage members/events but cannot see full financial audits
+            findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
+        }
+        // ADMIN role sees everything by default
+    }
+
+    private void setupNavigation() {
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
         findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
         findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
 
-        // SaaS PDF Generator Logic (Now routes to specific community DB)
+        // SaaS Multi-Tenant PDF Generation
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> {
-            Toast.makeText(this, "Generating Report for " + session.getCommunityName() + "...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Auditing " + session.getCommunityName() + " Financials...", Toast.LENGTH_SHORT).show();
             
-            // NOTE THE NEW DB PATH: communities -> [ID] -> logs -> Donation
             db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
               .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
@@ -86,7 +108,6 @@ public class DashboardActivity extends AppCompatActivity {
                         }
                     }
                     
-                    // Hand the data AND Community Name over to the PDF Engine
                     PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, total);
                 }
 
@@ -103,9 +124,9 @@ public class DashboardActivity extends AppCompatActivity {
         String[] shlokas = {
             "“You have the right to work, but for the work's sake only. You have no right to the fruits of work.”\n\n- Bhagavad Gita 2.47",
             "“Whenever dharma declines and the purpose of life is forgotten, I manifest myself on earth.”\n\n- Bhagavad Gita 4.7",
-            "“A person can rise through the efforts of his own mind; or draw himself down, in the same manner. Because each person is his own friend or enemy.”\n\n- Bhagavad Gita 6.5",
-            "“The soul is neither born, and nor does it die.”\n\n- Bhagavad Gita 2.20",
-            "“Truth is one, paths are many.”\n\n- Rig Veda"
+            "“A person can rise through the efforts of his own mind; or draw himself down, in the same manner.”\n\n- Bhagavad Gita 6.5",
+            "“Truth is one, paths are many.”\n\n- Rig Veda",
+            "“Arise, awake, and stop not till the goal is reached.”\n\n- Katha Upanishad"
         };
         Calendar calendar = Calendar.getInstance();
         tv.setText(shlokas[calendar.get(Calendar.DAY_OF_YEAR) % shlokas.length]);
