@@ -1,24 +1,156 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F8F9FA">
-    
-    <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
-        
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp" app:cardBackgroundColor="#FFF3E0" android:layout_marginBottom="20dp">
-            <TextView android:id="@+id/shlokaText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:textStyle="italic" android:textColor="#E65100"/>
-        </com.google.android.material.card.MaterialCardView>
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FAF9F6"> <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        android:background="@drawable/header_gradient"
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent" android:layout_height="250dp" app:cardCornerRadius="16dp">
-            <com.github.mikephil.charting.charts.BarChart android:id="@+id/financeChart" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp"/>
-        </com.google.android.material.card.MaterialCardView>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Sanatani Bandhan"
+            android:textColor="#FFFFFF"
+            android:textSize="24sp"
+            android:textStyle="bold" />
 
-        <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:layout_marginTop="20dp">
-            <Button android:id="@+id/btnMembers" android:text="Manage Members" android:layout_columnWeight="1" android:layout_margin="8dp" android:backgroundTint="#FF9800"/>
-            <Button android:id="@+id/btnTransactions" android:text="Add Funds / Expenses" android:layout_columnWeight="1" android:layout_margin="8dp" android:backgroundTint="#4CAF50"/>
-            <Button android:id="@+id/btnPDF" android:text="Generate PDF Report" android:layout_columnWeight="1" android:layout_margin="8dp" style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-        </GridLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Community Management Portal"
+            android:textColor="#FFCCBC"
+            android:textSize="14sp" />
     </LinearLayout>
-</ScrollView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/wisdomCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="120dp"
+        android:layout_marginHorizontal="20dp"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp"
+            android:background="#FFFFFF">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DAILY SHLOKA"
+                android:textSize="11sp"
+                android:letterSpacing="0.1"
+                android:textStyle="bold"
+                android:textColor="#E65100"/>
+            <TextView
+                android:id="@+id/shlokaText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Loading..."
+                android:textSize="16sp"
+                android:textColor="#212121"
+                android:textStyle="italic"
+                android:lineSpacingExtra="4dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/wisdomCard"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="20dp"
+        android:clipToPadding="false">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Financial Analytics"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp"
+                android:textColor="#424242"/>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                android:layout_marginBottom="24dp">
+                <com.github.mikephil.charting.charts.BarChart
+                    android:id="@+id/financeChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:padding="12dp"/>
+            </com.google.android.material.card.MaterialCardView>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:alignmentMode="alignMargins"
+                android:columnOrderPreserved="false">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardMembers"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="#E3F2FD">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="MEMBERS" android:textStyle="bold" android:textColor="#1976D2"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardTransactions"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_columnWeight="1"
+                    android:layout_margin="6dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardBackgroundColor="#E8F5E9">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="ACCOUNTS" android:textStyle="bold" android:textColor="#388E3C"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </GridLayout>
+
+            <Button
+                android:id="@+id/btnPDFManual"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="40dp"
+                android:text="GENERATE MONTHLY REPORT"
+                android:textStyle="bold"
+                android:backgroundTint="#263238"
+                app:cornerRadius="16dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</RelativeLayout>
