@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#FAF9F6" android:padding="20dp">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Mass Sandesh" android:textSize="24sp" android:textStyle="bold" android:textColor="#1565C0"/>
+    
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Broadcast Announcements to WhatsApp" android:textSize="14sp" android:textColor="#757575" android:layout_marginBottom="24dp"/>
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#E3F2FD">
+        
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Select Message Type:" android:textStyle="bold" android:layout_marginBottom="12dp"/>
+
+            <RadioGroup android:id="@+id/radioGroupTemplate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                <RadioButton android:id="@+id/radioMeeting" android:layout_width="wrap_content" android:layout_height="wrap_content" 
+                    android:text="Mandir / Committee Meeting" android:checked="true" android:buttonTint="#1565C0"/>
+                <RadioButton android:id="@+id/radioUtsav" android:layout_width="wrap_content" android:layout_height="wrap_content" 
+                    android:text="Utsav / Festival Greeting" android:buttonTint="#1565C0"/>
+                <RadioButton android:id="@+id/radioGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" 
+                    android:text="General Announcement" android:buttonTint="#1565C0"/>
+            </RadioGroup>
+
+            <EditText android:id="@+id/inputCustomMessage" android:layout_width="match_parent" android:layout_height="120dp"
+                android:hint="Type your main message here..." android:background="#FFFFFF" android:padding="12dp" 
+                android:gravity="top|start" android:inputType="textMultiLine" android:layout_marginBottom="24dp" android:elevation="1dp"/>
+
+            <Button android:id="@+id/btnSendWhatsapp" android:layout_width="match_parent" android:layout_height="60dp"
+                android:text="Broadcast via WhatsApp" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#128C7E"/>
+                
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>
