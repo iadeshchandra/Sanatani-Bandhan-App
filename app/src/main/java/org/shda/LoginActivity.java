@@ -14,7 +14,6 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // This is the fix! It now points to the real login UI.
         setContentView(R.layout.activity_login); 
 
         auth = FirebaseAuth.getInstance();
@@ -23,7 +22,6 @@ public class LoginActivity extends AppCompatActivity {
         EditText passInput = findViewById(R.id.passInput);
         Button loginBtn = findViewById(R.id.loginBtn);
 
-        // Check if already logged in
         if (auth.getCurrentUser() != null) {
             startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
             finish();
@@ -34,14 +32,12 @@ public class LoginActivity extends AppCompatActivity {
             String email = emailInput.getText().toString().trim();
             String pass = passInput.getText().toString().trim();
 
-            // Quick fallback for your admin requirement
             if(email.equals("admin") && pass.equals("admin123")) {
                 startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
                 finish();
                 return;
             }
 
-            // Real Firebase Auth
             if (!email.isEmpty() && !pass.isEmpty()) {
                 auth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
