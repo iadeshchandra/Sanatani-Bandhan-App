@@ -34,7 +34,7 @@ public class DashboardActivity extends AppCompatActivity {
             return;
         }
 
-        // Set Dynamic Name
+        // Set Dynamic Name at the top of the dashboard
         TextView tvTitle = findViewById(R.id.tvDashboardTitle);
         tvTitle.setText(session.getCommunityName());
 
@@ -48,6 +48,7 @@ public class DashboardActivity extends AppCompatActivity {
             finish();
         });
 
+        // Click listeners for the 4 CRM Modules
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
         findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
