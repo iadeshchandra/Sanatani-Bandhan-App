@@ -1,0 +1,24 @@
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:background="#F8F9FA">
+    
+    <LinearLayout android:orientation="vertical" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp">
+        
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp" app:cardBackgroundColor="#FFF3E0" android:layout_marginBottom="20dp">
+            <TextView android:id="@+id/shlokaText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:textStyle="italic" android:textColor="#E65100"/>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent" android:layout_height="250dp" app:cardCornerRadius="16dp">
+            <com.github.mikephil.charting.charts.BarChart android:id="@+id/financeChart" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="8dp"/>
+        </com.google.android.material.card.MaterialCardView>
+
+        <GridLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:columnCount="2" android:layout_marginTop="20dp">
+            <Button android:id="@+id/btnMembers" android:text="Manage Members" android:layout_columnWeight="1" android:layout_margin="8dp" android:backgroundTint="#FF9800"/>
+            <Button android:id="@+id/btnTransactions" android:text="Add Funds / Expenses" android:layout_columnWeight="1" android:layout_margin="8dp" android:backgroundTint="#4CAF50"/>
+            <Button android:id="@+id/btnPDF" android:text="Generate PDF Report" android:layout_columnWeight="1" android:layout_margin="8dp" style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+        </GridLayout>
+    </LinearLayout>
+</ScrollView>
