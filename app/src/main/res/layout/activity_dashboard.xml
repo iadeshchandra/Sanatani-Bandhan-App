@@ -5,18 +5,27 @@
     android:layout_height="match_parent"
     android:background="#FAF9F6">
 
-    <LinearLayout
+    <RelativeLayout
         android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="180dp"
         android:background="@drawable/header_gradient"
-        android:orientation="vertical"
         android:padding="24dp">
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Sanatani Bandhan" android:textColor="#FFFFFF" android:textSize="26sp" android:textStyle="bold" />
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Central Management Portal" android:textColor="#FFD180" android:textSize="14sp" />
-    </LinearLayout>
+        
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_alignParentStart="true">
+            <TextView android:id="@+id/tvDashboardTitle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Community Portal" android:textColor="#FFFFFF" android:textSize="26sp" android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Central Management Portal" android:textColor="#FFD180" android:textSize="14sp" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/btnLogout" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true" android:text="Logout" android:textColor="#FFFFFF" android:textStyle="bold" android:padding="8dp"/>
+    </RelativeLayout>
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/wisdomCard"
