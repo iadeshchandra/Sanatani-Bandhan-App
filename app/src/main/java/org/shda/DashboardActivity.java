@@ -6,6 +6,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.Locale;
 
 public class DashboardActivity extends AppCompatActivity {
     private DatabaseReference db;
+    private SessionManager session;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,33 +25,41 @@ public class DashboardActivity extends AppCompatActivity {
         setContentView(R.layout.activity_dashboard);
 
         db = FirebaseDatabase.getInstance().getReference();
+        session = new SessionManager(this);
+
+        // Security check: If no session exists, boot them back to login
+        if (session.getCommunityId() == null) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
+        // Set Dynamic Name
+        TextView tvTitle = findViewById(R.id.tvDashboardTitle);
+        tvTitle.setText(session.getCommunityName());
+
         setupDynamicShloka();
 
-        // 1. Members Directory
-        findViewById(R.id.cardMembers).setOnClickListener(v -> 
-            startActivity(new Intent(this, MemberActivity.class))
-        );
+        // Logout Logic
+        findViewById(R.id.btnLogout).setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            session.logout();
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+        });
 
-        // 2. Smart Chanda
-        findViewById(R.id.cardDonations).setOnClickListener(v -> 
-            startActivity(new Intent(this, TransactionActivity.class))
-        );
+        findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
+        findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
+        findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
+        findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
 
-        // 3. Utsav & Seva
-        findViewById(R.id.cardEvents).setOnClickListener(v -> 
-            startActivity(new Intent(this, EventActivity.class))
-        );
-
-        // 4. Mass Sandesh (Successfully Linked!)
-        findViewById(R.id.cardComms).setOnClickListener(v -> 
-            startActivity(new Intent(this, CommsActivity.class))
-        );
-
-        // The Smart PDF Generator Logic
+        // SaaS PDF Generator Logic (Now routes to specific community DB)
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> {
-            Toast.makeText(this, "Fetching data & Generating Report...", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Generating Report for " + session.getCommunityName() + "...", Toast.LENGTH_SHORT).show();
             
-            db.child("logs").child("Donation").addListenerForSingleValueEvent(new ValueEventListener() {
+            // NOTE THE NEW DB PATH: communities -> [ID] -> logs -> Donation
+            db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
+              .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     List<String> names = new ArrayList<>();
@@ -75,8 +85,8 @@ public class DashboardActivity extends AppCompatActivity {
                         }
                     }
                     
-                    // Hand the data over to the PDF Engine
-                    PdfReportService.generateFinancialReport(DashboardActivity.this, dates, names, amounts, notes, total);
+                    // Hand the data AND Community Name over to the PDF Engine
+                    PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, total);
                 }
 
                 @Override
@@ -94,14 +104,9 @@ public class DashboardActivity extends AppCompatActivity {
             "“Whenever dharma declines and the purpose of life is forgotten, I manifest myself on earth.”\n\n- Bhagavad Gita 4.7",
             "“A person can rise through the efforts of his own mind; or draw himself down, in the same manner. Because each person is his own friend or enemy.”\n\n- Bhagavad Gita 6.5",
             "“The soul is neither born, and nor does it die.”\n\n- Bhagavad Gita 2.20",
-            "“Truth is one, paths are many.”\n\n- Rig Veda",
-            "“There is nothing lost or wasted in this life.”\n\n- Bhagavad Gita 2.40",
-            "“Let noble thoughts come to us from every side.”\n\n- Rig Veda 1.89.1",
-            "“He who has no attachments can really love others, for his love is pure and divine.”\n\n- Swami Vivekananda",
-            "“Arise, awake, and stop not till the goal is reached.”\n\n- Katha Upanishad"
+            "“Truth is one, paths are many.”\n\n- Rig Veda"
         };
         Calendar calendar = Calendar.getInstance();
-        int dayOfYear = calendar.get(Calendar.DAY_OF_YEAR);
-        tv.setText(shlokas[dayOfYear % shlokas.length]);
+        tv.setText(shlokas[calendar.get(Calendar.DAY_OF_YEAR) % shlokas.length]);
     }
 }
