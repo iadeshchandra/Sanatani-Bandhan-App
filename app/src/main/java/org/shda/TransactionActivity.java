@@ -24,7 +24,7 @@ public class TransactionActivity extends AppCompatActivity {
         DatabaseReference db = FirebaseDatabase.getInstance().getReference();
 
         btnSave.setOnClickListener(v -> {
-            String type = typeSpinner.getSelectedItem().toString(); // Donation, Social Expense, or Festival Expense
+            String type = typeSpinner.getSelectedItem().toString();
             String title = inputTitle.getText().toString();
             String amountStr = inputAmount.getText().toString();
 
@@ -34,16 +34,14 @@ public class TransactionActivity extends AppCompatActivity {
                 data.put("amount", Float.parseFloat(amountStr));
                 data.put("timestamp", System.currentTimeMillis());
 
-                // Save to logs
                 db.child("logs").child(type).push().setValue(data);
                 
-                // Update running totals for the graph
                 db.child("finances").child(type).get().addOnSuccessListener(snap -> {
                     float current = snap.exists() ? snap.getValue(Float.class) : 0f;
                     db.child("finances").child(type).setValue(current + Float.parseFloat(amountStr));
                 });
 
-                Toast.makeText(this, type + " Saved!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, type + " Saved to Database!", Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
