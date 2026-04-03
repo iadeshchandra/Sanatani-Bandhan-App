@@ -60,7 +60,8 @@ public class TransactionActivity extends AppCompatActivity {
     }
 
     private void loadMembersForSearch() {
-        db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
+        db.child("communities").child(session.getCommunityId()).child("members")
+          .addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 memberList.clear();
@@ -70,7 +71,8 @@ public class TransactionActivity extends AppCompatActivity {
                         memberList.add(member.name + " (" + member.id + ")");
                     }
                 }
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(TransactionActivity.this, android.R.layout.simple_dropdown_item_1line, memberList);
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(TransactionActivity.this, 
+                        android.R.layout.simple_dropdown_item_1line, memberList);
                 autoCompleteMember.setAdapter(adapter);
             }
             @Override
@@ -96,7 +98,7 @@ public class TransactionActivity extends AppCompatActivity {
         if (isMember) {
             String selection = autoCompleteMember.getText().toString().trim();
             if (selection.isEmpty() || !selection.contains("(") || !selection.contains(")")) {
-                Toast.makeText(this, "Please select a valid member from the list", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Select a valid member", Toast.LENGTH_SHORT).show();
                 return;
             }
             nameToSave = selection;
@@ -109,31 +111,37 @@ public class TransactionActivity extends AppCompatActivity {
             }
         }
 
+        // --- SaaS DATA ROUTING ---
         HashMap<String, Object> logData = new HashMap<>();
         logData.put("name", nameToSave);
         logData.put("amount", amount);
         logData.put("note", note);
         logData.put("timestamp", System.currentTimeMillis());
+        
+        // Save to community logs
         db.child("communities").child(commId).child("logs").child("Donation").push().setValue(logData);
 
+        // Update community total finances
         db.child("communities").child(commId).child("finances").child("Donation").get().addOnSuccessListener(snap -> {
             float currentTotal = snap.exists() ? snap.getValue(Float.class) : 0f;
             db.child("communities").child(commId).child("finances").child("Donation").setValue(currentTotal + amount);
         });
 
+        // Update specific member's total if applicable
         if (isMember && memberIdToUpdate != null) {
-            db.child("communities").child(commId).child("members").child(memberIdToUpdate).child("totalDonated").get().addOnSuccessListener(snap -> {
+            db.child("communities").child(commId).child("members").child(memberIdToUpdate).child("totalDonated").get()
+              .addOnSuccessListener(snap -> {
                 float currentMemberTotal = snap.exists() ? snap.getValue(Float.class) : 0f;
                 db.child("communities").child(commId).child("members").child(memberIdToUpdate).child("totalDonated").setValue(currentMemberTotal + amount);
             });
         }
 
-        Toast.makeText(this, "Chanda Recorded! Generating Receipt...", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Chanda Recorded!", Toast.LENGTH_SHORT).show();
         
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("dd MMM yyyy, hh:mm a", java.util.Locale.getDefault());
         String dateStr = sdf.format(new java.util.Date());
         
-        // Pass dynamic community name to PDF
+        // Branded Receipt Generation
         PdfReportService.generateDonorReceipt(this, session.getCommunityName(), nameToSave, amount, note, dateStr);
     }
 }
