@@ -14,6 +14,7 @@ import com.google.firebase.database.*;
 
 public class EventActivity extends AppCompatActivity {
     private DatabaseReference db;
+    private SessionManager session;
     private LinearLayout eventsContainer;
     private EditText inputTitle, inputDate, inputDesc;
 
@@ -23,6 +24,13 @@ public class EventActivity extends AppCompatActivity {
         setContentView(R.layout.activity_events);
 
         db = FirebaseDatabase.getInstance().getReference();
+        session = new SessionManager(this);
+        
+        if (session.getCommunityId() == null) {
+            finish();
+            return;
+        }
+
         eventsContainer = findViewById(R.id.eventsContainer);
         inputTitle = findViewById(R.id.inputEventTitle);
         inputDate = findViewById(R.id.inputEventDate);
@@ -44,11 +52,12 @@ public class EventActivity extends AppCompatActivity {
             return;
         }
 
-        String eventId = db.child("events").push().getKey();
+        String commId = session.getCommunityId();
+        String eventId = db.child("communities").child(commId).child("events").push().getKey();
         Event newEvent = new Event(eventId, title, date, desc, System.currentTimeMillis());
 
         if (eventId != null) {
-            db.child("events").child(eventId).setValue(newEvent)
+            db.child("communities").child(commId).child("events").child(eventId).setValue(newEvent)
                 .addOnSuccessListener(aVoid -> {
                     Toast.makeText(this, "Utsav Scheduled!", Toast.LENGTH_SHORT).show();
                     inputTitle.setText("");
@@ -59,7 +68,7 @@ public class EventActivity extends AppCompatActivity {
     }
 
     private void loadEvents() {
-        db.child("events").addValueEventListener(new ValueEventListener() {
+        db.child("communities").child(session.getCommunityId()).child("events").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 eventsContainer.removeAllViews();
@@ -75,7 +84,6 @@ public class EventActivity extends AppCompatActivity {
         });
     }
 
-    // Programmatically creates beautiful cards for the feed
     private void addEventCard(Event event) {
         MaterialCardView card = new MaterialCardView(this);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
@@ -110,7 +118,6 @@ public class EventActivity extends AppCompatActivity {
         layout.addView(tvDesc);
         card.addView(layout);
         
-        // Add newest events to the top
         eventsContainer.addView(card, 0); 
     }
 }
