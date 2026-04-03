@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +23,7 @@ import java.util.List;
 
 public class MemberActivity extends AppCompatActivity {
     private DatabaseReference db;
+    private SessionManager session;
     private LinearLayout membersContainer;
     private List<Member> memberList = new ArrayList<>();
 
@@ -33,21 +33,22 @@ public class MemberActivity extends AppCompatActivity {
         setContentView(R.layout.activity_member);
 
         db = FirebaseDatabase.getInstance().getReference();
+        session = new SessionManager(this);
         membersContainer = findViewById(R.id.membersContainer);
+
+        if (session.getCommunityId() == null) {
+            finish();
+            return;
+        }
 
         loadMembers();
 
-        // Share PDF Action
         findViewById(R.id.btnSharePdf).setOnClickListener(v -> generateAndSharePDF());
-        
-        // Go to Add Member Screen
-        findViewById(R.id.btnGoToAdd).setOnClickListener(v -> {
-            startActivity(new Intent(MemberActivity.this, AddMemberActivity.class));
-        });
+        findViewById(R.id.btnGoToAdd).setOnClickListener(v -> startActivity(new Intent(MemberActivity.this, AddMemberActivity.class)));
     }
 
     private void loadMembers() {
-        db.child("members").addValueEventListener(new ValueEventListener() {
+        db.child("communities").child(session.getCommunityId()).child("members").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 membersContainer.removeAllViews();
@@ -86,14 +87,14 @@ public class MemberActivity extends AppCompatActivity {
 
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File file = new File(path, "Sanatani_Members_Directory.pdf");
+            File file = new File(path, "Directory_" + System.currentTimeMillis() + ".pdf");
 
             PdfWriter writer = new PdfWriter(file.getAbsolutePath());
             PdfDocument pdf = new PdfDocument(writer);
             Document document = new Document(pdf);
 
-            document.add(new Paragraph("Sanatani Bandhan - Official Member Directory").setBold().setFontSize(18));
-            document.add(new Paragraph("Generated securely from CRM System.\n\n"));
+            document.add(new Paragraph(session.getCommunityName() + " - Member Directory").setBold().setFontSize(18));
+            document.add(new Paragraph("Generated securely from SaaS Portal.\n\n"));
 
             for (Member m : memberList) {
                 document.add(new Paragraph(m.id + " | " + m.name + " | Phone: " + m.phone + " | Total Donated: ৳" + m.totalDonated));
@@ -114,7 +115,7 @@ public class MemberActivity extends AppCompatActivity {
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
         shareIntent.setType("application/pdf");
         shareIntent.putExtra(Intent.EXTRA_STREAM, uri);
-        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Sanatani Bandhan Member Directory");
+        shareIntent.putExtra(Intent.EXTRA_SUBJECT, session.getCommunityName() + " Member Directory");
         shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         startActivity(Intent.createChooser(shareIntent, "Share Directory via..."));
     }
