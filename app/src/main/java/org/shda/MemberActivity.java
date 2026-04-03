@@ -37,12 +37,13 @@ public class MemberActivity extends AppCompatActivity {
 
         loadMembers();
 
+        // Share PDF Action
         findViewById(R.id.btnSharePdf).setOnClickListener(v -> generateAndSharePDF());
         
-        // Next phase: This will open a new AddMemberActivity
-        findViewById(R.id.btnGoToAdd).setOnClickListener(v -> 
-            Toast.makeText(this, "Add Member Form opening...", Toast.LENGTH_SHORT).show()
-        );
+        // Go to Add Member Screen
+        findViewById(R.id.btnGoToAdd).setOnClickListener(v -> {
+            startActivity(new Intent(MemberActivity.this, AddMemberActivity.class));
+        });
     }
 
     private void loadMembers() {
