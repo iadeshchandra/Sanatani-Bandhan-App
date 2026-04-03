@@ -2,6 +2,7 @@ package org.shda;
 
 import android.content.Context;
 import android.os.Environment;
+import android.widget.Toast;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
@@ -20,10 +21,10 @@ public class PdfReportService {
 
             document.add(new Paragraph("Sanatani Bandhan Community Report"));
             document.add(new Paragraph("--------------------------------"));
-            document.add(new Paragraph("Generated successfully from the Android App."));
-            // Firebase data retrieval logic would loop here to write rows.
+            document.add(new Paragraph("Generated from Secure Admin Portal."));
             
             document.close();
+            Toast.makeText(context, "PDF saved to Downloads folder", Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             e.printStackTrace();
         }
