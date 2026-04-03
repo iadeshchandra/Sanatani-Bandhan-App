@@ -10,6 +10,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 public class AddMemberActivity extends AppCompatActivity {
     private DatabaseReference db;
+    private SessionManager session;
     private long currentIdCounter = 1000;
 
     @Override
@@ -18,6 +19,12 @@ public class AddMemberActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_member);
 
         db = FirebaseDatabase.getInstance().getReference();
+        session = new SessionManager(this);
+
+        if (session.getCommunityId() == null) {
+            finish();
+            return;
+        }
 
         EditText inputName = findViewById(R.id.inputName);
         EditText inputPhone = findViewById(R.id.inputPhone);
@@ -36,21 +43,23 @@ public class AddMemberActivity extends AppCompatActivity {
                 return;
             }
 
-            db.child("metadata").child("lastMemberId").get().addOnSuccessListener(snap -> {
+            String commId = session.getCommunityId();
+            
+            db.child("communities").child(commId).child("metadata").child("lastMemberId").get().addOnSuccessListener(snap -> {
                 if (snap.exists()) {
                     currentIdCounter = snap.getValue(Long.class);
                 }
                 
                 currentIdCounter++;
-                String newMemberId = "SB-" + currentIdCounter;
+                String newMemberId = "SB-" + currentIdCounter; 
 
                 Member newMember = new Member(newMemberId, name, phone, gotra, bloodGroup, System.currentTimeMillis());
                 
-                db.child("members").child(newMemberId).setValue(newMember);
-                db.child("metadata").child("lastMemberId").setValue(currentIdCounter);
+                db.child("communities").child(commId).child("members").child(newMemberId).setValue(newMember);
+                db.child("communities").child(commId).child("metadata").child("lastMemberId").setValue(currentIdCounter);
 
                 Toast.makeText(this, "Success! Generated: " + newMemberId, Toast.LENGTH_LONG).show();
-                finish(); // Closes the form and goes back to Directory
+                finish(); 
             });
         });
     }
