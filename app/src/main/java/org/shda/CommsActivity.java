@@ -9,11 +9,18 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class CommsActivity extends AppCompatActivity {
+    private SessionManager session;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_comms);
+
+        session = new SessionManager(this);
+        if (session.getCommunityId() == null) {
+            finish();
+            return;
+        }
 
         RadioGroup radioGroup = findViewById(R.id.radioGroupTemplate);
         EditText inputMessage = findViewById(R.id.inputCustomMessage);
@@ -37,7 +44,6 @@ public class CommsActivity extends AppCompatActivity {
     private String buildFormattedMessage(int selectedId, String customText) {
         StringBuilder sb = new StringBuilder();
         
-        // Add traditional greeting
         sb.append("🙏 *Namaskar / Jay Sanatan Dharma* 🙏\n\n");
 
         if (selectedId == R.id.radioMeeting) {
@@ -48,13 +54,12 @@ public class CommsActivity extends AppCompatActivity {
             sb.append("📢 *IMPORTANT ANNOUNCEMENT*\n\n");
         }
 
-        // Add the custom text typed by the Admin
         sb.append(customText).append("\n\n");
 
-        // Add standard sign-off
         sb.append("----------------------------\n");
-        sb.append("Sent via *Sanatani Bandhan App*\n");
-        sb.append("Your Community Management Portal");
+        // Dynamically inserts the specific Mandir's name!
+        sb.append("Sent via *").append(session.getCommunityName()).append(" Portal*\n");
+        sb.append("Powered by Sanatani SaaS");
 
         return sb.toString();
     }
@@ -65,13 +70,11 @@ public class CommsActivity extends AppCompatActivity {
         sendIntent.putExtra(Intent.EXTRA_TEXT, message);
         sendIntent.setType("text/plain");
         
-        // Optional: specifically target WhatsApp if installed
         sendIntent.setPackage("com.whatsapp");
 
         try {
             startActivity(sendIntent);
         } catch (android.content.ActivityNotFoundException ex) {
-            // Fallback if WhatsApp isn't installed
             Toast.makeText(this, "WhatsApp not installed. Opening default share...", Toast.LENGTH_SHORT).show();
             Intent fallbackIntent = new Intent(Intent.ACTION_SEND);
             fallbackIntent.setType("text/plain");
