@@ -21,7 +21,8 @@
         <activity android:name=".MemberActivity" />
         <activity android:name=".AddMemberActivity" />
         <activity android:name=".TransactionActivity" />
-        <activity android:name=".EventActivity" /> <provider
+        <activity android:name=".EventActivity" /> 
+        <activity android:name=".CommsActivity" /> <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
