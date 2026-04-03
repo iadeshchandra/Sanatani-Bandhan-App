@@ -35,14 +35,14 @@ public class DashboardActivity extends AppCompatActivity {
             startActivity(new Intent(this, TransactionActivity.class))
         );
 
-        // 3. Utsav & Seva (Successfully Linked!)
+        // 3. Utsav & Seva
         findViewById(R.id.cardEvents).setOnClickListener(v -> 
             startActivity(new Intent(this, EventActivity.class))
         );
 
-        // 4. Mass Sandesh (Coming Next)
+        // 4. Mass Sandesh (Successfully Linked!)
         findViewById(R.id.cardComms).setOnClickListener(v -> 
-            Toast.makeText(this, "WhatsApp Integration unlocking soon...", Toast.LENGTH_SHORT).show()
+            startActivity(new Intent(this, CommsActivity.class))
         );
 
         // The Smart PDF Generator Logic
