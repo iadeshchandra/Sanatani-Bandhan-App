@@ -6,24 +6,53 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class LoginActivity extends AppCompatActivity {
+    private FirebaseAuth auth;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Fallback layout creation for brevity. In a real app, use activity_login.xml
-        setContentView(R.layout.activity_transactions); 
-        
-        EditText user = findViewById(R.id.inputTitle); user.setHint("Username (admin)");
-        EditText pass = findViewById(R.id.inputAmount); pass.setHint("Password (admin123)");
-        Button btn = findViewById(R.id.btnSave); btn.setText("Login");
+        // This is the fix! It now points to the real login UI.
+        setContentView(R.layout.activity_login); 
 
-        btn.setOnClickListener(v -> {
-            if (user.getText().toString().equals("admin") && pass.getText().toString().equals("admin123")) {
-                startActivity(new Intent(this, DashboardActivity.class));
+        auth = FirebaseAuth.getInstance();
+
+        EditText emailInput = findViewById(R.id.emailInput);
+        EditText passInput = findViewById(R.id.passInput);
+        Button loginBtn = findViewById(R.id.loginBtn);
+
+        // Check if already logged in
+        if (auth.getCurrentUser() != null) {
+            startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+            finish();
+            return;
+        }
+
+        loginBtn.setOnClickListener(v -> {
+            String email = emailInput.getText().toString().trim();
+            String pass = passInput.getText().toString().trim();
+
+            // Quick fallback for your admin requirement
+            if(email.equals("admin") && pass.equals("admin123")) {
+                startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
                 finish();
+                return;
+            }
+
+            // Real Firebase Auth
+            if (!email.isEmpty() && !pass.isEmpty()) {
+                auth.signInWithEmailAndPassword(email, pass).addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+                        finish();
+                    } else {
+                        Toast.makeText(LoginActivity.this, "Invalid credentials", Toast.LENGTH_LONG).show();
+                    }
+                });
             } else {
-                Toast.makeText(this, "Invalid credentials", Toast.LENGTH_SHORT).show();
+                Toast.makeText(LoginActivity.this, "Enter Email and Password", Toast.LENGTH_SHORT).show();
             }
         });
     }
