@@ -2,7 +2,6 @@ package org.shda;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -28,11 +27,11 @@ public class DashboardActivity extends AppCompatActivity {
         setupShloka();
         loadGraph();
 
-        findViewById(R.id.btnMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
-        findViewById(R.id.btnTransactions).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
-        findViewById(R.id.btnPDF).setOnClickListener(v -> {
+        findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
+        findViewById(R.id.cardTransactions).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
+        findViewById(R.id.btnPDFManual).setOnClickListener(v -> {
             PdfReportService.generateReport(this);
-            Toast.makeText(this, "PDF Generated in Downloads!", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Generating Professional Report...", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -53,9 +52,10 @@ public class DashboardActivity extends AppCompatActivity {
                 entries.add(new BarEntry(0, don));
                 entries.add(new BarEntry(1, exp));
 
-                BarDataSet ds = new BarDataSet(entries, "Donations vs Total Expenses");
-                ds.setColors(new int[]{0xFF4CAF50, 0xFFF44336}); 
+                BarDataSet ds = new BarDataSet(entries, "Donations vs Expenses");
+                ds.setColors(new int[]{0xFF388E3C, 0xFFD32F2F}); 
                 barChart.setData(new BarData(ds));
+                barChart.getDescription().setEnabled(false);
                 barChart.animateY(1000);
             }
             @Override public void onCancelled(DatabaseError error) {}
