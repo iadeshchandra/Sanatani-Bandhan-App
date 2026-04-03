@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="transaction_types">
+        <item>Donation</item>
+        <item>Social Expense</item>
+        <item>Festival Expense</item>
+    </string-array>
+</resources>
