@@ -1,21 +1,34 @@
-# 🕉️ Sanatani Bandhan Management App
+# Sanatani Bandhan CRM & SaaS Platform 🪔
+**The Digital Backbone for Global Hindu Communities.**
 
-A premium, Native Android application built to manage community members, track donations and festival expenses, and generate transparent financial reports. 
+Sanatani Bandhan is a high-performance, Multi-Tenant SaaS platform designed to bring transparency, organization, and modern technology to Mandirs and Sanatan organizations worldwide.
 
-## 🚀 Features
-* **Live Analytics:** Real-time financial graphs using MPAndroidChart.
-* **Role-Based Access:** Secure multi-user ecosystem (Admin/Editor/Viewer) powered by Firebase Auth.
-* **Material UI:** Modern, card-based interface following Google's Material 3 guidelines.
-* **Smart Reporting:** On-device PDF generation for easy sharing.
-* **Dharma Feed:** Daily Shlokas from the Bhagavad Gita to inspire the community.
+---
 
-## 🛠️ Tech Stack
-* **Language:** Java / XML
-* **Backend:** Firebase (Realtime Database, Authentication, Cloud Messaging)
-* **Build System:** Gradle (Kotlin DSL)
-* **CI/CD:** GitHub Actions for automated APK generation
+## 🚀 Key Features
+* **Multi-Tenant Architecture:** Every community gets its own secure, isolated workspace.
+* **Smart Member Directory:** Manage member data (Gotra, Blood Group, Contact) with instant search.
+* **Digital Chanda (POS):** Log donations with automated, branded PDF receipts featuring Bhagavad Gita shlokas.
+* **Utsav & Seva Planner:** Schedule community events and meetings with a beautiful UI.
+* **Mass Sandesh (Broadcast):** One-click WhatsApp broadcasting with professional traditional greetings.
+* **Financial Auditing:** Generate full-scale financial reports in PDF format for community transparency.
 
-## ⚙️ Setup Instructions
-1. Clone the repository.
-2. Add your `google-services.json` file to the `app/` directory.
-3. Build the project using Android Studio or via GitHub Actions.
+## 🛠️ Technical Stack
+* **Frontend:** Android (Java/XML)
+* **Backend:** Firebase Realtime Database & Authentication
+* **Architecture:** Multi-Tenant SaaS with Role-Based Access Control (RBAC)
+* **CI/CD:** GitHub Actions for automated APK builds
+* **PDF Engine:** iText7 Core
+
+## 🔐 Security & Roles
+* **Admin:** Full control over community settings and financial audits.
+* **Manager:** Can manage members and events.
+* **Member:** View-only access to events and personal profile.
+
+## 📦 Installation
+1. Download the latest APK from the **Releases** section.
+2. Open the app and select **"Register New Community"**.
+3. Create your workspace and start managing your community with Sanatan values.
+
+---
+*Built with devotion for the Sanatani Community.*
