@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "org.shda"
     compileSdk = 34
+    
     defaultConfig {
         applicationId = "org.shda"
         minSdk = 24
@@ -13,10 +14,10 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
-    buildFeatures { viewBinding = true }
 }
 
 dependencies {
+    // UI components
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
@@ -26,7 +27,7 @@ dependencies {
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
 
-    // Startup Features
+    // Startup Features (Graphs & PDF)
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0") 
     implementation("com.itextpdf:itext7-core:7.1.15")
 }
