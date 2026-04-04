@@ -67,6 +67,7 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         if (radioAdmin.isChecked()) {
+            // --- SUPER ADMIN LOGIN (Uses standard Firebase Email Auth) ---
             mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String uid = mAuth.getCurrentUser().getUid();
@@ -83,42 +84,50 @@ public class LoginActivity extends AppCompatActivity {
                 } else Toast.makeText(this, "Invalid Admin Credentials", Toast.LENGTH_SHORT).show();
             });
         } else {
+            // --- STAFF / MEMBER LOGIN ---
             if (sbId.isEmpty()) { Toast.makeText(this, "Please enter your SB-ID", Toast.LENGTH_SHORT).show(); return; }
 
-            db.child("users").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (snapshot.exists()) {
-                        String commId = null, commName = null;
-                        for (DataSnapshot userSnap : snapshot.getChildren()) {
-                            commId = userSnap.child("communityId").getValue(String.class);
-                            commName = userSnap.child("communityName").getValue(String.class);
-                            break;
-                        }
-                        
-                        if (commId != null) {
-                            final String finalCommName = commName;
-                            final String finalCommId = commId;
-                            db.child("communities").child(finalCommId).child("members").child(sbId).addListenerForSingleValueEvent(new ValueEventListener() {
-                                @Override public void onDataChange(@NonNull DataSnapshot memSnap) {
-                                    if (memSnap.exists()) {
-                                        String dbPassword = memSnap.child("password").getValue(String.class);
-                                        String role = memSnap.child("role").getValue(String.class);
-                                        String name = memSnap.child("name").getValue(String.class);
-
-                                        if (dbPassword != null && dbPassword.equals(password)) {
-                                            session.createLoginSession(finalCommId, role != null ? role : "MEMBER", finalCommName, name, sbId);
-                                            AuditLogger.logAction(finalCommId, name, "LOGIN", "Logged into portal");
-                                            startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
-                                            finish();
-                                        } else Toast.makeText(LoginActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
-                                    } else Toast.makeText(LoginActivity.this, "SB-ID not found in this Workspace", Toast.LENGTH_SHORT).show();
+            // ENTERPRISE SECURITY: Sign in anonymously to get a Firebase Security Badge before reading the database
+            mAuth.signInAnonymously().addOnCompleteListener(anonTask -> {
+                if (anonTask.isSuccessful()) {
+                    db.child("users").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if (snapshot.exists()) {
+                                String commId = null, commName = null;
+                                for (DataSnapshot userSnap : snapshot.getChildren()) {
+                                    commId = userSnap.child("communityId").getValue(String.class);
+                                    commName = userSnap.child("communityName").getValue(String.class);
+                                    break;
                                 }
-                                @Override public void onCancelled(@NonNull DatabaseError error) {}
-                            });
+                                
+                                if (commId != null) {
+                                    final String finalCommName = commName;
+                                    final String finalCommId = commId;
+                                    db.child("communities").child(finalCommId).child("members").child(sbId).addListenerForSingleValueEvent(new ValueEventListener() {
+                                        @Override public void onDataChange(@NonNull DataSnapshot memSnap) {
+                                            if (memSnap.exists()) {
+                                                String dbPassword = memSnap.child("password").getValue(String.class);
+                                                String role = memSnap.child("role").getValue(String.class);
+                                                String name = memSnap.child("name").getValue(String.class);
+
+                                                if (dbPassword != null && dbPassword.equals(password)) {
+                                                    session.createLoginSession(finalCommId, role != null ? role : "MEMBER", finalCommName, name, sbId);
+                                                    AuditLogger.logAction(finalCommId, name, "LOGIN", "Logged into portal");
+                                                    startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+                                                    finish();
+                                                } else Toast.makeText(LoginActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
+                                            } else Toast.makeText(LoginActivity.this, "SB-ID not found in this Workspace", Toast.LENGTH_SHORT).show();
+                                        }
+                                        @Override public void onCancelled(@NonNull DatabaseError error) {}
+                                    });
+                                }
+                            } else Toast.makeText(LoginActivity.this, "Workspace not found", Toast.LENGTH_SHORT).show();
                         }
-                    } else Toast.makeText(LoginActivity.this, "Workspace not found", Toast.LENGTH_SHORT).show();
+                        @Override public void onCancelled(@NonNull DatabaseError error) {}
+                    });
+                } else {
+                    Toast.makeText(LoginActivity.this, "Network Security Error. Please try again.", Toast.LENGTH_SHORT).show();
                 }
-                @Override public void onCancelled(@NonNull DatabaseError error) {}
             });
         }
     }
