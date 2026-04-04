@@ -11,7 +11,8 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.property.TextAlignment;
+// THE FIX: Changed 'property' to 'properties' to match the latest iText7 library
+import com.itextpdf.layout.properties.TextAlignment; 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -129,7 +130,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // UPDATED: Single Poll Report (Privacy Aware)
     public static void generatePollReport(Context context, String communityName, Poll poll, boolean isSuperAdmin) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -164,7 +164,6 @@ public class PdfReportService {
         } catch (Exception e) { Toast.makeText(context, "Failed to create Poll PDF", Toast.LENGTH_SHORT).show(); }
     }
 
-    // NEW: Multiple Polls Report (Privacy Aware)
     public static void generateMultiplePollsReport(Context context, String communityName, List<Poll> polls, String reportRange, boolean isSuperAdmin) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
