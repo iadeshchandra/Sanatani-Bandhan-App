@@ -39,7 +39,6 @@ public class DashboardActivity extends AppCompatActivity {
         applyPermissions(session.getRole());
         setupNavigation();
 
-        // NEW: Open TrackiQ Academy Linktree
         findViewById(R.id.tvDashboardBranding).setOnClickListener(v -> {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://linktr.ee/Adesh_Chandra"));
             startActivity(browserIntent);
@@ -60,7 +59,6 @@ public class DashboardActivity extends AppCompatActivity {
         
         Date today = new Date();
         SimpleDateFormat engFormat = new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH);
-        // Uses Android's built-in Bengali localization
         SimpleDateFormat benFormat = new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD"));
         
         tvDateEnglish.setText("🕉 " + engFormat.format(today));
@@ -68,15 +66,14 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void applyPermissions(String role) {
+        // THE FIX: Financial Transparency Update
+        // Members and Managers can now see Donations, Expenses, and the Income Report Button!
         if (role.equals("MEMBER")) {
             findViewById(R.id.cardMembers).setVisibility(View.GONE);
-            findViewById(R.id.cardDonations).setVisibility(View.GONE);
-            findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
-            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
+            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE); // Security Audit is Admin only
             findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
         } else if (role.equals("MANAGER")) {
-            findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
-            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
+            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE); // Security Audit is Admin only
             findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
         } else if (role.equals("ADMIN")) {
             findViewById(R.id.btnEditCommunity).setVisibility(View.VISIBLE);
