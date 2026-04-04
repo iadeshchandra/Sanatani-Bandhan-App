@@ -37,6 +37,9 @@ public class DashboardActivity extends AppCompatActivity {
         applyPermissions(session.getRole());
         setupNavigation();
 
+        // Admin Edit Community Button
+        findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
+
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
             session.logout();
@@ -52,9 +55,13 @@ public class DashboardActivity extends AppCompatActivity {
             findViewById(R.id.cardComms).setVisibility(View.GONE);
             findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
+            findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
         } else if (role.equals("MANAGER")) {
             findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
+            findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
+        } else if (role.equals("ADMIN")) {
+            findViewById(R.id.btnEditCommunity).setVisibility(View.VISIBLE);
         }
     }
 
@@ -132,6 +139,56 @@ public class DashboardActivity extends AppCompatActivity {
                 }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
             }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
         });
+    }
+
+    private void showEditCommunityDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        builder.setTitle("Edit Community Name");
+        builder.setMessage("This name will appear on all new PDFs and reports.");
+
+        final android.widget.EditText input = new android.widget.EditText(this);
+        input.setText(session.getCommunityName());
+        
+        android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT);
+        input.setLayoutParams(lp);
+        
+        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+        container.setPadding(50, 20, 50, 0);
+        container.addView(input);
+        builder.setView(container);
+
+        builder.setPositiveButton("SAVE", (dialog, which) -> {
+            String newName = input.getText().toString().trim();
+            if (!newName.isEmpty()) {
+                updateCommunityNameInDatabase(newName);
+            } else {
+                Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void updateCommunityNameInDatabase(String newName) {
+        // Fetch current user ID for the Admin
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+        if (uid != null) {
+            db.child("users").child(uid).child("communityName").setValue(newName)
+                .addOnSuccessListener(aVoid -> {
+                    // Instantly update Session and UI
+                    session.updateCommunityName(newName);
+                    ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
+                    Toast.makeText(this, "Community Name Updated Successfully", Toast.LENGTH_SHORT).show();
+                    
+                    // Secretly log this update for security
+                    AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "SETTINGS_CHANGED", "Updated community name to: " + newName);
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to update name", Toast.LENGTH_SHORT).show());
+        } else {
+            Toast.makeText(this, "Authentication error. Only Admins can do this.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void setupDynamicShloka() {
