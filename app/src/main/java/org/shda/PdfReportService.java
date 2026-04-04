@@ -22,17 +22,19 @@ public class PdfReportService {
     
     private static final DeviceRgb SAFFRON = new DeviceRgb(230, 81, 0);
 
+    // Dynamic Auto-Naming for PDF Files
     private static String getFormattedFileName(String prefix) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd_MMM_yyyy_hh_mm_a", Locale.getDefault());
         return sdf.format(new Date()) + "_" + prefix.replace(" ", "_") + ".pdf";
     }
 
+    // Dynamic Timestamp printed inside the PDF
     private static String getGenerationStamp() {
         SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
         return "Generated on: " + sdf.format(new Date());
     }
 
-    // 1. FINANCIAL REPORT
+    // 1. FINANCIAL REPORT (With Date Range)
     public static void generateFinancialReport(Context context, String communityName, List<String> dates, List<String> names, List<Float> amounts, List<String> notes, float totalDonations, String reportRange) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -62,11 +64,12 @@ public class PdfReportService {
             document.close();
             shareFile(context, file, communityName + " - Financial Report");
         } catch (Exception e) {
+            e.printStackTrace();
             Toast.makeText(context, "Failed to create PDF", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // 2. DONOR RECEIPT
+    // 2. INDIVIDUAL DONOR RECEIPT
     public static void generateDonorReceipt(Context context, String communityName, String name, float amount, String note, String date) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -88,6 +91,7 @@ public class PdfReportService {
             document.close();
             shareFile(context, file, communityName + " - Receipt");
         } catch (Exception e) {
+            e.printStackTrace();
             Toast.makeText(context, "Failed to create Receipt", Toast.LENGTH_SHORT).show();
         }
     }
@@ -111,11 +115,12 @@ public class PdfReportService {
             document.close();
             shareFile(context, file, communityName + " Directory");
         } catch (Exception e) {
+            e.printStackTrace();
             Toast.makeText(context, "Failed to create Directory", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // 4. INDIVIDUAL MEMBER PROFILE
+    // 4. INDIVIDUAL MEMBER PROFILE (Deep Dive)
     public static void generateMemberProfile(Context context, String communityName, Member member) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -136,16 +141,54 @@ public class PdfReportService {
             document.add(new Paragraph("Phone: " + member.phone).setFontSize(14));
             document.add(new Paragraph("Gotra: " + member.gotra).setFontSize(14));
             document.add(new Paragraph("Blood Group: " + member.bloodGroup).setFontSize(14).setFontColor(new DeviceRgb(211, 47, 47)));
+            
+            // Add Role to PDF if it's set
+            if(member.role != null) {
+                document.add(new Paragraph("Community Role: " + member.role).setFontSize(14).setFontColor(new DeviceRgb(25, 118, 210)));
+            }
+
             document.add(new Paragraph("\nJoin Date: " + joinDate).setFontSize(12));
             document.add(new Paragraph("Total Chanda Contributed: ৳" + member.totalDonated).setBold().setFontSize(14).setFontColor(new DeviceRgb(46, 125, 50)));
 
             document.close();
             shareFile(context, file, member.name + " Profile");
         } catch (Exception e) {
+            e.printStackTrace();
             Toast.makeText(context, "Failed to create Profile", Toast.LENGTH_SHORT).show();
         }
     }
 
+    // 5. MANAGER AUDIT TRAIL REPORT (Super Admin Only)
+    public static void generateAuditReport(Context context, String communityName, List<String> logs, String reportRange) {
+        try {
+            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File file = new File(path, getFormattedFileName("Audit_Report"));
+            PdfWriter writer = new PdfWriter(file.getAbsolutePath());
+            Document document = new Document(new PdfDocument(writer));
+
+            document.add(new Paragraph(communityName.toUpperCase() + " - SECURITY AUDIT").setFontColor(new DeviceRgb(211, 47, 47)).setBold().setFontSize(22).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph("Manager Activity Log").setBold().setFontSize(14).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph(reportRange).setFontSize(12).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph(getGenerationStamp()).setFontSize(10).setItalic().setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph("--------------------------------------------------\n").setTextAlignment(TextAlignment.CENTER));
+
+            if (logs.isEmpty()) {
+                document.add(new Paragraph("No manager activity recorded for this period.").setTextAlignment(TextAlignment.CENTER));
+            } else {
+                for (String logEntry : logs) {
+                    document.add(new Paragraph(logEntry).setFontSize(11));
+                    document.add(new Paragraph("----------------------------------------"));
+                }
+            }
+            document.close();
+            shareFile(context, file, communityName + " - Audit Report");
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(context, "Failed to create Audit PDF", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // System Intent to share/open the generated file
     private static void shareFile(Context context, File file, String subject) {
         Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
         Intent shareIntent = new Intent(Intent.ACTION_SEND);
