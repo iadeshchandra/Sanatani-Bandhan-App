@@ -7,26 +7,35 @@ public class SessionManager {
     private SharedPreferences prefs;
     private SharedPreferences.Editor editor;
 
+    private static final String PREF_NAME = "SanataniSession";
+    private static final String KEY_COMM_ID = "communityId";
+    private static final String KEY_ROLE = "role";
+    private static final String KEY_COMM_NAME = "communityName";
+    private static final String KEY_USER_NAME = "userName"; // For the Audit Trail
+    private static final String KEY_USER_ID = "userId";     // SB-1001 etc.
+
     public SessionManager(Context context) {
-        prefs = context.getSharedPreferences("SanataniSaaS", Context.MODE_PRIVATE);
+        prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         editor = prefs.edit();
     }
 
-    // Saves the user's SaaS data when they log in
-    public void createSession(String uid, String communityId, String role, String communityName) {
-        editor.putString("uid", uid);
-        editor.putString("communityId", communityId);
-        editor.putString("role", role);
-        editor.putString("communityName", communityName);
+    public void createLoginSession(String commId, String role, String commName, String userName, String userId) {
+        editor.putString(KEY_COMM_ID, commId);
+        editor.putString(KEY_ROLE, role);
+        editor.putString(KEY_COMM_NAME, commName);
+        editor.putString(KEY_USER_NAME, userName);
+        editor.putString(KEY_USER_ID, userId);
         editor.apply();
     }
 
-    // Fetch these anywhere in the app to route data correctly
-    public String getCommunityId() { return prefs.getString("communityId", null); }
-    public String getCommunityName() { return prefs.getString("communityName", "Sanatani Portal"); }
-    public String getRole() { return prefs.getString("role", "MEMBER"); } // ADMIN, MANAGER, or MEMBER
-    
-    public void logout() { 
-        editor.clear().apply(); 
+    public String getCommunityId() { return prefs.getString(KEY_COMM_ID, null); }
+    public String getRole() { return prefs.getString(KEY_ROLE, "MEMBER"); }
+    public String getCommunityName() { return prefs.getString(KEY_COMM_NAME, "Sanatani Bandhan"); }
+    public String getUserName() { return prefs.getString(KEY_USER_NAME, "Unknown User"); }
+    public String getUserId() { return prefs.getString(KEY_USER_ID, ""); }
+
+    public void logout() {
+        editor.clear();
+        editor.apply();
     }
 }
