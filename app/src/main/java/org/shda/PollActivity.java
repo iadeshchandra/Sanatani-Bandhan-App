@@ -39,16 +39,21 @@ public class PollActivity extends AppCompatActivity {
         if (session.getCommunityId() == null) { finish(); return; }
 
         String role = session.getRole();
+        if (role == null) role = "MEMBER"; // Null safety fallback
+        
         isAdminOrManager = role.equals("ADMIN") || role.equals("MANAGER");
         isSuperAdmin = role.equals("ADMIN");
 
         Button btnCreatePoll = findViewById(R.id.btnCreatePoll);
-        if (isAdminOrManager) {
+        if (isAdminOrManager && btnCreatePoll != null) {
             btnCreatePoll.setVisibility(View.VISIBLE);
             btnCreatePoll.setOnClickListener(v -> showCreatePollDialog());
         }
 
-        findViewById(R.id.btnExportAllPolls).setOnClickListener(v -> triggerAllPollsReport());
+        View btnExport = findViewById(R.id.btnExportAllPolls);
+        if (btnExport != null) {
+            btnExport.setOnClickListener(v -> triggerAllPollsReport());
+        }
 
         loadPolls();
     }
@@ -60,10 +65,15 @@ public class PollActivity extends AppCompatActivity {
                 pollsContainer.removeAllViews();
                 allPolls.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
-                    Poll poll = data.getValue(Poll.class);
-                    if (poll != null) {
-                        allPolls.add(poll);
-                        renderPollCard(poll);
+                    // THE FIX: Try-Catch prevents crashes from old/corrupted test data
+                    try {
+                        Poll poll = data.getValue(Poll.class);
+                        if (poll != null && poll.question != null) {
+                            allPolls.add(poll);
+                            renderPollCard(poll);
+                        }
+                    } catch (Exception e) {
+                        // Ignore corrupted poll data quietly
                     }
                 }
             }
@@ -84,11 +94,10 @@ public class PollActivity extends AppCompatActivity {
         Button btnAddComment = view.findViewById(R.id.btnAddComment);
         Button btnDownload = view.findViewById(R.id.btnDownloadPollData);
 
-        tvQuestion.setText(poll.question);
-        btnOptA.setText(poll.optionA);
-        btnOptB.setText(poll.optionB);
+        tvQuestion.setText(poll.question != null ? poll.question : "Untitled Poll");
+        btnOptA.setText(poll.optionA != null ? poll.optionA : "Yes");
+        btnOptB.setText(poll.optionB != null ? poll.optionB : "No");
 
-        // Calculate Live Votes
         int countA = 0, countB = 0;
         if (poll.votes != null) {
             for (String choice : poll.votes.values()) {
@@ -98,7 +107,6 @@ public class PollActivity extends AppCompatActivity {
         }
         tvLiveCounts.setText("Live Tally ➔ " + poll.optionA + ": " + countA + " | " + poll.optionB + ": " + countB);
 
-        // Display Official Comment if exists
         if (poll.officialComment != null && !poll.officialComment.isEmpty()) {
             tvOfficialComment.setVisibility(View.VISIBLE);
             tvOfficialComment.setText(poll.officialComment);
@@ -117,19 +125,18 @@ public class PollActivity extends AppCompatActivity {
             btnOptB.setOnClickListener(v -> submitVote(poll.id, userId, "B"));
         }
 
-        // Admin/Manager Comment Power
         if (isAdminOrManager) {
             btnAddComment.setVisibility(View.VISIBLE);
             btnAddComment.setOnClickListener(v -> showAddCommentDialog(poll.id));
         }
 
-        // Everyone can download, but the PDF service will check 'isSuperAdmin' for privacy
         btnDownload.setOnClickListener(v -> PdfReportService.generatePollReport(this, session.getCommunityName(), poll, isSuperAdmin));
 
-        pollsContainer.addView(view, 0); // Add newest to top
+        pollsContainer.addView(view, 0);
     }
 
     private void submitVote(String pollId, String userId, String choice) {
+        if (pollId == null) return;
         db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).child("votes").child(userId).setValue(choice)
           .addOnSuccessListener(aVoid -> Toast.makeText(this, "Vote securely cast!", Toast.LENGTH_SHORT).show());
     }
@@ -162,10 +169,10 @@ public class PollActivity extends AppCompatActivity {
     }
 
     private void showAddCommentDialog(String pollId) {
+        if (pollId == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Add Official Remark");
-        final EditText inputComment = new EditText(this);
-        inputComment.setHint("Write remark here...");
+        final EditText inputComment = new EditText(this); inputComment.setHint("Write remark here...");
         
         LinearLayout layout = new LinearLayout(this); layout.setPadding(50, 20, 50, 0); layout.addView(inputComment);
         builder.setView(layout);
