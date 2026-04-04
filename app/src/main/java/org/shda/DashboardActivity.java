@@ -52,13 +52,18 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void applyPermissions(String role) {
         if (role.equals("MEMBER")) {
+            // Regular members only see Utsavs & their own profiles
             findViewById(R.id.cardMembers).setVisibility(View.GONE);
             findViewById(R.id.cardDonations).setVisibility(View.GONE);
             findViewById(R.id.cardComms).setVisibility(View.GONE);
             findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
+            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE); // Hide Audit
         } else if (role.equals("MANAGER")) {
+            // Managers can manage CRM but cannot pull full financial or security audits
             findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
+            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE); // Hide Audit
         }
+        // Admin sees everything
     }
 
     private void setupNavigation() {
@@ -67,16 +72,13 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
         findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
 
-        // Date Picker Financial Reports Logic
+        // --- 1. FINANCIAL REPORTS (With Date Picker) ---
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> {
             Calendar startCal = Calendar.getInstance();
             Calendar endCal = Calendar.getInstance();
 
-            // Ask for Start Date
             new android.app.DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
                 startCal.set(year, month, dayOfMonth, 0, 0, 0); 
-
-                // Ask for End Date
                 new android.app.DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
                     endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
 
@@ -88,7 +90,6 @@ public class DashboardActivity extends AppCompatActivity {
 
                     Toast.makeText(this, "Auditing Financials...", Toast.LENGTH_SHORT).show();
 
-                    // Query Firebase using the timestamps
                     db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
                       .orderByChild("timestamp").startAt(startTimestamp).endAt(endTimestamp)
                       .addListenerForSingleValueEvent(new ValueEventListener() {
@@ -116,18 +117,56 @@ public class DashboardActivity extends AppCompatActivity {
                                     total += amt;
                                 }
                             }
-                            
                             PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, total, reportRange);
                         }
-
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
-                            Toast.makeText(DashboardActivity.this, "Database Error", Toast.LENGTH_SHORT).show();
-                        }
+                        @Override public void onCancelled(@NonNull DatabaseError error) {}
                     });
-
                 }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+        });
 
+        // --- 2. SECURITY AUDIT REPORT (Admin Only, With Date Picker) ---
+        findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> {
+            Calendar startCal = Calendar.getInstance();
+            Calendar endCal = Calendar.getInstance();
+
+            new android.app.DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                startCal.set(year, month, dayOfMonth, 0, 0, 0); 
+                new android.app.DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
+                    endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
+
+                    long startTimestamp = startCal.getTimeInMillis();
+                    long endTimestamp = endCal.getTimeInMillis();
+                    
+                    SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                    String reportRange = "Audit Period: " + displayFormat.format(startCal.getTime()) + " to " + displayFormat.format(endCal.getTime());
+
+                    Toast.makeText(this, "Compiling Audit Logs...", Toast.LENGTH_SHORT).show();
+
+                    db.child("communities").child(session.getCommunityId()).child("audit_logs")
+                      .orderByChild("timestamp").startAt(startTimestamp).endAt(endTimestamp)
+                      .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            List<String> auditEntries = new ArrayList<>();
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+
+                            for (DataSnapshot data : snapshot.getChildren()) {
+                                String manager = data.child("managerName").getValue(String.class);
+                                String action = data.child("actionType").getValue(String.class);
+                                String desc = data.child("description").getValue(String.class);
+                                Long ts = data.child("timestamp").getValue(Long.class);
+                                
+                                if (manager != null) {
+                                    String dateStr = ts != null ? sdf.format(new Date(ts)) : "Unknown Date";
+                                    auditEntries.add(dateStr + "\nUser: " + manager + " (" + action + ")\nDetails: " + desc);
+                                }
+                            }
+                            PdfReportService.generateAuditReport(DashboardActivity.this, session.getCommunityName(), auditEntries, reportRange);
+                        }
+                        @Override public void onCancelled(@NonNull DatabaseError error) {}
+                    });
+                }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
             }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
         });
     }
