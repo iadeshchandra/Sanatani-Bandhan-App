@@ -4,14 +4,17 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class TransactionActivity extends AppCompatActivity {
@@ -31,20 +34,15 @@ public class TransactionActivity extends AppCompatActivity {
         transactionsContainer = findViewById(R.id.transactionsContainer);
         tvTotalDonations = findViewById(R.id.tvTotalDonations);
 
-        if (session.getCommunityId() == null) { finish(); return; }
-
-        // THE FIX: RBAC Security for Adding Chanda
-        // Find the button that opens the "Record Smart Chanda" dialog
         View btnAddTransaction = findViewById(R.id.btnAddTransaction); 
         
+        // 🔒 RBAC: Hide the Add button if the user is a MEMBER
         if (btnAddTransaction != null) {
             if ("MEMBER".equals(session.getRole())) {
-                // Hide the add button completely from normal members
                 btnAddTransaction.setVisibility(View.GONE);
             } else {
-                // Admins and Managers get the click listener to open your Chanda dialog
-                // (Ensure your existing showAddChandaDialog method is called here)
-                // btnAddTransaction.setOnClickListener(v -> showAddChandaDialog());
+                btnAddTransaction.setVisibility(View.VISIBLE);
+                btnAddTransaction.setOnClickListener(v -> showAddChandaDialog());
             }
         }
 
@@ -66,36 +64,69 @@ public class TransactionActivity extends AppCompatActivity {
                         Float amount = data.child("amount").getValue(Float.class);
                         String note = data.child("note").getValue(String.class);
                         Long timestamp = data.child("timestamp").getValue(Long.class);
+                        String loggedBy = data.child("loggedBy").getValue(String.class); // Fetch signature
 
                         if (name != null && amount != null) {
                             totalDonationsValue += amount;
                             
-                            // Re-inflate your standard transaction item view
                             View view = LayoutInflater.from(TransactionActivity.this).inflate(R.layout.item_transaction, transactionsContainer, false);
                             
-                            TextView tvName = view.findViewById(R.id.tvTransName);
-                            TextView tvAmount = view.findViewById(R.id.tvTransAmount);
-                            TextView tvDate = view.findViewById(R.id.tvTransDate);
-                            TextView tvNote = view.findViewById(R.id.tvTransNote);
+                            ((TextView) view.findViewById(R.id.tvTransName)).setText(name);
+                            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("৳" + amount);
+                            if(timestamp != null) ((TextView) view.findViewById(R.id.tvTransDate)).setText(sdf.format(new Date(timestamp)));
+                            
+                            // Display the note AND the Manager's Signature
+                            String finalNote = (note != null ? note : "") + "\n✍️ Logged by: " + (loggedBy != null ? loggedBy : "Admin");
+                            ((TextView) view.findViewById(R.id.tvTransNote)).setText(finalNote);
 
-                            if(tvName != null) tvName.setText(name);
-                            if(tvAmount != null) tvAmount.setText("৳" + amount);
-                            if(tvDate != null && timestamp != null) tvDate.setText(sdf.format(new Date(timestamp)));
-                            if(tvNote != null) tvNote.setText(note != null ? note : "");
-
-                            transactionsContainer.addView(view, 0); // Add newest to the top
+                            transactionsContainer.addView(view, 0); 
                         }
-                    } catch (Exception e) {
-                        // Safely ignore corrupted data
-                    }
+                    } catch (Exception e) {}
                 }
-                if (tvTotalDonations != null) {
-                    tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
-                }
+                if (tvTotalDonations != null) tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    // Include your existing showAddChandaDialog() logic here from your previous file!
+    private void showAddChandaDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Record Smart Chanda");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 20, 50, 0);
+
+        final EditText inputName = new EditText(this); inputName.setHint("Donor Name"); layout.addView(inputName);
+        final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
+        final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Note"); layout.addView(inputNote);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("SAVE", (dialog, which) -> {
+            String name = inputName.getText().toString().trim();
+            String amountStr = inputAmount.getText().toString().trim();
+            String note = inputNote.getText().toString().trim();
+
+            if (name.isEmpty() || amountStr.isEmpty()) { Toast.makeText(this, "Name and Amount required", Toast.LENGTH_SHORT).show(); return; }
+
+            try {
+                float amount = Float.parseFloat(amountStr);
+                String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
+                
+                HashMap<String, Object> transMap = new HashMap<>();
+                transMap.put("name", name);
+                transMap.put("amount", amount);
+                transMap.put("note", note);
+                transMap.put("timestamp", System.currentTimeMillis());
+                // ✍️ THE SIGNATURE: Automatically stamp the user who created it
+                transMap.put("loggedBy", session.getRole() + " - " + session.getUserName());
+
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
+                Toast.makeText(this, "Chanda Recorded Securely", Toast.LENGTH_SHORT).show();
+            } catch (NumberFormatException e) { Toast.makeText(this, "Invalid Amount", Toast.LENGTH_SHORT).show(); }
+        });
+        builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
 }
