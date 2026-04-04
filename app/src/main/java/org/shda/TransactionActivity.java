@@ -111,7 +111,7 @@ public class TransactionActivity extends AppCompatActivity {
             }
         }
 
-        // FIX: Creating final variables for Lambda expressions
+        // Creating final variables for Lambda expressions
         final String finalMemberId = tempMemberId;
         final String finalCommId = commId;
         final float finalAmount = amount;
@@ -124,16 +124,19 @@ public class TransactionActivity extends AppCompatActivity {
         logData.put("note", finalNote);
         logData.put("timestamp", System.currentTimeMillis());
         
-        // Save to community logs
+        // 1. Save to community financial logs
         db.child("communities").child(finalCommId).child("logs").child("Donation").push().setValue(logData);
 
-        // Update community total finances
+        // --- 2. NEW: DIGITAL SIGNATURE FOR THE AUDIT TRAIL ---
+        AuditLogger.logAction(finalCommId, session.getUserName(), "CHANDA_COLLECTED", "Collected ৳" + finalAmount + " from " + finalNameToSave);
+
+        // 3. Update community total finances
         db.child("communities").child(finalCommId).child("finances").child("Donation").get().addOnSuccessListener(snap -> {
             float currentTotal = snap.exists() ? snap.getValue(Float.class) : 0f;
             db.child("communities").child(finalCommId).child("finances").child("Donation").setValue(currentTotal + finalAmount);
         });
 
-        // Update specific member's total if applicable
+        // 4. Update specific member's total if applicable
         if (isMember && finalMemberId != null) {
             db.child("communities").child(finalCommId).child("members").child(finalMemberId).child("totalDonated").get()
               .addOnSuccessListener(snap -> {
