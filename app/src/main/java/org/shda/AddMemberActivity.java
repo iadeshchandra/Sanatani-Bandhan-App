@@ -26,14 +26,20 @@ public class AddMemberActivity extends AppCompatActivity {
 
         if (session.getCommunityId() == null || "MEMBER".equals(session.getRole())) { 
             Toast.makeText(this, "Access Denied. Admins and Managers only.", Toast.LENGTH_LONG).show();
-            finish(); 
-            return; 
+            finish(); return; 
         }
 
         EditText inputName = findViewById(R.id.inputName);
         EditText inputPhone = findViewById(R.id.inputPhone);
         EditText inputGotra = findViewById(R.id.inputGotra);
         EditText inputBloodGroup = findViewById(R.id.inputBloodGroup);
+        
+        // New Optional Fields
+        EditText inputFather = findViewById(R.id.inputFather);
+        EditText inputMother = findViewById(R.id.inputMother);
+        EditText inputNid = findViewById(R.id.inputNid);
+        EditText inputAddress = findViewById(R.id.inputAddress);
+        
         Button btnSave = findViewById(R.id.btnSaveMember);
 
         btnSave.setOnClickListener(v -> {
@@ -42,26 +48,30 @@ public class AddMemberActivity extends AppCompatActivity {
             String gotra = inputGotra.getText().toString().trim();
             String bloodGroup = inputBloodGroup.getText().toString().trim();
 
-            if (name.isEmpty() || phone.isEmpty()) { 
-                Toast.makeText(this, "Name and Phone required", Toast.LENGTH_SHORT).show(); 
+            String father = inputFather.getText().toString().trim();
+            String mother = inputMother.getText().toString().trim();
+            String nid = inputNid.getText().toString().trim();
+            String address = inputAddress.getText().toString().trim();
+
+            if (name.isEmpty() || phone.isEmpty() || gotra.isEmpty() || bloodGroup.isEmpty()) { 
+                Toast.makeText(this, "Please fill all required fields", Toast.LENGTH_SHORT).show(); 
                 return; 
             }
 
             String autoPassword = String.format("%06d", new Random().nextInt(999999));
             String role = "MEMBER"; 
             String commId = session.getCommunityId();
+            String signature = session.getRole() + " - " + session.getUserName();
             
             db.child("communities").child(commId).child("metadata").child("lastMemberId").get().addOnSuccessListener(snap -> {
                 if (snap.exists()) { currentIdCounter = snap.getValue(Long.class); }
                 currentIdCounter++;
                 String newMemberId = "SB-" + currentIdCounter; 
 
-                Member newMember = new Member(newMemberId, name, phone, gotra, bloodGroup, System.currentTimeMillis(), role, autoPassword);
-                db.child("communities").child(commId).child("members").child(newMemberId).setValue(newMember);
+                // Inject the new expanded model
+                Member newMember = new Member(newMemberId, name, phone, gotra, bloodGroup, System.currentTimeMillis(), role, autoPassword, father, mother, nid, address, signature);
                 
-                String signature = session.getRole() + " - " + session.getUserName();
-                db.child("communities").child(commId).child("members").child(newMemberId).child("addedBySignature").setValue(signature);
-
+                db.child("communities").child(commId).child("members").child(newMemberId).setValue(newMember);
                 db.child("communities").child(commId).child("metadata").child("lastMemberId").setValue(currentIdCounter);
 
                 String encodedWorkspaceEmail = session.getWorkspaceEmail().replace(".", ",");
@@ -86,7 +96,6 @@ public class AddMemberActivity extends AppCompatActivity {
             .setTitle("User Created Successfully")
             .setMessage("Login ID: " + id + "\nPassword: " + password)
             .setPositiveButton("Done", (dialog, which) -> finish())
-            // 🌟 NEW: "Share as PDF" Button
             .setNeutralButton("Share as PDF", (dialog, which) -> {
                 PdfReportService.generateLoginCredentialsPdf(this, session.getCommunityName(), name, id, password, role);
                 finish();
