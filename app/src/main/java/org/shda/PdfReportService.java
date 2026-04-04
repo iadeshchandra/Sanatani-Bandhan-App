@@ -42,7 +42,6 @@ public class PdfReportService {
         document.add(new Paragraph("--------------------------------------------------\n").setTextAlignment(TextAlignment.CENTER));
     }
 
-    // --- NEW: GENERATE LOGIN CREDENTIALS PDF ---
     public static void generateLoginCredentialsPdf(Context context, String communityName, String memberName, String memberId, String password, String role) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -91,18 +90,22 @@ public class PdfReportService {
 
     public static void generateExpenseReport(Context context, String communityName, List<Expense> expenseList, float totalExpense, String reportRange) {
         try {
-            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); File file = new File(path, getFormattedFileName("Expense_Statement"));
+            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); File file = new File(path, getFormattedFileName("Utsav_Expenses"));
             PdfWriter writer = new PdfWriter(file.getAbsolutePath()); Document document = new Document(new PdfDocument(writer));
-            addSanataniHeader(document, communityName, "Official Expense Statement");
+            addSanataniHeader(document, communityName, "Official Utsav Expense Ledger");
             document.add(new Paragraph(reportRange).setFontSize(12).setTextAlignment(TextAlignment.CENTER).setMarginBottom(10f));
             document.add(new Paragraph("Total Expenses: ৳" + totalExpense).setBold().setFontSize(14).setFontColor(new DeviceRgb(211, 47, 47))); document.add(new Paragraph("\n"));
+            
             SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
             for(Expense exp : expenseList) {
+                document.add(new Paragraph("🪔 Utsav/Puja: " + exp.eventName).setBold().setFontSize(13).setFontColor(SAFFRON));
                 document.add(new Paragraph("Date: " + sdf.format(new Date(exp.timestamp)) + "  |  Amount: ৳" + exp.amount).setBold());
-                document.add(new Paragraph("Purpose: " + exp.purpose)); document.add(new Paragraph("Note: " + (exp.comment.isEmpty() ? "N/A" : exp.comment)));
-                document.add(new Paragraph("Authorized By: " + exp.loggedBy).setFontSize(10).setItalic()); document.add(new Paragraph("----------------------------------------"));
+                document.add(new Paragraph("Item/Seva: " + exp.itemName)); 
+                document.add(new Paragraph("Handled By: " + exp.involvedPerson));
+                document.add(new Paragraph("Logged By: " + exp.loggedBy).setFontSize(10).setItalic()); 
+                document.add(new Paragraph("----------------------------------------"));
             }
-            document.close(); shareFile(context, file, communityName + " - Expense Report");
+            document.close(); shareFile(context, file, communityName + " - Expense Ledger");
         } catch (Exception e) {}
     }
 
