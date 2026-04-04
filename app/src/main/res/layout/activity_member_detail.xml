@@ -6,6 +6,7 @@
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="Member Insights" android:textSize="26sp" android:textStyle="bold" android:textColor="#E65100"/>
+    
     <TextView android:id="@+id/tvDetailId" android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="SB-0000" android:textSize="16sp" android:textColor="#757575" android:layout_marginBottom="24dp"/>
 
@@ -14,7 +15,10 @@
         app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFFFFF" android:layout_marginBottom="24dp">
         
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
-            <TextView android:id="@+id/tvDetailName" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="12dp"/>
+            <TextView android:id="@+id/tvDetailName" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="22sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
+            
+            <TextView android:id="@+id/tvDetailRole" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#FFFFFF" android:background="#1976D2" android:paddingHorizontal="8dp" android:paddingVertical="4dp" android:textStyle="bold" android:layout_marginBottom="12dp"/>
+
             <TextView android:id="@+id/tvDetailPhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:layout_marginBottom="8dp"/>
             <TextView android:id="@+id/tvDetailGotra" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:layout_marginBottom="8dp"/>
             <TextView android:id="@+id/tvDetailBlood" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#D32F2F" android:textStyle="bold" android:layout_marginBottom="8dp"/>
@@ -26,4 +30,19 @@
 
     <Button android:id="@+id/btnDownloadProfile" android:layout_width="match_parent" android:layout_height="60dp"
         android:text="Export Member Profile PDF" android:textStyle="bold" android:backgroundTint="#1976D2"/>
+
+    <LinearLayout android:id="@+id/adminRoleLayout" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:visibility="gone" android:layout_marginTop="32dp">
+        
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" 
+            android:text="SUPER ADMIN CONTROLS" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginBottom="8dp"/>
+            
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <Button android:id="@+id/btnMakeManager" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp" 
+                android:text="Promote to Manager" android:textSize="12sp" android:backgroundTint="#F57C00" android:layout_marginEnd="4dp"/>
+            <Button android:id="@+id/btnMakeMember" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp" 
+                android:text="Demote to Member" android:textSize="12sp" android:backgroundTint="#757575" android:layout_marginStart="4dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
 </LinearLayout>
