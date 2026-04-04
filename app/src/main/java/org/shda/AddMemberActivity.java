@@ -34,7 +34,6 @@ public class AddMemberActivity extends AppCompatActivity {
         EditText inputGotra = findViewById(R.id.inputGotra);
         EditText inputBloodGroup = findViewById(R.id.inputBloodGroup);
         
-        // New Optional Fields
         EditText inputFather = findViewById(R.id.inputFather);
         EditText inputMother = findViewById(R.id.inputMother);
         EditText inputNid = findViewById(R.id.inputNid);
@@ -61,15 +60,21 @@ public class AddMemberActivity extends AppCompatActivity {
             String autoPassword = String.format("%06d", new Random().nextInt(999999));
             String role = "MEMBER"; 
             String commId = session.getCommunityId();
-            String signature = session.getRole() + " - " + session.getUserName();
+            
+            // 🛡️ DYNAMIC STRICT SIGNATURE
+            String strictSignature;
+            if ("ADMIN".equals(session.getRole())) {
+                strictSignature = "Super Admin - " + session.getUserName();
+            } else {
+                strictSignature = "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
+            }
             
             db.child("communities").child(commId).child("metadata").child("lastMemberId").get().addOnSuccessListener(snap -> {
                 if (snap.exists()) { currentIdCounter = snap.getValue(Long.class); }
                 currentIdCounter++;
                 String newMemberId = "SB-" + currentIdCounter; 
 
-                // Inject the new expanded model
-                Member newMember = new Member(newMemberId, name, phone, gotra, bloodGroup, System.currentTimeMillis(), role, autoPassword, father, mother, nid, address, signature);
+                Member newMember = new Member(newMemberId, name, phone, gotra, bloodGroup, System.currentTimeMillis(), role, autoPassword, father, mother, nid, address, strictSignature);
                 
                 db.child("communities").child(commId).child("members").child(newMemberId).setValue(newMember);
                 db.child("communities").child(commId).child("metadata").child("lastMemberId").setValue(currentIdCounter);
