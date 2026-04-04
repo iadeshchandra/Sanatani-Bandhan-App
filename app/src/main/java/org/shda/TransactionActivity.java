@@ -27,7 +27,7 @@ public class TransactionActivity extends AppCompatActivity {
     private LinearLayout transactionsContainer;
     private TextView tvTotalDonations;
     private float totalDonationsValue = 0f;
-    private List<String> memberSearchList = new ArrayList<>(); // Auto-complete data
+    private List<String> memberSearchList = new ArrayList<>(); 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,7 +53,7 @@ public class TransactionActivity extends AppCompatActivity {
         }
 
         loadTransactions();
-        fetchMembersForAutoComplete(); // Pre-load member names
+        fetchMembersForAutoComplete();
     }
 
     private void fetchMembersForAutoComplete() {
@@ -64,7 +64,7 @@ public class TransactionActivity extends AppCompatActivity {
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Member m = data.getValue(Member.class);
                     if (m != null) {
-                        memberSearchList.add(m.name + " (" + m.id + ")"); // e.g. "Ratan (SB-1001)"
+                        memberSearchList.add(m.name + " (" + m.id + ")");
                     }
                 }
             }
@@ -103,7 +103,6 @@ public class TransactionActivity extends AppCompatActivity {
                             if(tvAmount != null) tvAmount.setText("৳" + amount);
                             if(tvDate != null && timestamp != null) tvDate.setText(sdf.format(new Date(timestamp)));
                             
-                            // ✍️ STRICT AUDIT TRAIL: Show Manager Name AND ID
                             String finalNote = (note != null ? note : "") + "\n✍️ Collected By: " + (loggedBy != null ? loggedBy : "System");
                             if(tvNote != null) tvNote.setText(finalNote);
 
@@ -134,12 +133,11 @@ public class TransactionActivity extends AppCompatActivity {
         rgType.addView(rbMember); rgType.addView(rbGuest);
         layout.addView(rgType);
 
-        // 🧠 AUTO-COMPLETE TEXT BOX
         final AutoCompleteTextView inputName = new AutoCompleteTextView(this); 
         inputName.setHint("Donor Name / SB-ID"); 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList);
         inputName.setAdapter(adapter);
-        inputName.setThreshold(1); // Starts searching after 1 letter!
+        inputName.setThreshold(1); 
         layout.addView(inputName);
 
         final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
@@ -165,8 +163,13 @@ public class TransactionActivity extends AppCompatActivity {
                 transMap.put("note", note);
                 transMap.put("timestamp", System.currentTimeMillis());
                 
-                // 🛡️ STRICT SIGNATURE: Includes Role, Name, AND User ID
-                String strictSignature = session.getRole() + " - " + session.getUserName() + " (" + session.getUserId() + ")";
+                // 🛡️ DYNAMIC STRICT SIGNATURE
+                String strictSignature;
+                if ("ADMIN".equals(session.getRole())) {
+                    strictSignature = "Super Admin - " + session.getUserName(); 
+                } else {
+                    strictSignature = "Manager - " + session.getUserName() + " (" + session.getUserId() + ")"; 
+                }
                 transMap.put("loggedBy", strictSignature);
 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
