@@ -9,7 +9,7 @@ public class Member {
     public long timestamp;
     public float totalDonated;
     
-    // NEW: Security & Roles
+    // Security & Roles
     public String role; 
     public String password; 
 
