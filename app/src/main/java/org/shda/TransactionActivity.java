@@ -3,6 +3,8 @@ package org.shda;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -13,8 +15,10 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 
 public class TransactionActivity extends AppCompatActivity {
@@ -23,6 +27,7 @@ public class TransactionActivity extends AppCompatActivity {
     private LinearLayout transactionsContainer;
     private TextView tvTotalDonations;
     private float totalDonationsValue = 0f;
+    private List<String> memberSearchList = new ArrayList<>(); // Auto-complete data
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,7 +43,6 @@ public class TransactionActivity extends AppCompatActivity {
 
         View btnAddTransaction = findViewById(R.id.btnAddTransaction); 
         
-        // 🔒 RBAC Security: Only Admins/Managers can add Chanda. Members can only view.
         if (btnAddTransaction != null) {
             if ("MEMBER".equals(session.getRole())) {
                 btnAddTransaction.setVisibility(View.GONE);
@@ -49,6 +53,23 @@ public class TransactionActivity extends AppCompatActivity {
         }
 
         loadTransactions();
+        fetchMembersForAutoComplete(); // Pre-load member names
+    }
+
+    private void fetchMembersForAutoComplete() {
+        db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                memberSearchList.clear();
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Member m = data.getValue(Member.class);
+                    if (m != null) {
+                        memberSearchList.add(m.name + " (" + m.id + ")"); // e.g. "Ratan (SB-1001)"
+                    }
+                }
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
     private void loadTransactions() {
@@ -82,15 +103,13 @@ public class TransactionActivity extends AppCompatActivity {
                             if(tvAmount != null) tvAmount.setText("৳" + amount);
                             if(tvDate != null && timestamp != null) tvDate.setText(sdf.format(new Date(timestamp)));
                             
-                            // Combine the user note with the permanent Manager signature
-                            String finalNote = (note != null ? note : "") + "\n✍️ Logged by: " + (loggedBy != null ? loggedBy : "Admin");
+                            // ✍️ STRICT AUDIT TRAIL: Show Manager Name AND ID
+                            String finalNote = (note != null ? note : "") + "\n✍️ Collected By: " + (loggedBy != null ? loggedBy : "System");
                             if(tvNote != null) tvNote.setText(finalNote);
 
                             transactionsContainer.addView(view, 0); 
                         }
-                    } catch (Exception e) {
-                        // Safely ignore corrupted data
-                    }
+                    } catch (Exception e) {}
                 }
                 if (tvTotalDonations != null) {
                     tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
@@ -108,7 +127,6 @@ public class TransactionActivity extends AppCompatActivity {
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 20, 50, 0);
 
-        // Radio Group for Member vs Guest
         android.widget.RadioGroup rgType = new android.widget.RadioGroup(this);
         rgType.setOrientation(LinearLayout.HORIZONTAL);
         android.widget.RadioButton rbMember = new android.widget.RadioButton(this); rbMember.setText("Member"); rbMember.setChecked(true);
@@ -116,7 +134,14 @@ public class TransactionActivity extends AppCompatActivity {
         rgType.addView(rbMember); rgType.addView(rbGuest);
         layout.addView(rgType);
 
-        final EditText inputName = new EditText(this); inputName.setHint("Donor Name / SB-ID"); layout.addView(inputName);
+        // 🧠 AUTO-COMPLETE TEXT BOX
+        final AutoCompleteTextView inputName = new AutoCompleteTextView(this); 
+        inputName.setHint("Donor Name / SB-ID"); 
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList);
+        inputName.setAdapter(adapter);
+        inputName.setThreshold(1); // Starts searching after 1 letter!
+        layout.addView(inputName);
+
         final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
         final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Gotra / Note"); layout.addView(inputNote);
 
@@ -139,12 +164,14 @@ public class TransactionActivity extends AppCompatActivity {
                 transMap.put("amount", amount);
                 transMap.put("note", note);
                 transMap.put("timestamp", System.currentTimeMillis());
-                transMap.put("loggedBy", session.getRole() + " - " + session.getUserName());
+                
+                // 🛡️ STRICT SIGNATURE: Includes Role, Name, AND User ID
+                String strictSignature = session.getRole() + " - " + session.getUserName() + " (" + session.getUserId() + ")";
+                transMap.put("loggedBy", strictSignature);
 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
                 Toast.makeText(this, "Chanda Recorded Securely", Toast.LENGTH_SHORT).show();
                 
-                // Automatically log to the Audit Trail
                 AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from " + name);
                 
             } catch (NumberFormatException e) { Toast.makeText(this, "Invalid Amount", Toast.LENGTH_SHORT).show(); }
