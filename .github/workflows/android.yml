@@ -26,12 +26,15 @@ jobs:
         gradle-version: '8.7'
         cache-disabled: true
 
-    # NEW FIX: Automatically generate the gradlew file if it is missing from GitHub
     - name: Generate Gradle Wrapper
       run: gradle wrapper
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
+
+    # NEW FIX: Automatically delete any hidden Windows files that cause Android to crash
+    - name: Clean up Windows Hidden Files
+      run: find . -name "desktop.ini" -type f -delete
 
     - name: Build Installable APK
       run: ./gradlew assembleDebug
