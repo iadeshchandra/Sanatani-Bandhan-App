@@ -8,6 +8,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import java.util.HashMap;
 import java.util.Random;
 
 public class AddMemberActivity extends AppCompatActivity {
@@ -48,11 +49,23 @@ public class AddMemberActivity extends AppCompatActivity {
                 currentIdCounter++;
                 String newMemberId = "SB-" + currentIdCounter; 
 
+                // 1. Save standard profile in the secure community folder
                 Member newMember = new Member(newMemberId, name, phone, gotra, bloodGroup, System.currentTimeMillis(), role, autoPassword);
-                
                 db.child("communities").child(commId).child("members").child(newMemberId).setValue(newMember);
                 db.child("communities").child(commId).child("metadata").child("lastMemberId").setValue(currentIdCounter);
 
+                // 2. SECURITY UPGRADE: Save credentials to the Login Vault
+                String encodedWorkspaceEmail = session.getWorkspaceEmail().replace(".", ",");
+                HashMap<String, Object> loginData = new HashMap<>();
+                loginData.put("communityId", commId);
+                loginData.put("communityName", session.getCommunityName());
+                loginData.put("password", autoPassword);
+                loginData.put("role", role);
+                loginData.put("name", name);
+                
+                db.child("login_vault").child(encodedWorkspaceEmail).child(newMemberId).setValue(loginData);
+
+                // Log the action
                 AuditLogger.logAction(commId, session.getUserName(), "MEMBER_ADDED", "Added " + role + ": " + name + " (" + newMemberId + ")");
                 showCredentialsDialog(newMemberId, autoPassword, name);
             });
