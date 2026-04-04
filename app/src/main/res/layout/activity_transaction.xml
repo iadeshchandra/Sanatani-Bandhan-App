@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#FAF9F6" android:padding="16dp">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Smart Chanda Book" android:textSize="26sp" android:textStyle="bold"
+        android:textColor="#2E7D32" android:layout_marginBottom="16dp"/>
+
+    <Button android:id="@+id/btnAddTransaction" android:layout_width="match_parent" android:layout_height="60dp"
+        android:text="+ Record Smart Chanda" android:backgroundTint="#2E7D32" android:layout_marginBottom="16dp"/>
+
+    <TextView android:id="@+id/tvTotalDonations" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Total Chanda: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#2E7D32" android:layout_marginBottom="12dp" android:gravity="end"/>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:id="@+id/transactionsContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+    </ScrollView>
+</LinearLayout>
