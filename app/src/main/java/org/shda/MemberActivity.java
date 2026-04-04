@@ -23,15 +23,11 @@ public class MemberActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_member);
-
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
         membersContainer = findViewById(R.id.membersContainer);
 
-        if (session.getCommunityId() == null) {
-            finish();
-            return;
-        }
+        if (session.getCommunityId() == null) { finish(); return; }
 
         loadMembers();
 
@@ -41,8 +37,7 @@ public class MemberActivity extends AppCompatActivity {
 
     private void loadMembers() {
         db.child("communities").child(session.getCommunityId()).child("members").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 membersContainer.removeAllViews();
                 memberList.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
@@ -53,8 +48,7 @@ public class MemberActivity extends AppCompatActivity {
                     }
                 }
             }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
@@ -68,7 +62,6 @@ public class MemberActivity extends AppCompatActivity {
         tvId.setText(member.id + " | " + member.phone);
         tvTotal.setText("Donated: ৳" + member.totalDonated);
 
-        // Click card to open deep dive insights
         view.setOnClickListener(v -> {
             Intent intent = new Intent(MemberActivity.this, MemberDetailActivity.class);
             intent.putExtra("MEMBER_ID", member.id);
@@ -79,11 +72,7 @@ public class MemberActivity extends AppCompatActivity {
     }
 
     private void generateAndSharePDF() {
-        if (memberList.isEmpty()) {
-            Toast.makeText(this, "No members to export", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        // Route to the new upgraded PDF Engine
+        if (memberList.isEmpty()) { Toast.makeText(this, "No members to export", Toast.LENGTH_SHORT).show(); return; }
         PdfReportService.generateMemberDirectory(this, session.getCommunityName(), memberList);
     }
 }
