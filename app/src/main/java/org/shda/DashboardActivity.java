@@ -78,6 +78,14 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
+    // ✨ DYNAMIC SHLOKA INTEGRATION
+    private void setupDynamicShloka() {
+        TextView tv = findViewById(R.id.shlokaText);
+        if (tv != null) {
+            tv.setText(ShlokaEngine.getDailyShloka());
+        }
+    }
+
     private void setupNavigation() {
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
         findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
@@ -193,16 +201,5 @@ public class DashboardActivity extends AppCompatActivity {
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to update name", Toast.LENGTH_SHORT).show());
         } else { Toast.makeText(this, "Authentication error. Only Admins can do this.", Toast.LENGTH_SHORT).show(); }
-    }
-
-    private void setupDynamicShloka() {
-        TextView tv = findViewById(R.id.shlokaText);
-        String[] shlokas = {
-            "“You have the right to work, but for the work's sake only...”\n\n- Bhagavad Gita 2.47",
-            "“Whenever dharma declines and the purpose of life is forgotten...”\n\n- Bhagavad Gita 4.7",
-            "“Truth is one, paths are many.”\n\n- Rig Veda",
-            "“Arise, awake, and stop not till the goal is reached.”\n\n- Katha Upanishad"
-        };
-        tv.setText(shlokas[Calendar.getInstance().get(Calendar.DAY_OF_YEAR) % shlokas.length]);
     }
 }
