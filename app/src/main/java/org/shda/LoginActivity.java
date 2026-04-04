@@ -15,7 +15,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
 
 public class LoginActivity extends AppCompatActivity {
-
     private FirebaseAuth mAuth;
     private DatabaseReference db;
     private SessionManager session;
@@ -37,7 +36,6 @@ public class LoginActivity extends AppCompatActivity {
         radioAdmin = findViewById(R.id.radioAdmin);
         RadioGroup radioGroupLoginType = findViewById(R.id.radioGroupLoginType);
 
-        // Toggle SB-ID visibility based on role
         radioGroupLoginType.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.radioAdmin) {
                 inputSbId.setVisibility(View.GONE);
@@ -49,19 +47,12 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnLogin).setOnClickListener(v -> processLogin());
-        
-        findViewById(R.id.btnGoToRegister).setOnClickListener(v -> {
-            startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class));
-        });
+        findViewById(R.id.btnGoToRegister).setOnClickListener(v -> startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class)));
 
         findViewById(R.id.tvForgotPassword).setOnClickListener(v -> {
             String email = inputEmail.getText().toString().trim();
-            if (email.isEmpty()) {
-                Toast.makeText(this, "Enter Admin Email first", Toast.LENGTH_SHORT).show();
-            } else {
-                mAuth.sendPasswordResetEmail(email).addOnSuccessListener(aVoid -> 
-                    Toast.makeText(this, "Reset link sent to " + email, Toast.LENGTH_LONG).show());
-            }
+            if (email.isEmpty()) Toast.makeText(this, "Enter Admin Email first", Toast.LENGTH_SHORT).show();
+            else mAuth.sendPasswordResetEmail(email).addOnSuccessListener(aVoid -> Toast.makeText(this, "Reset link sent to " + email, Toast.LENGTH_LONG).show());
         });
     }
 
@@ -76,13 +67,11 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         if (radioAdmin.isChecked()) {
-            // --- SUPER ADMIN LOGIN (Firebase Auth) ---
             mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String uid = mAuth.getCurrentUser().getUid();
                     db.child("users").child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                             String commId = snapshot.child("communityId").getValue(String.class);
                             String commName = snapshot.child("communityName").getValue(String.class);
                             session.createLoginSession(commId, "ADMIN", commName, "Super Admin", "ADMIN-001");
@@ -91,24 +80,15 @@ public class LoginActivity extends AppCompatActivity {
                         }
                         @Override public void onCancelled(@NonNull DatabaseError error) {}
                     });
-                } else {
-                    Toast.makeText(this, "Invalid Admin Credentials", Toast.LENGTH_SHORT).show();
-                }
+                } else Toast.makeText(this, "Invalid Admin Credentials", Toast.LENGTH_SHORT).show();
             });
         } else {
-            // --- STAFF / MEMBER LOGIN (Database PIN Verification) ---
-            if (sbId.isEmpty()) {
-                Toast.makeText(this, "Please enter your SB-ID", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            if (sbId.isEmpty()) { Toast.makeText(this, "Please enter your SB-ID", Toast.LENGTH_SHORT).show(); return; }
 
-            // 1. Find the Community ID using the Admin's Email
             db.child("users").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()) {
-                        String commId = null;
-                        String commName = null;
+                        String commId = null, commName = null;
                         for (DataSnapshot userSnap : snapshot.getChildren()) {
                             commId = userSnap.child("communityId").getValue(String.class);
                             commName = userSnap.child("communityName").getValue(String.class);
@@ -116,13 +96,10 @@ public class LoginActivity extends AppCompatActivity {
                         }
                         
                         if (commId != null) {
-                            // 2. Verify Member PIN inside that Community
                             final String finalCommName = commName;
                             final String finalCommId = commId;
-                            
                             db.child("communities").child(finalCommId).child("members").child(sbId).addListenerForSingleValueEvent(new ValueEventListener() {
-                                @Override
-                                public void onDataChange(@NonNull DataSnapshot memSnap) {
+                                @Override public void onDataChange(@NonNull DataSnapshot memSnap) {
                                     if (memSnap.exists()) {
                                         String dbPassword = memSnap.child("password").getValue(String.class);
                                         String role = memSnap.child("role").getValue(String.class);
@@ -133,19 +110,13 @@ public class LoginActivity extends AppCompatActivity {
                                             AuditLogger.logAction(finalCommId, name, "LOGIN", "Logged into portal");
                                             startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
                                             finish();
-                                        } else {
-                                            Toast.makeText(LoginActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
-                                        }
-                                    } else {
-                                        Toast.makeText(LoginActivity.this, "SB-ID not found in this Workspace", Toast.LENGTH_SHORT).show();
-                                    }
+                                        } else Toast.makeText(LoginActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
+                                    } else Toast.makeText(LoginActivity.this, "SB-ID not found in this Workspace", Toast.LENGTH_SHORT).show();
                                 }
                                 @Override public void onCancelled(@NonNull DatabaseError error) {}
                             });
                         }
-                    } else {
-                        Toast.makeText(LoginActivity.this, "Workspace not found", Toast.LENGTH_SHORT).show();
-                    }
+                    } else Toast.makeText(LoginActivity.this, "Workspace not found", Toast.LENGTH_SHORT).show();
                 }
                 @Override public void onCancelled(@NonNull DatabaseError error) {}
             });
