@@ -1,6 +1,5 @@
 package org.shda;
 
-import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.LayoutInflater;
@@ -16,7 +15,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -27,30 +25,39 @@ public class ExpenseActivity extends AppCompatActivity {
     private LinearLayout expensesContainer;
     private TextView tvTotalExpense;
     private float totalExpenseValue = 0f;
-    private List<Expense> expenseList = new ArrayList<>();
+    private List<Expense> allExpenses = new ArrayList<>();
+    private boolean isAdminOrManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_expense);
+        setContentView(R.layout.activity_expense); // Assumes you have a basic XML with these IDs
 
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
         expensesContainer = findViewById(R.id.expensesContainer);
         tvTotalExpense = findViewById(R.id.tvTotalExpense);
-        
-        Button btnAddExpense = findViewById(R.id.btnAddExpense);
-        
+
         if (session.getCommunityId() == null) { finish(); return; }
 
-        // Only Admins and Managers can add new expenses
-        if ("MEMBER".equals(session.getRole())) {
-            btnAddExpense.setVisibility(View.GONE);
-        } else {
-            btnAddExpense.setOnClickListener(v -> showAddExpenseDialog());
-        }
+        isAdminOrManager = "ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole());
 
-        findViewById(R.id.btnExportExpense).setOnClickListener(v -> triggerExpenseReportPDF());
+        View btnAddExpense = findViewById(R.id.btnAddExpense);
+        if (btnAddExpense != null) {
+            if (!isAdminOrManager) {
+                btnAddExpense.setVisibility(View.GONE);
+            } else {
+                btnAddExpense.setOnClickListener(v -> showExpenseDialog(null)); // Pass null for New Expense
+            }
+        }
+        
+        View btnGenerateReport = findViewById(R.id.btnGenerateReport);
+        if (btnGenerateReport != null) {
+            btnGenerateReport.setOnClickListener(v -> {
+                String range = "All Time Utsav Expenses";
+                PdfReportService.generateExpenseReport(this, session.getCommunityName(), allExpenses, totalExpenseValue, range);
+            });
+        }
 
         loadExpenses();
     }
@@ -61,117 +68,106 @@ public class ExpenseActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 expensesContainer.removeAllViews();
-                expenseList.clear();
+                allExpenses.clear();
                 totalExpenseValue = 0f;
-                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
 
                 for (DataSnapshot data : snapshot.getChildren()) {
-                    Expense exp = data.getValue(Expense.class);
-                    if (exp != null) {
-                        expenseList.add(exp);
-                        totalExpenseValue += exp.amount;
-                        
-                        View view = LayoutInflater.from(ExpenseActivity.this).inflate(R.layout.item_expense, expensesContainer, false);
-                        ((TextView) view.findViewById(R.id.tvExpPurpose)).setText(exp.purpose);
-                        ((TextView) view.findViewById(R.id.tvExpAmount)).setText("৳" + exp.amount);
-                        ((TextView) view.findViewById(R.id.tvExpComment)).setText("Note: " + (exp.comment.isEmpty() ? "N/A" : exp.comment));
-                        ((TextView) view.findViewById(R.id.tvExpDate)).setText(sdf.format(new Date(exp.timestamp)));
-                        ((TextView) view.findViewById(R.id.tvExpUser)).setText("Logged by: " + exp.loggedBy);
-                        
-                        expensesContainer.addView(view, 0); // Add to top
-                    }
+                    try {
+                        Expense exp = data.getValue(Expense.class);
+                        if (exp != null) {
+                            allExpenses.add(exp);
+                            totalExpenseValue += exp.amount;
+
+                            // Create a Sanatani-Themed Card Programmatically for flexibility
+                            com.google.android.material.card.MaterialCardView card = new com.google.android.material.card.MaterialCardView(ExpenseActivity.this);
+                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+                            params.setMargins(0, 0, 0, 24); card.setLayoutParams(params);
+                            card.setCardElevation(4f); card.setRadius(16f); card.setCardBackgroundColor(android.graphics.Color.parseColor("#FFF3E0")); // Light Saffron
+
+                            LinearLayout layout = new LinearLayout(ExpenseActivity.this);
+                            layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(40, 40, 40, 40);
+
+                            TextView tvEvent = new TextView(ExpenseActivity.this); tvEvent.setText("🪔 Utsav: " + exp.eventName); tvEvent.setTextSize(18f); tvEvent.setTypeface(null, android.graphics.Typeface.BOLD); tvEvent.setTextColor(android.graphics.Color.parseColor("#E65100"));
+                            TextView tvItem = new TextView(ExpenseActivity.this); tvItem.setText("Seva/Item: " + exp.itemName); tvItem.setTextSize(16f); tvItem.setTextColor(android.graphics.Color.parseColor("#424242"));
+                            TextView tvAmt = new TextView(ExpenseActivity.this); tvAmt.setText("Amount: ৳" + exp.amount); tvAmt.setTextSize(16f); tvAmt.setTypeface(null, android.graphics.Typeface.BOLD); tvAmt.setTextColor(android.graphics.Color.parseColor("#D32F2F"));
+                            TextView tvPerson = new TextView(ExpenseActivity.this); tvPerson.setText("Assigned to: " + exp.involvedPerson); tvPerson.setTextSize(14f);
+                            TextView tvLog = new TextView(ExpenseActivity.this); tvLog.setText("Logged by: " + exp.loggedBy + " on " + sdf.format(new Date(exp.timestamp))); tvLog.setTextSize(12f); tvLog.setTextColor(android.graphics.Color.GRAY);
+
+                            layout.addView(tvEvent); layout.addView(tvItem); layout.addView(tvAmt); layout.addView(tvPerson); layout.addView(tvLog);
+                            card.addView(layout);
+
+                            // EDIT / DELETE LOGIC ON LONG PRESS
+                            if (isAdminOrManager) {
+                                card.setOnLongClickListener(v -> {
+                                    showEditDeleteDialog(exp);
+                                    return true;
+                                });
+                            }
+                            expensesContainer.addView(card, 0); 
+                        }
+                    } catch (Exception e) {}
                 }
-                tvTotalExpense.setText("Total Expenses: ৳" + totalExpenseValue);
+                if (tvTotalExpense != null) tvTotalExpense.setText("Total Utsav Expenses: ৳" + totalExpenseValue);
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    private void showAddExpenseDialog() {
+    private void showExpenseDialog(Expense existingExp) {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Log New Expense");
-        
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 20, 50, 0);
+        builder.setTitle(existingExp == null ? "Record Utsav Expense" : "Edit Expense");
 
-        final EditText inputPurpose = new EditText(this);
-        inputPurpose.setHint("Purpose (e.g. Saraswati Puja)");
-        layout.addView(inputPurpose);
+        LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-        final EditText inputAmount = new EditText(this);
-        inputAmount.setHint("Amount (৳)");
-        inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        layout.addView(inputAmount);
+        final EditText inputEvent = new EditText(this); inputEvent.setHint("Utsav/Puja Name (e.g. Durga Puja 2026)"); 
+        final EditText inputItem = new EditText(this); inputItem.setHint("Item Details (e.g. Flowers, Murti)");
+        final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        final EditText inputPerson = new EditText(this); inputPerson.setHint("Person Involved (Who bought it?)");
 
-        final EditText inputComment = new EditText(this);
-        inputComment.setHint("Admin Comment / Details (Optional)");
-        layout.addView(inputComment);
+        if (existingExp != null) {
+            inputEvent.setText(existingExp.eventName); inputItem.setText(existingExp.itemName); 
+            inputAmount.setText(String.valueOf(existingExp.amount)); inputPerson.setText(existingExp.involvedPerson);
+        }
 
+        layout.addView(inputEvent); layout.addView(inputItem); layout.addView(inputAmount); layout.addView(inputPerson);
         builder.setView(layout);
 
-        builder.setPositiveButton("SAVE EXPENSE", (dialog, which) -> {
-            String purpose = inputPurpose.getText().toString().trim();
-            String amountStr = inputAmount.getText().toString().trim();
-            String comment = inputComment.getText().toString().trim();
+        builder.setPositiveButton("SAVE", (dialog, which) -> {
+            String event = inputEvent.getText().toString().trim();
+            String item = inputItem.getText().toString().trim();
+            String amtStr = inputAmount.getText().toString().trim();
+            String person = inputPerson.getText().toString().trim();
 
-            if (purpose.isEmpty() || amountStr.isEmpty()) {
-                Toast.makeText(this, "Purpose and Amount are required", Toast.LENGTH_SHORT).show();
-                return;
-            }
+            if (event.isEmpty() || item.isEmpty() || amtStr.isEmpty()) { Toast.makeText(this, "Event, Item, and Amount required", Toast.LENGTH_SHORT).show(); return; }
 
-            float amount = Float.parseFloat(amountStr);
-            String expId = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey();
-            
-            Expense newExpense = new Expense(expId, amount, purpose, comment, System.currentTimeMillis(), session.getUserName());
-            
-            db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(expId).setValue(newExpense);
-            
-            // Update Master Finance Tracker
-            db.child("communities").child(session.getCommunityId()).child("finances").child("Expense").get().addOnSuccessListener(snap -> {
-                float currentTotal = snap.exists() ? snap.getValue(Float.class) : 0f;
-                db.child("communities").child(session.getCommunityId()).child("finances").child("Expense").setValue(currentTotal + amount);
-            });
+            try {
+                float amt = Float.parseFloat(amtStr);
+                String expId = existingExp == null ? db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey() : existingExp.id;
+                
+                Expense newExp = new Expense(expId, event, item, amt, person.isEmpty() ? "Self" : person, 
+                                             existingExp == null ? System.currentTimeMillis() : existingExp.timestamp, 
+                                             session.getRole() + " - " + session.getUserName());
 
-            AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "EXPENSE_ADDED", "Logged expense of ৳" + amount + " for " + purpose);
-            Toast.makeText(this, "Expense Recorded", Toast.LENGTH_SHORT).show();
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(expId).setValue(newExp);
+                Toast.makeText(this, "Expense Logged", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {}
         });
-        
         builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
-    private void triggerExpenseReportPDF() {
-        Calendar startCal = Calendar.getInstance();
-        Calendar endCal = Calendar.getInstance();
-
-        new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            startCal.set(year, month, dayOfMonth, 0, 0, 0);
-            new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
-                endCal.set(year2, month2, dayOfMonth2, 23, 59, 59);
-                
-                long startTimestamp = startCal.getTimeInMillis();
-                long endTimestamp = endCal.getTimeInMillis();
-                
-                SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-                String reportRange = "Period: " + displayFormat.format(startCal.getTime()) + " to " + displayFormat.format(endCal.getTime());
-
-                List<Expense> filteredList = new ArrayList<>();
-                float filteredTotal = 0f;
-
-                for (Expense exp : expenseList) {
-                    if (exp.timestamp >= startTimestamp && exp.timestamp <= endTimestamp) {
-                        filteredList.add(exp);
-                        filteredTotal += exp.amount;
-                    }
-                }
-                
-                if (filteredList.isEmpty()) {
-                    Toast.makeText(this, "No expenses found in this date range", Toast.LENGTH_SHORT).show();
-                } else {
-                    PdfReportService.generateExpenseReport(this, session.getCommunityName(), filteredList, filteredTotal, reportRange);
-                }
-            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
-        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    private void showEditDeleteDialog(Expense exp) {
+        new AlertDialog.Builder(this)
+            .setTitle("Manage Expense")
+            .setMessage("Do you want to Edit or Delete this entry for " + exp.itemName + "?")
+            .setPositiveButton("EDIT", (dialog, which) -> showExpenseDialog(exp))
+            .setNegativeButton("DELETE", (dialog, which) -> {
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(exp.id).removeValue();
+                Toast.makeText(this, "Expense Deleted", Toast.LENGTH_SHORT).show();
+                AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "EXPENSE_DELETED", "Deleted: " + exp.itemName + " (৳" + exp.amount + ")");
+            })
+            .setNeutralButton("CANCEL", null)
+            .show();
     }
 }
