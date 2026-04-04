@@ -72,9 +72,7 @@ public class PollActivity extends AppCompatActivity {
                             allPolls.add(poll);
                             renderPollCard(poll);
                         }
-                    } catch (Exception e) {
-                        // Silent catch for corrupted data
-                    }
+                    } catch (Exception e) {}
                 }
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
@@ -136,9 +134,7 @@ public class PollActivity extends AppCompatActivity {
             if(btnDownload != null) btnDownload.setOnClickListener(v -> PdfReportService.generatePollReport(this, session.getCommunityName(), poll, isSuperAdmin));
 
             pollsContainer.addView(view, 0);
-        } catch (Exception e) {
-            // Failsafe to prevent UI crash
-        }
+        } catch (Exception e) {}
     }
 
     private void submitVote(String pollId, String userId, String choice) {
@@ -165,11 +161,17 @@ public class PollActivity extends AppCompatActivity {
 
             String pollId = db.child("communities").child(session.getCommunityId()).child("polls").push().getKey();
             
-            // 🛡️ STRICT SIGNATURE: Include Manager ID
-            String strictSignature = session.getRole() + " - " + session.getUserName() + " (" + session.getUserId() + ")";
-            Poll newPoll = new Poll(pollId, q, a, b, System.currentTimeMillis(), strictSignature);
+            // 🛡️ DYNAMIC STRICT SIGNATURE
+            String strictSignature;
+            if ("ADMIN".equals(session.getRole())) {
+                strictSignature = "Super Admin - " + session.getUserName();
+            } else {
+                strictSignature = "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
+            }
             
+            Poll newPoll = new Poll(pollId, q, a, b, System.currentTimeMillis(), strictSignature);
             db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).setValue(newPoll);
+            
             AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "POLL_CREATED", "Created poll: " + q);
             Toast.makeText(this, "Poll Published Live", Toast.LENGTH_SHORT).show();
         });
@@ -189,7 +191,15 @@ public class PollActivity extends AppCompatActivity {
         builder.setPositiveButton("POST", (dialog, which) -> {
             String comment = inputComment.getText().toString().trim();
             if (!comment.isEmpty()) {
-                String signature = "✍️ [" + session.getRole() + " - " + session.getUserName() + "]: " + comment;
+                // 🛡️ DYNAMIC STRICT SIGNATURE
+                String strictSignature;
+                if ("ADMIN".equals(session.getRole())) {
+                    strictSignature = "Super Admin - " + session.getUserName();
+                } else {
+                    strictSignature = "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
+                }
+                
+                String signature = "✍️ [" + strictSignature + "]: " + comment;
                 db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).child("officialComment").setValue(signature);
                 Toast.makeText(this, "Remark added", Toast.LENGTH_SHORT).show();
             }
