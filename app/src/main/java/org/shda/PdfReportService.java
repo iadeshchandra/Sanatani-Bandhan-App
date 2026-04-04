@@ -133,17 +133,39 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
+    // ✨ THIS IS THE UPGRADED METHOD YOU ASKED ABOUT
     public static void generateMemberProfile(Context context, String communityName, Member member) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); File file = new File(path, getFormattedFileName(member.id + "_Profile"));
             PdfWriter writer = new PdfWriter(file.getAbsolutePath()); Document document = new Document(new PdfDocument(writer));
+            
             addSanataniHeader(document, communityName, "Official Member Profile");
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()); String joinDate = sdf.format(new Date(member.timestamp));
-            document.add(new Paragraph("Member ID: " + member.id).setBold().setFontSize(14)); document.add(new Paragraph("Name: " + member.name).setFontSize(14));
-            document.add(new Paragraph("Phone: " + member.phone).setFontSize(14)); document.add(new Paragraph("Gotra: " + member.gotra).setFontSize(14));
-            document.add(new Paragraph("Blood Group: " + member.bloodGroup).setFontSize(14).setFontColor(new DeviceRgb(211, 47, 47)));
+            
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()); 
+            String joinDate = sdf.format(new Date(member.timestamp));
+            
+            document.add(new Paragraph("Member ID: " + member.id).setBold().setFontSize(14)); 
+            document.add(new Paragraph("Name: " + member.name).setFontSize(14));
+            
             if(member.role != null) { document.add(new Paragraph("Community Role: " + member.role).setFontSize(14).setFontColor(new DeviceRgb(25, 118, 210))); }
-            document.add(new Paragraph("\nJoin Date: " + joinDate).setFontSize(12)); document.add(new Paragraph("Total Chanda Contributed: ৳" + member.totalDonated).setBold().setFontSize(14).setFontColor(new DeviceRgb(46, 125, 50)));
+            
+            document.add(new Paragraph("Phone: " + member.phone).setFontSize(14)); 
+            document.add(new Paragraph("Gotra: " + member.gotra).setFontSize(14));
+            document.add(new Paragraph("Blood Group: " + member.bloodGroup).setFontSize(14).setFontColor(new DeviceRgb(211, 47, 47)));
+            
+            // INJECT KYC DATA INTO THE PDF
+            if (member.fatherName != null && !member.fatherName.isEmpty()) document.add(new Paragraph("Father's Name: " + member.fatherName).setFontSize(12));
+            if (member.motherName != null && !member.motherName.isEmpty()) document.add(new Paragraph("Mother's Name: " + member.motherName).setFontSize(12));
+            if (member.nid != null && !member.nid.isEmpty()) document.add(new Paragraph("NID Number: " + member.nid).setFontSize(12));
+            if (member.address != null && !member.address.isEmpty()) document.add(new Paragraph("Address: " + member.address).setFontSize(12));
+
+            document.add(new Paragraph("\nJoin Date: " + joinDate).setFontSize(12)); 
+            document.add(new Paragraph("Total Chanda Contributed: ৳" + member.totalDonated).setBold().setFontSize(14).setFontColor(new DeviceRgb(46, 125, 50)));
+            
+            if (member.addedBySignature != null && !member.addedBySignature.isEmpty()) {
+                document.add(new Paragraph("\n[Profile verified and logged by: " + member.addedBySignature + "]").setItalic().setFontSize(10).setFontColor(new DeviceRgb(117, 117, 117)));
+            }
+
             document.close(); shareFile(context, file, member.name + " Profile");
         } catch (Exception e) {}
     }
