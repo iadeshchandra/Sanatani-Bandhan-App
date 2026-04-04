@@ -24,7 +24,7 @@
         <activity android:name=".DashboardActivity" />
         <activity android:name=".MemberActivity" />
         <activity android:name=".AddMemberActivity" />
-        <activity android:name=".TransactionActivity" />
+        <activity android:name=".MemberDetailActivity" /> <activity android:name=".TransactionActivity" />
         <activity android:name=".EventActivity" /> 
         <activity android:name=".CommsActivity" />
         
