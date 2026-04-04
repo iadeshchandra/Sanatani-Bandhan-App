@@ -28,6 +28,12 @@ public class SessionManager {
         editor.apply();
     }
 
+    // NEW: Instantly update the community name in local memory
+    public void updateCommunityName(String newName) {
+        editor.putString(KEY_COMM_NAME, newName);
+        editor.apply();
+    }
+
     public String getCommunityId() { return prefs.getString(KEY_COMM_ID, null); }
     public String getRole() { return prefs.getString(KEY_ROLE, "MEMBER"); }
     public String getCommunityName() { return prefs.getString(KEY_COMM_NAME, "Sanatani Bandhan"); }
