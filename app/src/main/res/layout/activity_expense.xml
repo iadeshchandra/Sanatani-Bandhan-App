@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" 
-    android:layout_width="match_parent" android:layout_height="match_parent" 
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:background="#FAF9F6" android:padding="16dp">
-    
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" 
-        android:text="Expense Tracker" android:textSize="26sp" android:textStyle="bold" 
-        android:textColor="#D32F2F" android:layout_marginBottom="16dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Utsav &amp; Seva Tracker" android:textSize="26sp" android:textStyle="bold"
+        android:textColor="#E65100" android:layout_marginBottom="16dp"/>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="16dp">
+        <Button android:id="@+id/btnAddExpense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
+            android:text="+ Add Expense" android:backgroundTint="#E65100" android:layout_marginEnd="8dp"/>
         
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="16dp">
-        <Button android:id="@+id/btnAddExpense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="+ Add Expense" android:backgroundTint="#F57F17" android:layout_marginEnd="4dp"/>
-        <Button android:id="@+id/btnExportExpense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:text="Generate Report" android:backgroundTint="#37474F" android:layout_marginStart="4dp"/>
+        <Button android:id="@+id/btnGenerateReport" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
+            android:text="Export PDF" android:backgroundTint="#37474F" android:layout_marginStart="8dp"/>
     </LinearLayout>
-    
-    <TextView android:id="@+id/tvTotalExpense" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Total Expenses: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginBottom="12dp" android:gravity="end"/>
-    
+
+    <TextView android:id="@+id/tvTotalExpense" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="Total Utsav Expenses: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginBottom="12dp" android:gravity="end"/>
+
     <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
         <LinearLayout android:id="@+id/expensesContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
     </ScrollView>
+    
 </LinearLayout>
