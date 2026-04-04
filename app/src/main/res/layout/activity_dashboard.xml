@@ -5,11 +5,17 @@
 
     <RelativeLayout android:id="@+id/topBar" android:layout_width="match_parent" android:layout_height="180dp"
         android:background="@drawable/header_gradient" android:padding="24dp">
+        
         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:layout_alignParentStart="true">
             <TextView android:id="@+id/tvDashboardTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Community Portal" android:textColor="#FFFFFF" android:textSize="26sp" android:textStyle="bold" />
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Central Management Portal" android:textColor="#FFD180" android:textSize="14sp" />
         </LinearLayout>
-        <TextView android:id="@+id/btnLogout" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentEnd="true" android:text="Logout" android:textColor="#FFFFFF" android:textStyle="bold" android:padding="8dp"/>
+
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_alignParentEnd="true">
+            <TextView android:id="@+id/btnEditCommunity" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙️ Edit" android:textColor="#FFFFFF" android:textStyle="bold" android:padding="8dp" android:visibility="gone" android:layout_marginEnd="8dp"/>
+            
+            <TextView android:id="@+id/btnLogout" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Logout" android:textColor="#FFFFFF" android:textStyle="bold" android:padding="8dp"/>
+        </LinearLayout>
     </RelativeLayout>
 
     <com.google.android.material.card.MaterialCardView android:id="@+id/wisdomCard" android:layout_width="match_parent" android:layout_height="wrap_content"
