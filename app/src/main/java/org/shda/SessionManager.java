@@ -11,8 +11,8 @@ public class SessionManager {
     private static final String KEY_COMM_ID = "communityId";
     private static final String KEY_ROLE = "role";
     private static final String KEY_COMM_NAME = "communityName";
-    private static final String KEY_USER_NAME = "userName"; // For the Audit Trail
-    private static final String KEY_USER_ID = "userId";     // SB-1001 etc.
+    private static final String KEY_USER_NAME = "userName"; 
+    private static final String KEY_USER_ID = "userId";     
 
     public SessionManager(Context context) {
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
