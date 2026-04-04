@@ -6,6 +6,7 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
@@ -15,79 +16,96 @@ import java.util.Locale;
 public class MemberDetailActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
-    private Member currentMember;
     private String memberId;
+    private Member currentMember;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // MATCHING YOUR EXACT XML FILE NAME HERE:
         setContentView(R.layout.activity_member_detail);
 
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
-
         memberId = getIntent().getStringExtra("MEMBER_ID");
-        if (memberId == null) { finish(); return; }
 
-        // Role-Based UI: Only Super Admins see the Role Management buttons
-        LinearLayout adminRoleLayout = findViewById(R.id.adminRoleLayout);
-        if ("ADMIN".equals(session.getRole())) {
-            adminRoleLayout.setVisibility(View.VISIBLE);
+        if (memberId == null || session.getCommunityId() == null) { finish(); return; }
+
+        // 🔒 RBAC: Hide Super Admin Controls if the logged-in user is just a MEMBER
+        LinearLayout layoutAdminControls = findViewById(R.id.layoutAdminControls);
+        if ("MEMBER".equals(session.getRole()) && layoutAdminControls != null) {
+            layoutAdminControls.setVisibility(View.GONE);
         }
 
-        loadMemberData(memberId);
+        loadMemberData();
 
-        findViewById(R.id.btnDownloadProfile).setOnClickListener(v -> {
-            if (currentMember != null) {
-                PdfReportService.generateMemberProfile(this, session.getCommunityName(), currentMember);
-            }
-        });
-
-        // Admin Actions
-        findViewById(R.id.btnMakeManager).setOnClickListener(v -> updateMemberRole("MANAGER"));
-        findViewById(R.id.btnMakeMember).setOnClickListener(v -> updateMemberRole("MEMBER"));
-    }
-
-    private void loadMemberData(String mId) {
-        db.child("communities").child(session.getCommunityId()).child("members").child(mId)
-          .addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                currentMember = snapshot.getValue(Member.class);
+        Button btnExport = findViewById(R.id.btnExportProfilePdf);
+        if(btnExport != null) {
+            btnExport.setOnClickListener(v -> {
                 if (currentMember != null) {
-                    ((TextView) findViewById(R.id.tvDetailId)).setText(currentMember.id);
-                    ((TextView) findViewById(R.id.tvDetailName)).setText(currentMember.name);
-                    ((TextView) findViewById(R.id.tvDetailPhone)).setText("📞 " + currentMember.phone);
-                    ((TextView) findViewById(R.id.tvDetailGotra)).setText("🕉 Gotra: " + currentMember.gotra);
-                    ((TextView) findViewById(R.id.tvDetailBlood)).setText("🩸 Blood Group: " + currentMember.bloodGroup);
-                    
-                    // Display Current Role
-                    String role = currentMember.role != null ? currentMember.role : "MEMBER";
-                    ((TextView) findViewById(R.id.tvDetailRole)).setText(role);
-                    
-                    SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-                    ((TextView) findViewById(R.id.tvDetailJoinDate)).setText("Joined: " + sdf.format(new Date(currentMember.timestamp)));
-                    ((TextView) findViewById(R.id.tvDetailTotal)).setText("Total Donated: ৳" + currentMember.totalDonated);
+                    PdfReportService.generateMemberProfile(this, session.getCommunityName(), currentMember);
                 }
+            });
+        }
+
+        Button btnPromote = findViewById(R.id.btnPromote);
+        if(btnPromote != null) btnPromote.setOnClickListener(v -> changeRole("MANAGER"));
+        
+        Button btnDemote = findViewById(R.id.btnDemote);
+        if(btnDemote != null) btnDemote.setOnClickListener(v -> changeRole("MEMBER"));
+    }
+
+    private void loadMemberData() {
+        db.child("communities").child(session.getCommunityId()).child("members").child(memberId)
+          .addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                currentMember = snapshot.getValue(Member.class);
+                if (currentMember != null) { populateUI(); }
             }
-            @Override public void onCancelled(DatabaseError error) {}
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    private void updateMemberRole(String newRole) {
-        if (currentMember != null) {
-            String commId = session.getCommunityId();
-            
-            db.child("communities").child(commId).child("members").child(memberId).child("role").setValue(newRole)
-              .addOnSuccessListener(aVoid -> {
-                  Toast.makeText(this, currentMember.name + " is now a " + newRole, Toast.LENGTH_SHORT).show();
-                  
-                  // Log the admin's action in the security audit
-                  AuditLogger.logAction(commId, session.getUserName(), "ROLE_CHANGED", "Changed " + currentMember.name + "'s role to " + newRole);
-                  
-                  // Reload the data to reflect changes on screen
-                  loadMemberData(memberId);
-              });
-        }
+    private void populateUI() {
+        TextView tvId = findViewById(R.id.tvProfileId); if(tvId != null) tvId.setText(currentMember.id);
+        TextView tvName = findViewById(R.id.tvProfileName); if(tvName != null) tvName.setText(currentMember.name);
+        TextView tvRole = findViewById(R.id.tvProfileRole); if(tvRole != null) tvRole.setText(currentMember.role);
+        TextView tvPhone = findViewById(R.id.tvProfilePhone); if(tvPhone != null) tvPhone.setText("📞 " + currentMember.phone);
+        TextView tvGotra = findViewById(R.id.tvProfileGotra); if(tvGotra != null) tvGotra.setText("🕉 Gotra: " + currentMember.gotra);
+        TextView tvBlood = findViewById(R.id.tvProfileBlood); if(tvBlood != null) tvBlood.setText("🩸 Blood Group: " + currentMember.bloodGroup);
+        TextView tvDonated = findViewById(R.id.tvProfileDonated); if(tvDonated != null) tvDonated.setText("Total Donated: ৳" + currentMember.totalDonated);
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+        TextView tvJoined = findViewById(R.id.tvProfileJoined); 
+        if(tvJoined != null) tvJoined.setText("Joined: " + sdf.format(new Date(currentMember.timestamp)));
+
+        // ✨ Reveal Optional KYC Fields if they exist
+        TextView tvFather = findViewById(R.id.tvProfileFather);
+        if (tvFather != null && currentMember.fatherName != null && !currentMember.fatherName.isEmpty()) { tvFather.setVisibility(View.VISIBLE); tvFather.setText("Father: " + currentMember.fatherName); }
+        
+        TextView tvMother = findViewById(R.id.tvProfileMother);
+        if (tvMother != null && currentMember.motherName != null && !currentMember.motherName.isEmpty()) { tvMother.setVisibility(View.VISIBLE); tvMother.setText("Mother: " + currentMember.motherName); }
+        
+        TextView tvNid = findViewById(R.id.tvProfileNid);
+        if (tvNid != null && currentMember.nid != null && !currentMember.nid.isEmpty()) { tvNid.setVisibility(View.VISIBLE); tvNid.setText("NID: " + currentMember.nid); }
+        
+        TextView tvAddress = findViewById(R.id.tvProfileAddress);
+        if (tvAddress != null && currentMember.address != null && !currentMember.address.isEmpty()) { tvAddress.setVisibility(View.VISIBLE); tvAddress.setText("Address: " + currentMember.address); }
+
+        TextView tvSignature = findViewById(R.id.tvProfileSignature);
+        if (tvSignature != null && currentMember.addedBySignature != null && !currentMember.addedBySignature.isEmpty()) { tvSignature.setVisibility(View.VISIBLE); tvSignature.setText("✍️ Profile verified by: " + currentMember.addedBySignature); }
+    }
+
+    private void changeRole(String newRole) {
+        if ("ADMIN".equals(currentMember.role)) { Toast.makeText(this, "Cannot change Super Admin role", Toast.LENGTH_SHORT).show(); return; }
+        
+        db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("role").setValue(newRole);
+        
+        String encodedEmail = session.getWorkspaceEmail().replace(".", ",");
+        db.child("login_vault").child(encodedEmail).child(memberId).child("role").setValue(newRole);
+        
+        Toast.makeText(this, "Role updated to " + newRole, Toast.LENGTH_SHORT).show();
+        AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "ROLE_CHANGED", "Changed role of " + currentMember.name + " to " + newRole);
     }
 }
