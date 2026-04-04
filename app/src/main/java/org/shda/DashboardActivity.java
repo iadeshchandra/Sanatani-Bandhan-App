@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -34,8 +35,15 @@ public class DashboardActivity extends AppCompatActivity {
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
         setupDynamicShloka();
+        setupDates();
         applyPermissions(session.getRole());
         setupNavigation();
+
+        // NEW: Open TrackiQ Academy Linktree
+        findViewById(R.id.tvDashboardBranding).setOnClickListener(v -> {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://linktr.ee/Adesh_Chandra"));
+            startActivity(browserIntent);
+        });
 
         findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
@@ -46,11 +54,23 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
+    private void setupDates() {
+        TextView tvDateEnglish = findViewById(R.id.tvDateEnglish);
+        TextView tvDateBengali = findViewById(R.id.tvDateBengali);
+        
+        Date today = new Date();
+        SimpleDateFormat engFormat = new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH);
+        // Uses Android's built-in Bengali localization
+        SimpleDateFormat benFormat = new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD"));
+        
+        tvDateEnglish.setText("🕉 " + engFormat.format(today));
+        tvDateBengali.setText("শুভ দিন: " + benFormat.format(today));
+    }
+
     private void applyPermissions(String role) {
         if (role.equals("MEMBER")) {
             findViewById(R.id.cardMembers).setVisibility(View.GONE);
             findViewById(R.id.cardDonations).setVisibility(View.GONE);
-            // Note: cardExpenses is visible so members can download reports
             findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
             findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
@@ -66,8 +86,10 @@ public class DashboardActivity extends AppCompatActivity {
     private void setupNavigation() {
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
         findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
-        findViewById(R.id.cardExpenses).setOnClickListener(v -> startActivity(new Intent(this, ExpenseActivity.class))); // NEW BINDING
+        findViewById(R.id.cardExpenses).setOnClickListener(v -> startActivity(new Intent(this, ExpenseActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
+        findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
+        findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
 
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> {
             Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
@@ -148,13 +170,11 @@ public class DashboardActivity extends AppCompatActivity {
         input.setText(session.getCommunityName());
         
         android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT);
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.MATCH_PARENT);
         input.setLayoutParams(lp);
         
         android.widget.LinearLayout container = new android.widget.LinearLayout(this);
-        container.setPadding(50, 20, 50, 0);
-        container.addView(input);
+        container.setPadding(50, 20, 50, 0); container.addView(input);
         builder.setView(container);
 
         builder.setPositiveButton("SAVE", (dialog, which) -> {
@@ -173,13 +193,11 @@ public class DashboardActivity extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> {
                     session.updateCommunityName(newName);
                     ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
-                    Toast.makeText(this, "Community Name Updated Successfully", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Community Name Updated", Toast.LENGTH_SHORT).show();
                     AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "SETTINGS_CHANGED", "Updated community name to: " + newName);
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to update name", Toast.LENGTH_SHORT).show());
-        } else {
-            Toast.makeText(this, "Authentication error. Only Admins can do this.", Toast.LENGTH_SHORT).show();
-        }
+        } else { Toast.makeText(this, "Authentication error. Only Admins can do this.", Toast.LENGTH_SHORT).show(); }
     }
 
     private void setupDynamicShloka() {
