@@ -22,7 +22,6 @@ import java.util.Locale;
 public class PdfReportService {
     
     private static final DeviceRgb SAFFRON = new DeviceRgb(230, 81, 0);
-    private static final String VEDIC_SHLOKA = "“Dharmo Rakshati Rakshitah”\n(Dharma protects those who protect it)";
 
     private static String getFormattedFileName(String prefix) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd_MMM_yyyy_hh_mm_a", Locale.getDefault());
@@ -36,7 +35,10 @@ public class PdfReportService {
 
     private static void addSanataniHeader(Document document, String communityName, String reportType) {
         document.add(new Paragraph(communityName.toUpperCase()).setFontColor(SAFFRON).setBold().setFontSize(24).setTextAlignment(TextAlignment.CENTER));
-        document.add(new Paragraph(VEDIC_SHLOKA).setFontSize(11).setItalic().setFontColor(new DeviceRgb(117, 117, 117)).setTextAlignment(TextAlignment.CENTER));
+        
+        // ✨ DYNAMIC SHLOKA INJECTED INTO EVERY PDF
+        document.add(new Paragraph(ShlokaEngine.getDailyShloka()).setFontSize(11).setItalic().setFontColor(new DeviceRgb(117, 117, 117)).setTextAlignment(TextAlignment.CENTER));
+        
         document.add(new Paragraph(reportType).setBold().setFontSize(14).setTextAlignment(TextAlignment.CENTER).setMarginTop(8f));
         document.add(new Paragraph(getGenerationStamp()).setFontSize(10).setItalic().setTextAlignment(TextAlignment.CENTER));
         document.add(new Paragraph("--------------------------------------------------\n").setTextAlignment(TextAlignment.CENTER));
@@ -133,7 +135,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // ✨ THIS IS THE UPGRADED METHOD YOU ASKED ABOUT
     public static void generateMemberProfile(Context context, String communityName, Member member) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); File file = new File(path, getFormattedFileName(member.id + "_Profile"));
@@ -153,7 +154,6 @@ public class PdfReportService {
             document.add(new Paragraph("Gotra: " + member.gotra).setFontSize(14));
             document.add(new Paragraph("Blood Group: " + member.bloodGroup).setFontSize(14).setFontColor(new DeviceRgb(211, 47, 47)));
             
-            // INJECT KYC DATA INTO THE PDF
             if (member.fatherName != null && !member.fatherName.isEmpty()) document.add(new Paragraph("Father's Name: " + member.fatherName).setFontSize(12));
             if (member.motherName != null && !member.motherName.isEmpty()) document.add(new Paragraph("Mother's Name: " + member.motherName).setFontSize(12));
             if (member.nid != null && !member.nid.isEmpty()) document.add(new Paragraph("NID Number: " + member.nid).setFontSize(12));
