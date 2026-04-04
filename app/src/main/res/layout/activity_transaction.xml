@@ -7,8 +7,13 @@
         android:text="Smart Chanda Book" android:textSize="26sp" android:textStyle="bold"
         android:textColor="#2E7D32" android:layout_marginBottom="16dp"/>
 
-    <Button android:id="@+id/btnAddTransaction" android:layout_width="match_parent" android:layout_height="60dp"
-        android:text="+ Record Smart Chanda" android:backgroundTint="#2E7D32" android:layout_marginBottom="16dp"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="16dp">
+        <Button android:id="@+id/btnAddTransaction" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
+            android:text="+ Record Chanda" android:backgroundTint="#2E7D32" android:layout_marginEnd="8dp"/>
+        
+        <Button android:id="@+id/btnGenerateReport" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
+            android:text="Export PDF" android:backgroundTint="#37474F" android:layout_marginStart="8dp"/>
+    </LinearLayout>
 
     <TextView android:id="@+id/tvTotalDonations" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:text="Total Chanda: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#2E7D32" android:layout_marginBottom="12dp" android:gravity="end"/>
