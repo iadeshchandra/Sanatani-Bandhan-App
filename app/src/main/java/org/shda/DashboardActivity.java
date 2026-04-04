@@ -37,9 +37,7 @@ public class DashboardActivity extends AppCompatActivity {
         applyPermissions(session.getRole());
         setupNavigation();
 
-        // Admin Edit Community Button
         findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
-
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
             session.logout();
@@ -52,7 +50,7 @@ public class DashboardActivity extends AppCompatActivity {
         if (role.equals("MEMBER")) {
             findViewById(R.id.cardMembers).setVisibility(View.GONE);
             findViewById(R.id.cardDonations).setVisibility(View.GONE);
-            findViewById(R.id.cardComms).setVisibility(View.GONE);
+            // Note: cardExpenses is visible so members can download reports
             findViewById(R.id.btnGenerateReports).setVisibility(View.GONE);
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
             findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
@@ -68,8 +66,8 @@ public class DashboardActivity extends AppCompatActivity {
     private void setupNavigation() {
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
         findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
+        findViewById(R.id.cardExpenses).setOnClickListener(v -> startActivity(new Intent(this, ExpenseActivity.class))); // NEW BINDING
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
-        findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
 
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> {
             Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
@@ -161,28 +159,21 @@ public class DashboardActivity extends AppCompatActivity {
 
         builder.setPositiveButton("SAVE", (dialog, which) -> {
             String newName = input.getText().toString().trim();
-            if (!newName.isEmpty()) {
-                updateCommunityNameInDatabase(newName);
-            } else {
-                Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show();
-            }
+            if (!newName.isEmpty()) { updateCommunityNameInDatabase(newName); } 
+            else { Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show(); }
         });
         builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
     private void updateCommunityNameInDatabase(String newName) {
-        // Fetch current user ID for the Admin
         String uid = FirebaseAuth.getInstance().getCurrentUser() != null ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
         if (uid != null) {
             db.child("users").child(uid).child("communityName").setValue(newName)
                 .addOnSuccessListener(aVoid -> {
-                    // Instantly update Session and UI
                     session.updateCommunityName(newName);
                     ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
                     Toast.makeText(this, "Community Name Updated Successfully", Toast.LENGTH_SHORT).show();
-                    
-                    // Secretly log this update for security
                     AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "SETTINGS_CHANGED", "Updated community name to: " + newName);
                 })
                 .addOnFailureListener(e -> Toast.makeText(this, "Failed to update name", Toast.LENGTH_SHORT).show());
