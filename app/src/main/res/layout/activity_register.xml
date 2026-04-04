@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:padding="24dp" android:background="#FAF9F6" android:gravity="center">
 
@@ -8,7 +9,28 @@
     <EditText android:id="@+id/inputCommName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Community / Mandir Name" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp" android:elevation="2dp"/>
     <EditText android:id="@+id/inputAdminName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Full Name" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp" android:elevation="2dp"/>
     <EditText android:id="@+id/inputEmail" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Email" android:inputType="textEmailAddress" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp" android:elevation="2dp"/>
-    <EditText android:id="@+id/inputPassword" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Secure Password" android:inputType="textPassword" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="24dp" android:elevation="2dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:elevation="2dp"
+        app:hintEnabled="false"
+        app:endIconMode="password_toggle"
+        app:boxBackgroundMode="outline"
+        app:boxBackgroundColor="#FFFFFF"
+        app:boxStrokeWidth="0dp"
+        app:boxStrokeWidthFocused="0dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/inputPassword"
+            android:layout_width="match_parent"
+            android:layout_height="55dp"
+            android:hint="Secure Password"
+            android:inputType="textPassword"
+            android:padding="12dp"
+            android:background="@null"/>
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button android:id="@+id/btnRegister" android:layout_width="match_parent" android:layout_height="60dp" android:text="Create Secure Workspace" android:backgroundTint="#1976D2" android:textStyle="bold"/>
 </LinearLayout>
