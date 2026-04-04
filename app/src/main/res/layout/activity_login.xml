@@ -30,7 +30,7 @@
 
     <Button android:id="@+id/btnGoToRegister" android:layout_width="match_parent" android:layout_height="55dp" android:text="Register New Community" android:backgroundTint="#757575" android:textColor="#FFFFFF" />
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Powered by Creative Learning Pro" android:textSize="12sp" android:textColor="#BDBDBD"
-        android:layout_marginTop="30dp" android:textStyle="italic"/>
+    <TextView android:id="@+id/tvBrandingLink" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="🔗 Powered by TrackiQ Academy" android:textSize="13sp" android:textColor="#1976D2"
+        android:layout_marginTop="30dp" android:textStyle="bold"/>
 </LinearLayout>
