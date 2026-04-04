@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -45,6 +46,12 @@ public class LoginActivity extends AppCompatActivity {
 
         findViewById(R.id.btnLogin).setOnClickListener(v -> processLogin());
         findViewById(R.id.btnGoToRegister).setOnClickListener(v -> startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class)));
+
+        // NEW: Open TrackiQ Academy Linktree
+        findViewById(R.id.tvBrandingLink).setOnClickListener(v -> {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://linktr.ee/Adesh_Chandra"));
+            startActivity(browserIntent);
+        });
     }
 
     private void processLogin() {
@@ -55,7 +62,6 @@ public class LoginActivity extends AppCompatActivity {
         if (email.isEmpty() || password.isEmpty()) { Toast.makeText(this, "Fields cannot be empty", Toast.LENGTH_SHORT).show(); return; }
 
         if (radioAdmin.isChecked()) {
-            // ADMIN LOGIN
             mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String uid = mAuth.getCurrentUser().getUid();
@@ -72,15 +78,12 @@ public class LoginActivity extends AppCompatActivity {
                 } else Toast.makeText(this, "Invalid Admin Credentials", Toast.LENGTH_SHORT).show();
             });
         } else {
-            // STAFF/MEMBER SECURE LOGIN
             if (sbId.isEmpty()) { Toast.makeText(this, "Enter SB-ID", Toast.LENGTH_SHORT).show(); return; }
-            String encodedEmail = email.replace(".", ","); // Firebase keys cannot contain dots
+            String encodedEmail = email.replace(".", ","); 
 
             mAuth.signInAnonymously().addOnCompleteListener(anonTask -> {
                 if (anonTask.isSuccessful()) {
                     String tempUid = mAuth.getCurrentUser().getUid();
-                    
-                    // Look inside the isolated Login Vault
                     db.child("login_vault").child(encodedEmail).child(sbId).addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override public void onDataChange(@NonNull DataSnapshot snap) {
                             if (snap.exists()) {
@@ -91,13 +94,11 @@ public class LoginActivity extends AppCompatActivity {
                                     String name = snap.child("name").getValue(String.class);
                                     String commName = snap.child("communityName").getValue(String.class);
 
-                                    // VITAL SECURITY STEP: Link this temporary UID to the Community ID
                                     HashMap<String, Object> userMap = new HashMap<>();
                                     userMap.put("communityId", commId);
                                     userMap.put("role", role);
                                     
                                     db.child("users").child(tempUid).setValue(userMap).addOnSuccessListener(aVoid -> {
-                                        // Once mapped, the Firebase Rules will now allow access to the Community folder!
                                         session.createLoginSession(commId, role, commName, name, sbId, email);
                                         startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
                                         finish();
