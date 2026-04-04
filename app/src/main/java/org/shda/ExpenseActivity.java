@@ -31,7 +31,7 @@ public class ExpenseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_expense); // Assumes you have a basic XML with these IDs
+        setContentView(R.layout.activity_expense);
 
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
@@ -47,7 +47,7 @@ public class ExpenseActivity extends AppCompatActivity {
             if (!isAdminOrManager) {
                 btnAddExpense.setVisibility(View.GONE);
             } else {
-                btnAddExpense.setOnClickListener(v -> showExpenseDialog(null)); // Pass null for New Expense
+                btnAddExpense.setOnClickListener(v -> showExpenseDialog(null));
             }
         }
         
@@ -79,11 +79,10 @@ public class ExpenseActivity extends AppCompatActivity {
                             allExpenses.add(exp);
                             totalExpenseValue += exp.amount;
 
-                            // Create a Sanatani-Themed Card Programmatically for flexibility
                             com.google.android.material.card.MaterialCardView card = new com.google.android.material.card.MaterialCardView(ExpenseActivity.this);
                             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                             params.setMargins(0, 0, 0, 24); card.setLayoutParams(params);
-                            card.setCardElevation(4f); card.setRadius(16f); card.setCardBackgroundColor(android.graphics.Color.parseColor("#FFF3E0")); // Light Saffron
+                            card.setCardElevation(4f); card.setRadius(16f); card.setCardBackgroundColor(android.graphics.Color.parseColor("#FFF3E0"));
 
                             LinearLayout layout = new LinearLayout(ExpenseActivity.this);
                             layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(40, 40, 40, 40);
@@ -97,7 +96,6 @@ public class ExpenseActivity extends AppCompatActivity {
                             layout.addView(tvEvent); layout.addView(tvItem); layout.addView(tvAmt); layout.addView(tvPerson); layout.addView(tvLog);
                             card.addView(layout);
 
-                            // EDIT / DELETE LOGIC ON LONG PRESS
                             if (isAdminOrManager) {
                                 card.setOnLongClickListener(v -> {
                                     showEditDeleteDialog(exp);
@@ -145,9 +143,17 @@ public class ExpenseActivity extends AppCompatActivity {
                 float amt = Float.parseFloat(amtStr);
                 String expId = existingExp == null ? db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey() : existingExp.id;
                 
+                // 🛡️ DYNAMIC STRICT SIGNATURE
+                String strictSignature;
+                if ("ADMIN".equals(session.getRole())) {
+                    strictSignature = "Super Admin - " + session.getUserName();
+                } else {
+                    strictSignature = "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
+                }
+
                 Expense newExp = new Expense(expId, event, item, amt, person.isEmpty() ? "Self" : person, 
                                              existingExp == null ? System.currentTimeMillis() : existingExp.timestamp, 
-                                             session.getRole() + " - " + session.getUserName());
+                                             strictSignature);
 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(expId).setValue(newExp);
                 Toast.makeText(this, "Expense Logged", Toast.LENGTH_SHORT).show();
