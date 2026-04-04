@@ -96,8 +96,12 @@
             </GridLayout>
 
             <Button android:id="@+id/btnGenerateReports" android:layout_width="match_parent" android:layout_height="60dp"
-                android:layout_marginTop="20dp" android:layout_marginBottom="40dp" android:text="DOWNLOAD FINANCIAL REPORTS"
+                android:layout_marginTop="20dp" android:text="DOWNLOAD FINANCIAL REPORTS"
                 android:textStyle="bold" android:backgroundTint="#37474F" app:cornerRadius="12dp"/>
+                
+            <Button android:id="@+id/btnDownloadAudit" android:layout_width="match_parent" android:layout_height="60dp"
+                android:layout_marginTop="12dp" android:layout_marginBottom="40dp" android:text="DOWNLOAD SECURITY AUDIT"
+                android:textStyle="bold" android:backgroundTint="#D32F2F" app:cornerRadius="12dp"/>
                 
         </LinearLayout>
     </ScrollView>
