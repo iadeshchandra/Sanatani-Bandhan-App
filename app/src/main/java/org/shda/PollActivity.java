@@ -39,7 +39,7 @@ public class PollActivity extends AppCompatActivity {
         if (session.getCommunityId() == null) { finish(); return; }
 
         String role = session.getRole();
-        if (role == null) role = "MEMBER"; // Null safety fallback
+        if (role == null) role = "MEMBER"; 
         
         isAdminOrManager = role.equals("ADMIN") || role.equals("MANAGER");
         isSuperAdmin = role.equals("ADMIN");
@@ -62,18 +62,18 @@ public class PollActivity extends AppCompatActivity {
         db.child("communities").child(session.getCommunityId()).child("polls").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if(pollsContainer == null) return;
                 pollsContainer.removeAllViews();
                 allPolls.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
-                    // THE FIX: Try-Catch prevents crashes from old/corrupted test data
                     try {
                         Poll poll = data.getValue(Poll.class);
-                        if (poll != null && poll.question != null) {
+                        if (poll != null && poll.id != null && poll.question != null) {
                             allPolls.add(poll);
                             renderPollCard(poll);
                         }
                     } catch (Exception e) {
-                        // Ignore corrupted poll data quietly
+                        // Silent catch for corrupted data
                     }
                 }
             }
@@ -82,57 +82,63 @@ public class PollActivity extends AppCompatActivity {
     }
 
     private void renderPollCard(Poll poll) {
-        View view = LayoutInflater.from(this).inflate(R.layout.item_poll, pollsContainer, false);
-        
-        TextView tvQuestion = view.findViewById(R.id.tvPollQuestion);
-        TextView tvLiveCounts = view.findViewById(R.id.tvLiveCounts);
-        Button btnOptA = view.findViewById(R.id.btnOptionA);
-        Button btnOptB = view.findViewById(R.id.btnOptionB);
-        TextView tvStatus = view.findViewById(R.id.tvPollStatus);
-        LinearLayout layoutVoting = view.findViewById(R.id.layoutVoting);
-        TextView tvOfficialComment = view.findViewById(R.id.tvOfficialComment);
-        Button btnAddComment = view.findViewById(R.id.btnAddComment);
-        Button btnDownload = view.findViewById(R.id.btnDownloadPollData);
+        try {
+            View view = LayoutInflater.from(this).inflate(R.layout.item_poll, pollsContainer, false);
+            
+            TextView tvQuestion = view.findViewById(R.id.tvPollQuestion);
+            TextView tvLiveCounts = view.findViewById(R.id.tvLiveCounts);
+            Button btnOptA = view.findViewById(R.id.btnOptionA);
+            Button btnOptB = view.findViewById(R.id.btnOptionB);
+            TextView tvStatus = view.findViewById(R.id.tvPollStatus);
+            LinearLayout layoutVoting = view.findViewById(R.id.layoutVoting);
+            TextView tvOfficialComment = view.findViewById(R.id.tvOfficialComment);
+            Button btnAddComment = view.findViewById(R.id.btnAddComment);
+            Button btnDownload = view.findViewById(R.id.btnDownloadPollData);
 
-        tvQuestion.setText(poll.question != null ? poll.question : "Untitled Poll");
-        btnOptA.setText(poll.optionA != null ? poll.optionA : "Yes");
-        btnOptB.setText(poll.optionB != null ? poll.optionB : "No");
+            if(tvQuestion != null) tvQuestion.setText(poll.question);
+            if(btnOptA != null) btnOptA.setText(poll.optionA != null ? poll.optionA : "Option A");
+            if(btnOptB != null) btnOptB.setText(poll.optionB != null ? poll.optionB : "Option B");
 
-        int countA = 0, countB = 0;
-        if (poll.votes != null) {
-            for (String choice : poll.votes.values()) {
-                if (choice.equals("A")) countA++;
-                else if (choice.equals("B")) countB++;
+            int countA = 0, countB = 0;
+            if (poll.votes != null) {
+                for (String choice : poll.votes.values()) {
+                    if ("A".equals(choice)) countA++;
+                    else if ("B".equals(choice)) countB++;
+                }
             }
+            if(tvLiveCounts != null) tvLiveCounts.setText("Live Tally ➔ " + (poll.optionA != null ? poll.optionA : "A") + ": " + countA + " | " + (poll.optionB != null ? poll.optionB : "B") + ": " + countB);
+
+            if (poll.officialComment != null && !poll.officialComment.isEmpty() && tvOfficialComment != null) {
+                tvOfficialComment.setVisibility(View.VISIBLE);
+                tvOfficialComment.setText(poll.officialComment);
+            }
+
+            String userId = session.getUserId() != null && !session.getUserId().isEmpty() ? session.getUserId() : session.getUserName();
+            boolean hasVoted = poll.votes != null && poll.votes.containsKey(userId);
+
+            if (hasVoted) {
+                if(layoutVoting != null) layoutVoting.setVisibility(View.GONE);
+                if(tvStatus != null) {
+                    tvStatus.setVisibility(View.VISIBLE);
+                    String userChoice = poll.votes.get(userId).equals("A") ? poll.optionA : poll.optionB;
+                    tvStatus.setText("Your Vote Recorded: " + userChoice);
+                }
+            } else {
+                if(btnOptA != null) btnOptA.setOnClickListener(v -> submitVote(poll.id, userId, "A"));
+                if(btnOptB != null) btnOptB.setOnClickListener(v -> submitVote(poll.id, userId, "B"));
+            }
+
+            if (isAdminOrManager && btnAddComment != null) {
+                btnAddComment.setVisibility(View.VISIBLE);
+                btnAddComment.setOnClickListener(v -> showAddCommentDialog(poll.id));
+            }
+
+            if(btnDownload != null) btnDownload.setOnClickListener(v -> PdfReportService.generatePollReport(this, session.getCommunityName(), poll, isSuperAdmin));
+
+            pollsContainer.addView(view, 0);
+        } catch (Exception e) {
+            // Failsafe to prevent UI crash
         }
-        tvLiveCounts.setText("Live Tally ➔ " + poll.optionA + ": " + countA + " | " + poll.optionB + ": " + countB);
-
-        if (poll.officialComment != null && !poll.officialComment.isEmpty()) {
-            tvOfficialComment.setVisibility(View.VISIBLE);
-            tvOfficialComment.setText(poll.officialComment);
-        }
-
-        String userId = session.getUserId() != null && !session.getUserId().isEmpty() ? session.getUserId() : session.getUserName();
-        boolean hasVoted = poll.votes != null && poll.votes.containsKey(userId);
-
-        if (hasVoted) {
-            layoutVoting.setVisibility(View.GONE);
-            tvStatus.setVisibility(View.VISIBLE);
-            String userChoice = poll.votes.get(userId).equals("A") ? poll.optionA : poll.optionB;
-            tvStatus.setText("Your Vote Recorded: " + userChoice);
-        } else {
-            btnOptA.setOnClickListener(v -> submitVote(poll.id, userId, "A"));
-            btnOptB.setOnClickListener(v -> submitVote(poll.id, userId, "B"));
-        }
-
-        if (isAdminOrManager) {
-            btnAddComment.setVisibility(View.VISIBLE);
-            btnAddComment.setOnClickListener(v -> showAddCommentDialog(poll.id));
-        }
-
-        btnDownload.setOnClickListener(v -> PdfReportService.generatePollReport(this, session.getCommunityName(), poll, isSuperAdmin));
-
-        pollsContainer.addView(view, 0);
     }
 
     private void submitVote(String pollId, String userId, String choice) {
@@ -158,7 +164,10 @@ public class PollActivity extends AppCompatActivity {
             if (q.isEmpty() || a.isEmpty() || b.isEmpty()) { Toast.makeText(this, "All fields required", Toast.LENGTH_SHORT).show(); return; }
 
             String pollId = db.child("communities").child(session.getCommunityId()).child("polls").push().getKey();
-            Poll newPoll = new Poll(pollId, q, a, b, System.currentTimeMillis(), session.getUserName());
+            
+            // 🛡️ STRICT SIGNATURE: Include Manager ID
+            String strictSignature = session.getRole() + " - " + session.getUserName() + " (" + session.getUserId() + ")";
+            Poll newPoll = new Poll(pollId, q, a, b, System.currentTimeMillis(), strictSignature);
             
             db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).setValue(newPoll);
             AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "POLL_CREATED", "Created poll: " + q);
@@ -180,7 +189,7 @@ public class PollActivity extends AppCompatActivity {
         builder.setPositiveButton("POST", (dialog, which) -> {
             String comment = inputComment.getText().toString().trim();
             if (!comment.isEmpty()) {
-                String signature = "[" + session.getRole() + " - " + session.getUserName() + "]: " + comment;
+                String signature = "✍️ [" + session.getRole() + " - " + session.getUserName() + "]: " + comment;
                 db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).child("officialComment").setValue(signature);
                 Toast.makeText(this, "Remark added", Toast.LENGTH_SHORT).show();
             }
