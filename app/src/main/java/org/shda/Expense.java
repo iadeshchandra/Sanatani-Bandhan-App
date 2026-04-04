@@ -1,21 +1,19 @@
 package org.shda;
 
 public class Expense {
-    public String id;
+    public String id, eventName, itemName, involvedPerson, loggedBy;
     public float amount;
-    public String purpose;
-    public String comment;
     public long timestamp;
-    public String loggedBy;
 
-    // Required empty constructor for Firebase
+    // Required by Firebase
     public Expense() {}
 
-    public Expense(String id, float amount, String purpose, String comment, long timestamp, String loggedBy) {
+    public Expense(String id, String eventName, String itemName, float amount, String involvedPerson, long timestamp, String loggedBy) {
         this.id = id;
+        this.eventName = eventName;
+        this.itemName = itemName;
         this.amount = amount;
-        this.purpose = purpose;
-        this.comment = comment;
+        this.involvedPerson = involvedPerson;
         this.timestamp = timestamp;
         this.loggedBy = loggedBy;
     }
