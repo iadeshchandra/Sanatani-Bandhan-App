@@ -11,7 +11,6 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
-// THE FIX: Changed 'property' to 'properties' to match the latest iText7 library
 import com.itextpdf.layout.properties.TextAlignment; 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -41,6 +40,35 @@ public class PdfReportService {
         document.add(new Paragraph(reportType).setBold().setFontSize(14).setTextAlignment(TextAlignment.CENTER).setMarginTop(8f));
         document.add(new Paragraph(getGenerationStamp()).setFontSize(10).setItalic().setTextAlignment(TextAlignment.CENTER));
         document.add(new Paragraph("--------------------------------------------------\n").setTextAlignment(TextAlignment.CENTER));
+    }
+
+    // --- NEW: GENERATE LOGIN CREDENTIALS PDF ---
+    public static void generateLoginCredentialsPdf(Context context, String communityName, String memberName, String memberId, String password, String role) {
+        try {
+            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File file = new File(path, getFormattedFileName(memberId + "_Credentials"));
+            PdfWriter writer = new PdfWriter(file.getAbsolutePath());
+            Document document = new Document(new PdfDocument(writer));
+
+            addSanataniHeader(document, communityName, "CONFIDENTIAL: Access Credentials");
+
+            document.add(new Paragraph("\nWelcome to the digital portal of " + communityName + "!").setBold().setFontSize(14).setTextAlignment(TextAlignment.CENTER));
+            
+            document.add(new Paragraph("\nName: " + memberName).setFontSize(14));
+            document.add(new Paragraph("Assigned Role: " + role).setFontSize(14).setFontColor(new DeviceRgb(25, 118, 210)));
+            
+            document.add(new Paragraph("\n--- YOUR LOGIN DETAILS ---").setBold().setFontSize(14).setMarginTop(10f));
+            document.add(new Paragraph("SB-ID (Login ID): " + memberId).setBold().setFontSize(18).setFontColor(SAFFRON));
+            document.add(new Paragraph("Secure PIN: " + password).setBold().setFontSize(18).setFontColor(new DeviceRgb(211, 47, 47)));
+            
+            document.add(new Paragraph("\n* Important: Please keep this document secure. You will need the Workspace Admin's email along with these credentials to access the app.")
+                .setItalic().setFontSize(10).setFontColor(new DeviceRgb(97, 97, 97)).setMarginTop(20f));
+
+            document.close();
+            shareFile(context, file, memberName + " - Login Credentials");
+        } catch (Exception e) {
+            Toast.makeText(context, "Failed to create Credentials PDF", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public static void generateFinancialReport(Context context, String communityName, List<String> dates, List<String> names, List<Float> amounts, List<String> notes, float totalDonations, String reportRange) {
@@ -135,31 +163,25 @@ public class PdfReportService {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             File file = new File(path, getFormattedFileName("Panchayat_Insight"));
             PdfWriter writer = new PdfWriter(file.getAbsolutePath()); Document document = new Document(new PdfDocument(writer));
-
             addSanataniHeader(document, communityName, "Community Panchayat Insight");
-
             document.add(new Paragraph("Decision Topic: " + poll.question).setBold().setFontSize(16));
             if (poll.officialComment != null && !poll.officialComment.isEmpty()) {
                 document.add(new Paragraph("Official Remark: " + poll.officialComment).setFontSize(11).setItalic().setFontColor(new DeviceRgb(117, 117, 117)).setMarginBottom(10f));
             }
-
             List<String> votersA = new ArrayList<>(); List<String> votersB = new ArrayList<>();
             if (poll.votes != null) {
                 for (String userId : poll.votes.keySet()) {
                     if (poll.votes.get(userId).equals("A")) votersA.add(userId); else votersB.add(userId);
                 }
             }
-
             document.add(new Paragraph("Option 1: " + poll.optionA).setBold().setFontSize(14).setFontColor(new DeviceRgb(25, 118, 210)));
             document.add(new Paragraph("Total Votes: " + votersA.size()).setFontSize(12).setMarginBottom(4f));
             if (isSuperAdmin) { document.add(new Paragraph("Voters: " + String.join(", ", votersA)).setFontSize(10).setMarginBottom(10f)); } 
             else { document.add(new Paragraph("[Secret Ballot: Voter identities protected]").setFontSize(10).setItalic().setMarginBottom(10f)); }
-
             document.add(new Paragraph("Option 2: " + poll.optionB).setBold().setFontSize(14).setFontColor(new DeviceRgb(245, 124, 0)));
             document.add(new Paragraph("Total Votes: " + votersB.size()).setFontSize(12).setMarginBottom(4f));
             if (isSuperAdmin) { document.add(new Paragraph("Voters: " + String.join(", ", votersB)).setFontSize(10)); } 
             else { document.add(new Paragraph("[Secret Ballot: Voter identities protected]").setFontSize(10).setItalic()); }
-
             document.close(); shareFile(context, file, communityName + " - Poll Insight");
         } catch (Exception e) { Toast.makeText(context, "Failed to create Poll PDF", Toast.LENGTH_SHORT).show(); }
     }
@@ -169,34 +191,26 @@ public class PdfReportService {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             File file = new File(path, getFormattedFileName("Panchayat_Summary"));
             PdfWriter writer = new PdfWriter(file.getAbsolutePath()); Document document = new Document(new PdfDocument(writer));
-
             addSanataniHeader(document, communityName, "Community Panchayat Summary");
             document.add(new Paragraph(reportRange).setFontSize(12).setTextAlignment(TextAlignment.CENTER).setMarginBottom(10f));
-
             for (Poll poll : polls) {
                 document.add(new Paragraph("Q: " + poll.question).setBold().setFontSize(14));
                 if (poll.officialComment != null && !poll.officialComment.isEmpty()) {
                     document.add(new Paragraph(poll.officialComment).setFontSize(10).setItalic().setFontColor(new DeviceRgb(117, 117, 117)));
                 }
-
                 List<String> vA = new ArrayList<>(); List<String> vB = new ArrayList<>();
                 if (poll.votes != null) {
                     for (String userId : poll.votes.keySet()) {
                         if (poll.votes.get(userId).equals("A")) vA.add(userId); else vB.add(userId);
                     }
                 }
-
                 document.add(new Paragraph(" • " + poll.optionA + " (" + vA.size() + " votes)").setFontSize(12));
                 if (isSuperAdmin && !vA.isEmpty()) document.add(new Paragraph("   Voters: " + String.join(", ", vA)).setFontSize(9));
-                
                 document.add(new Paragraph(" • " + poll.optionB + " (" + vB.size() + " votes)").setFontSize(12));
                 if (isSuperAdmin && !vB.isEmpty()) document.add(new Paragraph("   Voters: " + String.join(", ", vB)).setFontSize(9));
-                
                 if (!isSuperAdmin) document.add(new Paragraph("   [Voter identities protected]").setFontSize(9).setItalic());
-                
                 document.add(new Paragraph("----------------------------------------"));
             }
-
             document.close(); shareFile(context, file, communityName + " - Panchayat Summary");
         } catch (Exception e) { Toast.makeText(context, "Failed to create Summary PDF", Toast.LENGTH_SHORT).show(); }
     }
