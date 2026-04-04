@@ -34,9 +34,11 @@ public class TransactionActivity extends AppCompatActivity {
         transactionsContainer = findViewById(R.id.transactionsContainer);
         tvTotalDonations = findViewById(R.id.tvTotalDonations);
 
+        if (session.getCommunityId() == null) { finish(); return; }
+
         View btnAddTransaction = findViewById(R.id.btnAddTransaction); 
         
-        // 🔒 RBAC: Hide the Add button if the user is a MEMBER
+        // 🔒 RBAC Security: Only Admins/Managers can add Chanda. Members can only view.
         if (btnAddTransaction != null) {
             if ("MEMBER".equals(session.getRole())) {
                 btnAddTransaction.setVisibility(View.GONE);
@@ -64,26 +66,35 @@ public class TransactionActivity extends AppCompatActivity {
                         Float amount = data.child("amount").getValue(Float.class);
                         String note = data.child("note").getValue(String.class);
                         Long timestamp = data.child("timestamp").getValue(Long.class);
-                        String loggedBy = data.child("loggedBy").getValue(String.class); // Fetch signature
+                        String loggedBy = data.child("loggedBy").getValue(String.class);
 
                         if (name != null && amount != null) {
                             totalDonationsValue += amount;
                             
                             View view = LayoutInflater.from(TransactionActivity.this).inflate(R.layout.item_transaction, transactionsContainer, false);
                             
-                            ((TextView) view.findViewById(R.id.tvTransName)).setText(name);
-                            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("৳" + amount);
-                            if(timestamp != null) ((TextView) view.findViewById(R.id.tvTransDate)).setText(sdf.format(new Date(timestamp)));
+                            TextView tvName = view.findViewById(R.id.tvTransName);
+                            TextView tvAmount = view.findViewById(R.id.tvTransAmount);
+                            TextView tvDate = view.findViewById(R.id.tvTransDate);
+                            TextView tvNote = view.findViewById(R.id.tvTransNote);
+
+                            if(tvName != null) tvName.setText(name);
+                            if(tvAmount != null) tvAmount.setText("৳" + amount);
+                            if(tvDate != null && timestamp != null) tvDate.setText(sdf.format(new Date(timestamp)));
                             
-                            // Display the note AND the Manager's Signature
+                            // Combine the user note with the permanent Manager signature
                             String finalNote = (note != null ? note : "") + "\n✍️ Logged by: " + (loggedBy != null ? loggedBy : "Admin");
-                            ((TextView) view.findViewById(R.id.tvTransNote)).setText(finalNote);
+                            if(tvNote != null) tvNote.setText(finalNote);
 
                             transactionsContainer.addView(view, 0); 
                         }
-                    } catch (Exception e) {}
+                    } catch (Exception e) {
+                        // Safely ignore corrupted data
+                    }
                 }
-                if (tvTotalDonations != null) tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
+                if (tvTotalDonations != null) {
+                    tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
+                }
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -97,9 +108,17 @@ public class TransactionActivity extends AppCompatActivity {
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 20, 50, 0);
 
-        final EditText inputName = new EditText(this); inputName.setHint("Donor Name"); layout.addView(inputName);
+        // Radio Group for Member vs Guest
+        android.widget.RadioGroup rgType = new android.widget.RadioGroup(this);
+        rgType.setOrientation(LinearLayout.HORIZONTAL);
+        android.widget.RadioButton rbMember = new android.widget.RadioButton(this); rbMember.setText("Member"); rbMember.setChecked(true);
+        android.widget.RadioButton rbGuest = new android.widget.RadioButton(this); rbGuest.setText("Guest");
+        rgType.addView(rbMember); rgType.addView(rbGuest);
+        layout.addView(rgType);
+
+        final EditText inputName = new EditText(this); inputName.setHint("Donor Name / SB-ID"); layout.addView(inputName);
         final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
-        final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Note"); layout.addView(inputNote);
+        final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Gotra / Note"); layout.addView(inputNote);
 
         builder.setView(layout);
 
@@ -107,6 +126,7 @@ public class TransactionActivity extends AppCompatActivity {
             String name = inputName.getText().toString().trim();
             String amountStr = inputAmount.getText().toString().trim();
             String note = inputNote.getText().toString().trim();
+            String donorType = rbMember.isChecked() ? "[Member]" : "[Guest]";
 
             if (name.isEmpty() || amountStr.isEmpty()) { Toast.makeText(this, "Name and Amount required", Toast.LENGTH_SHORT).show(); return; }
 
@@ -115,15 +135,18 @@ public class TransactionActivity extends AppCompatActivity {
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
                 
                 HashMap<String, Object> transMap = new HashMap<>();
-                transMap.put("name", name);
+                transMap.put("name", donorType + " " + name);
                 transMap.put("amount", amount);
                 transMap.put("note", note);
                 transMap.put("timestamp", System.currentTimeMillis());
-                // ✍️ THE SIGNATURE: Automatically stamp the user who created it
                 transMap.put("loggedBy", session.getRole() + " - " + session.getUserName());
 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
                 Toast.makeText(this, "Chanda Recorded Securely", Toast.LENGTH_SHORT).show();
+                
+                // Automatically log to the Audit Trail
+                AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from " + name);
+                
             } catch (NumberFormatException e) { Toast.makeText(this, "Invalid Amount", Toast.LENGTH_SHORT).show(); }
         });
         builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
