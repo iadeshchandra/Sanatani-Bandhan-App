@@ -17,8 +17,9 @@
         <activity android:name=".DashboardActivity" />
         <activity android:name=".MemberActivity" />
         <activity android:name=".AddMemberActivity" />
-        <activity android:name=".MemberDetailActivity" /> <activity android:name=".TransactionActivity" />
-        <activity android:name=".EventActivity" /> 
+        <activity android:name=".MemberDetailActivity" />
+        <activity android:name=".TransactionActivity" />
+        <activity android:name=".ExpenseActivity" /> <activity android:name=".EventActivity" /> 
         <activity android:name=".CommsActivity" />
         
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.provider" android:exported="false" android:grantUriPermissions="true">
