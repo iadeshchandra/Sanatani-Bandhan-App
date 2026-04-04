@@ -3,16 +3,11 @@ package org.shda;
 import java.util.HashMap;
 
 public class Poll {
-    public String id;
-    public String question;
-    public String optionA;
-    public String optionB;
+    public String id, question, optionA, optionB, createdBy, officialComment;
     public long timestamp;
-    public String createdBy;
-    public String officialComment; // NEW: To store Admin/Manager signed comments
-    public HashMap<String, String> votes = new HashMap<>(); 
+    public HashMap<String, String> votes;
 
-    // Required by Firebase
+    // 🔥 CRITICAL FIX: Firebase requires this empty constructor, or it crashes!
     public Poll() {}
 
     public Poll(String id, String question, String optionA, String optionB, long timestamp, String createdBy) {
@@ -22,6 +17,6 @@ public class Poll {
         this.optionB = optionB;
         this.timestamp = timestamp;
         this.createdBy = createdBy;
-        this.officialComment = ""; // Starts empty
+        this.votes = new HashMap<>();
     }
 }
