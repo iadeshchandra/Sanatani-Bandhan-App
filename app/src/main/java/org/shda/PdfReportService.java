@@ -13,30 +13,44 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.property.TextAlignment;
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class PdfReportService {
     
     private static final DeviceRgb SAFFRON = new DeviceRgb(230, 81, 0);
 
-    // 1. GLOBAL FINANCIAL STATEMENT 
-    public static void generateFinancialReport(Context context, String communityName, List<String> dates, List<String> names, List<Float> amounts, List<String> notes, float totalDonations) {
+    private static String getFormattedFileName(String prefix) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd_MMM_yyyy_hh_mm_a", Locale.getDefault());
+        return sdf.format(new Date()) + "_" + prefix.replace(" ", "_") + ".pdf";
+    }
+
+    private static String getGenerationStamp() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+        return "Generated on: " + sdf.format(new Date());
+    }
+
+    // 1. FINANCIAL REPORT
+    public static void generateFinancialReport(Context context, String communityName, List<String> dates, List<String> names, List<Float> amounts, List<String> notes, float totalDonations, String reportRange) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File file = new File(path, "Financial_Statement_" + System.currentTimeMillis() + ".pdf");
+            File file = new File(path, getFormattedFileName("Financial_Statement"));
             PdfWriter writer = new PdfWriter(file.getAbsolutePath());
             Document document = new Document(new PdfDocument(writer));
 
-            // Dynamic White-Label Header
             document.add(new Paragraph(communityName.toUpperCase()).setFontColor(SAFFRON).setBold().setFontSize(24).setTextAlignment(TextAlignment.CENTER));
-            document.add(new Paragraph("Official Monthly Financial Statement").setBold().setFontSize(14).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph("Official Financial Statement").setBold().setFontSize(14).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph(reportRange).setFontSize(12).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph(getGenerationStamp()).setFontSize(10).setItalic().setTextAlignment(TextAlignment.CENTER));
             document.add(new Paragraph("--------------------------------------------------\n").setTextAlignment(TextAlignment.CENTER));
 
             document.add(new Paragraph("Total Chanda Collected: ৳" + totalDonations).setBold().setFontSize(14));
             document.add(new Paragraph("\n"));
 
             if (names.isEmpty()) {
-                document.add(new Paragraph("No transactions recorded yet."));
+                document.add(new Paragraph("No transactions recorded for this period."));
             } else {
                 for(int i = 0; i < names.size(); i++) {
                     document.add(new Paragraph("Date: " + dates.get(i) + "  |  Amount: ৳" + amounts.get(i)).setBold());
@@ -47,45 +61,88 @@ public class PdfReportService {
             }
             document.close();
             shareFile(context, file, communityName + " - Financial Report");
-
         } catch (Exception e) {
-            e.printStackTrace();
             Toast.makeText(context, "Failed to create PDF", Toast.LENGTH_SHORT).show();
         }
     }
 
-    // 2. INDIVIDUAL DONOR RECEIPT 
+    // 2. DONOR RECEIPT
     public static void generateDonorReceipt(Context context, String communityName, String name, float amount, String note, String date) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            File file = new File(path, "Chanda_Receipt_" + System.currentTimeMillis() + ".pdf");
+            File file = new File(path, getFormattedFileName(name + "_Receipt"));
             PdfWriter writer = new PdfWriter(file.getAbsolutePath());
             Document document = new Document(new PdfDocument(writer));
 
-            // Dynamic White-Label Header
             document.add(new Paragraph(communityName.toUpperCase()).setFontColor(SAFFRON).setBold().setFontSize(26).setTextAlignment(TextAlignment.CENTER));
             document.add(new Paragraph("Official Chanda Receipt").setBold().setFontSize(16).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph(getGenerationStamp()).setFontSize(10).setItalic().setTextAlignment(TextAlignment.CENTER));
             document.add(new Paragraph("--------------------------------------------------\n").setTextAlignment(TextAlignment.CENTER));
 
-            document.add(new Paragraph("“Dātavyam iti yad dānaṁ dīyate 'nupakāriṇe...”").setItalic().setFontColor(SAFFRON).setTextAlignment(TextAlignment.CENTER));
-            document.add(new Paragraph("Charity given to a worthy person simply because it is right to give, without consideration of anything in return, is stated to be in the mode of goodness. (Bhagavad Gita 17.20)\n").setItalic().setFontSize(10).setTextAlignment(TextAlignment.CENTER));
-
-            document.add(new Paragraph("\nDate: " + date).setFontSize(12));
+            document.add(new Paragraph("\nTransaction Date: " + date).setFontSize(12));
             document.add(new Paragraph("Received With Gratitude From:").setBold().setFontSize(12));
             document.add(new Paragraph(name).setFontSize(16).setFontColor(SAFFRON));
             
             document.add(new Paragraph("\nContribution Amount: ৳" + amount).setBold().setFontSize(14));
             document.add(new Paragraph("Purpose/Note: " + note).setFontSize(12));
-
-            document.add(new Paragraph("\n--------------------------------------------------").setTextAlignment(TextAlignment.CENTER));
-            document.add(new Paragraph("Dhanyabad! Thank you for your generous contribution to the community. May Bhagavan bless you and your family with peace and prosperity.").setTextAlignment(TextAlignment.CENTER).setBold());
-
             document.close();
             shareFile(context, file, communityName + " - Receipt");
-
         } catch (Exception e) {
-            e.printStackTrace();
             Toast.makeText(context, "Failed to create Receipt", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // 3. FULL MEMBER DIRECTORY
+    public static void generateMemberDirectory(Context context, String communityName, List<Member> memberList) {
+        try {
+            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File file = new File(path, getFormattedFileName("Member_Directory"));
+            PdfWriter writer = new PdfWriter(file.getAbsolutePath());
+            Document document = new Document(new PdfDocument(writer));
+
+            document.add(new Paragraph(communityName.toUpperCase() + " - Member Directory").setBold().setFontSize(18));
+            document.add(new Paragraph(getGenerationStamp()).setFontSize(10).setItalic());
+            document.add(new Paragraph("--------------------------------------------------\n"));
+
+            for (Member m : memberList) {
+                document.add(new Paragraph(m.id + " | " + m.name + " | Phone: " + m.phone + " | Total Donated: ৳" + m.totalDonated));
+                document.add(new Paragraph("--------------------------------------------------"));
+            }
+            document.close();
+            shareFile(context, file, communityName + " Directory");
+        } catch (Exception e) {
+            Toast.makeText(context, "Failed to create Directory", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // 4. INDIVIDUAL MEMBER PROFILE
+    public static void generateMemberProfile(Context context, String communityName, Member member) {
+        try {
+            File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File file = new File(path, getFormattedFileName(member.id + "_Profile"));
+            PdfWriter writer = new PdfWriter(file.getAbsolutePath());
+            Document document = new Document(new PdfDocument(writer));
+
+            document.add(new Paragraph(communityName.toUpperCase()).setFontColor(SAFFRON).setBold().setFontSize(22).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph("Official Member Profile").setBold().setFontSize(16).setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph(getGenerationStamp()).setFontSize(10).setItalic().setTextAlignment(TextAlignment.CENTER));
+            document.add(new Paragraph("--------------------------------------------------\n").setTextAlignment(TextAlignment.CENTER));
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+            String joinDate = sdf.format(new Date(member.timestamp));
+
+            document.add(new Paragraph("Member ID: " + member.id).setBold().setFontSize(14));
+            document.add(new Paragraph("Name: " + member.name).setFontSize(14));
+            document.add(new Paragraph("Phone: " + member.phone).setFontSize(14));
+            document.add(new Paragraph("Gotra: " + member.gotra).setFontSize(14));
+            document.add(new Paragraph("Blood Group: " + member.bloodGroup).setFontSize(14).setFontColor(new DeviceRgb(211, 47, 47)));
+            document.add(new Paragraph("\nJoin Date: " + joinDate).setFontSize(12));
+            document.add(new Paragraph("Total Chanda Contributed: ৳" + member.totalDonated).setBold().setFontSize(14).setFontColor(new DeviceRgb(46, 125, 50)));
+
+            document.close();
+            shareFile(context, file, member.name + " Profile");
+        } catch (Exception e) {
+            Toast.makeText(context, "Failed to create Profile", Toast.LENGTH_SHORT).show();
         }
     }
 
