@@ -3,16 +3,15 @@ package org.shda;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
+import java.util.HashMap;
 
 public class LoginActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
@@ -38,22 +37,14 @@ public class LoginActivity extends AppCompatActivity {
 
         radioGroupLoginType.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == R.id.radioAdmin) {
-                inputSbId.setVisibility(View.GONE);
-                inputEmail.setHint("Admin Email");
+                inputSbId.setVisibility(View.GONE); inputEmail.setHint("Admin Email");
             } else {
-                inputSbId.setVisibility(View.VISIBLE);
-                inputEmail.setHint("Workspace Admin Email");
+                inputSbId.setVisibility(View.VISIBLE); inputEmail.setHint("Workspace Admin Email");
             }
         });
 
         findViewById(R.id.btnLogin).setOnClickListener(v -> processLogin());
         findViewById(R.id.btnGoToRegister).setOnClickListener(v -> startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class)));
-
-        findViewById(R.id.tvForgotPassword).setOnClickListener(v -> {
-            String email = inputEmail.getText().toString().trim();
-            if (email.isEmpty()) Toast.makeText(this, "Enter Admin Email first", Toast.LENGTH_SHORT).show();
-            else mAuth.sendPasswordResetEmail(email).addOnSuccessListener(aVoid -> Toast.makeText(this, "Reset link sent to " + email, Toast.LENGTH_LONG).show());
-        });
     }
 
     private void processLogin() {
@@ -61,13 +52,10 @@ public class LoginActivity extends AppCompatActivity {
         String password = inputPassword.getText().toString().trim();
         String sbId = inputSbId.getText().toString().trim().toUpperCase();
 
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Fields cannot be empty", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (email.isEmpty() || password.isEmpty()) { Toast.makeText(this, "Fields cannot be empty", Toast.LENGTH_SHORT).show(); return; }
 
         if (radioAdmin.isChecked()) {
-            // --- SUPER ADMIN LOGIN (Uses standard Firebase Email Auth) ---
+            // ADMIN LOGIN
             mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String uid = mAuth.getCurrentUser().getUid();
@@ -75,7 +63,7 @@ public class LoginActivity extends AppCompatActivity {
                         @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                             String commId = snapshot.child("communityId").getValue(String.class);
                             String commName = snapshot.child("communityName").getValue(String.class);
-                            session.createLoginSession(commId, "ADMIN", commName, "Super Admin", "ADMIN-001");
+                            session.createLoginSession(commId, "ADMIN", commName, "Super Admin", "ADMIN-001", email);
                             startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
                             finish();
                         }
@@ -84,50 +72,42 @@ public class LoginActivity extends AppCompatActivity {
                 } else Toast.makeText(this, "Invalid Admin Credentials", Toast.LENGTH_SHORT).show();
             });
         } else {
-            // --- STAFF / MEMBER LOGIN ---
-            if (sbId.isEmpty()) { Toast.makeText(this, "Please enter your SB-ID", Toast.LENGTH_SHORT).show(); return; }
+            // STAFF/MEMBER SECURE LOGIN
+            if (sbId.isEmpty()) { Toast.makeText(this, "Enter SB-ID", Toast.LENGTH_SHORT).show(); return; }
+            String encodedEmail = email.replace(".", ","); // Firebase keys cannot contain dots
 
-            // ENTERPRISE SECURITY: Sign in anonymously to get a Firebase Security Badge before reading the database
             mAuth.signInAnonymously().addOnCompleteListener(anonTask -> {
                 if (anonTask.isSuccessful()) {
-                    db.child("users").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(new ValueEventListener() {
-                        @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            if (snapshot.exists()) {
-                                String commId = null, commName = null;
-                                for (DataSnapshot userSnap : snapshot.getChildren()) {
-                                    commId = userSnap.child("communityId").getValue(String.class);
-                                    commName = userSnap.child("communityName").getValue(String.class);
-                                    break;
-                                }
-                                
-                                if (commId != null) {
-                                    final String finalCommName = commName;
-                                    final String finalCommId = commId;
-                                    db.child("communities").child(finalCommId).child("members").child(sbId).addListenerForSingleValueEvent(new ValueEventListener() {
-                                        @Override public void onDataChange(@NonNull DataSnapshot memSnap) {
-                                            if (memSnap.exists()) {
-                                                String dbPassword = memSnap.child("password").getValue(String.class);
-                                                String role = memSnap.child("role").getValue(String.class);
-                                                String name = memSnap.child("name").getValue(String.class);
+                    String tempUid = mAuth.getCurrentUser().getUid();
+                    
+                    // Look inside the isolated Login Vault
+                    db.child("login_vault").child(encodedEmail).child(sbId).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override public void onDataChange(@NonNull DataSnapshot snap) {
+                            if (snap.exists()) {
+                                String dbPass = snap.child("password").getValue(String.class);
+                                if (dbPass != null && dbPass.equals(password)) {
+                                    String commId = snap.child("communityId").getValue(String.class);
+                                    String role = snap.child("role").getValue(String.class);
+                                    String name = snap.child("name").getValue(String.class);
+                                    String commName = snap.child("communityName").getValue(String.class);
 
-                                                if (dbPassword != null && dbPassword.equals(password)) {
-                                                    session.createLoginSession(finalCommId, role != null ? role : "MEMBER", finalCommName, name, sbId);
-                                                    AuditLogger.logAction(finalCommId, name, "LOGIN", "Logged into portal");
-                                                    startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
-                                                    finish();
-                                                } else Toast.makeText(LoginActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
-                                            } else Toast.makeText(LoginActivity.this, "SB-ID not found in this Workspace", Toast.LENGTH_SHORT).show();
-                                        }
-                                        @Override public void onCancelled(@NonNull DatabaseError error) {}
+                                    // VITAL SECURITY STEP: Link this temporary UID to the Community ID
+                                    HashMap<String, Object> userMap = new HashMap<>();
+                                    userMap.put("communityId", commId);
+                                    userMap.put("role", role);
+                                    
+                                    db.child("users").child(tempUid).setValue(userMap).addOnSuccessListener(aVoid -> {
+                                        // Once mapped, the Firebase Rules will now allow access to the Community folder!
+                                        session.createLoginSession(commId, role, commName, name, sbId, email);
+                                        startActivity(new Intent(LoginActivity.this, DashboardActivity.class));
+                                        finish();
                                     });
-                                }
-                            } else Toast.makeText(LoginActivity.this, "Workspace not found", Toast.LENGTH_SHORT).show();
+                                } else Toast.makeText(LoginActivity.this, "Incorrect PIN", Toast.LENGTH_SHORT).show();
+                            } else Toast.makeText(LoginActivity.this, "SB-ID not found in this Workspace", Toast.LENGTH_SHORT).show();
                         }
                         @Override public void onCancelled(@NonNull DatabaseError error) {}
                     });
-                } else {
-                    Toast.makeText(LoginActivity.this, "Network Security Error. Please try again.", Toast.LENGTH_SHORT).show();
-                }
+                } else Toast.makeText(this, "Network Error", Toast.LENGTH_SHORT).show();
             });
         }
     }
