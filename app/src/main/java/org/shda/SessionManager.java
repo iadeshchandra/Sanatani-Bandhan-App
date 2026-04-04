@@ -13,22 +13,23 @@ public class SessionManager {
     private static final String KEY_COMM_NAME = "communityName";
     private static final String KEY_USER_NAME = "userName"; 
     private static final String KEY_USER_ID = "userId";     
+    private static final String KEY_WORKSPACE_EMAIL = "workspaceEmail"; // NEW
 
     public SessionManager(Context context) {
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         editor = prefs.edit();
     }
 
-    public void createLoginSession(String commId, String role, String commName, String userName, String userId) {
+    public void createLoginSession(String commId, String role, String commName, String userName, String userId, String workspaceEmail) {
         editor.putString(KEY_COMM_ID, commId);
         editor.putString(KEY_ROLE, role);
         editor.putString(KEY_COMM_NAME, commName);
         editor.putString(KEY_USER_NAME, userName);
         editor.putString(KEY_USER_ID, userId);
+        editor.putString(KEY_WORKSPACE_EMAIL, workspaceEmail);
         editor.apply();
     }
 
-    // NEW: Instantly update the community name in local memory
     public void updateCommunityName(String newName) {
         editor.putString(KEY_COMM_NAME, newName);
         editor.apply();
@@ -39,6 +40,7 @@ public class SessionManager {
     public String getCommunityName() { return prefs.getString(KEY_COMM_NAME, "Sanatani Bandhan"); }
     public String getUserName() { return prefs.getString(KEY_USER_NAME, "Unknown User"); }
     public String getUserId() { return prefs.getString(KEY_USER_ID, ""); }
+    public String getWorkspaceEmail() { return prefs.getString(KEY_WORKSPACE_EMAIL, ""); }
 
     public void logout() {
         editor.clear();
