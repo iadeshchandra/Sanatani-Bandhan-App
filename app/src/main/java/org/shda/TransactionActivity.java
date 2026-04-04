@@ -92,7 +92,7 @@ public class TransactionActivity extends AppCompatActivity {
 
         float amount = Float.parseFloat(amountStr);
         String nameToSave = "";
-        String memberIdToUpdate = null;
+        String tempMemberId = null; 
         String commId = session.getCommunityId();
 
         if (isMember) {
@@ -102,7 +102,7 @@ public class TransactionActivity extends AppCompatActivity {
                 return;
             }
             nameToSave = selection;
-            memberIdToUpdate = selection.substring(selection.indexOf("(") + 1, selection.indexOf(")"));
+            tempMemberId = selection.substring(selection.indexOf("(") + 1, selection.indexOf(")"));
         } else {
             nameToSave = inputGuestName.getText().toString().trim() + " (Guest)";
             if (nameToSave.equals(" (Guest)")) {
@@ -111,28 +111,34 @@ public class TransactionActivity extends AppCompatActivity {
             }
         }
 
-        // --- SaaS DATA ROUTING ---
+        // FIX: Creating final variables for Lambda expressions
+        final String finalMemberId = tempMemberId;
+        final String finalCommId = commId;
+        final float finalAmount = amount;
+        final String finalNameToSave = nameToSave;
+        final String finalNote = note;
+
         HashMap<String, Object> logData = new HashMap<>();
-        logData.put("name", nameToSave);
-        logData.put("amount", amount);
-        logData.put("note", note);
+        logData.put("name", finalNameToSave);
+        logData.put("amount", finalAmount);
+        logData.put("note", finalNote);
         logData.put("timestamp", System.currentTimeMillis());
         
         // Save to community logs
-        db.child("communities").child(commId).child("logs").child("Donation").push().setValue(logData);
+        db.child("communities").child(finalCommId).child("logs").child("Donation").push().setValue(logData);
 
         // Update community total finances
-        db.child("communities").child(commId).child("finances").child("Donation").get().addOnSuccessListener(snap -> {
+        db.child("communities").child(finalCommId).child("finances").child("Donation").get().addOnSuccessListener(snap -> {
             float currentTotal = snap.exists() ? snap.getValue(Float.class) : 0f;
-            db.child("communities").child(commId).child("finances").child("Donation").setValue(currentTotal + amount);
+            db.child("communities").child(finalCommId).child("finances").child("Donation").setValue(currentTotal + finalAmount);
         });
 
         // Update specific member's total if applicable
-        if (isMember && memberIdToUpdate != null) {
-            db.child("communities").child(commId).child("members").child(memberIdToUpdate).child("totalDonated").get()
+        if (isMember && finalMemberId != null) {
+            db.child("communities").child(finalCommId).child("members").child(finalMemberId).child("totalDonated").get()
               .addOnSuccessListener(snap -> {
                 float currentMemberTotal = snap.exists() ? snap.getValue(Float.class) : 0f;
-                db.child("communities").child(commId).child("members").child(memberIdToUpdate).child("totalDonated").setValue(currentMemberTotal + amount);
+                db.child("communities").child(finalCommId).child("members").child(finalMemberId).child("totalDonated").setValue(currentMemberTotal + finalAmount);
             });
         }
 
@@ -142,6 +148,6 @@ public class TransactionActivity extends AppCompatActivity {
         String dateStr = sdf.format(new java.util.Date());
         
         // Branded Receipt Generation
-        PdfReportService.generateDonorReceipt(this, session.getCommunityName(), nameToSave, amount, note, dateStr);
+        PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalNameToSave, finalAmount, finalNote, dateStr);
     }
 }
