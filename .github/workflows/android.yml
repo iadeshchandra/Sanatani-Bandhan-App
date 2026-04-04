@@ -26,6 +26,10 @@ jobs:
         gradle-version: '8.7'
         cache-disabled: true
 
+    # NEW FIX: Automatically generate the gradlew file if it is missing from GitHub
+    - name: Generate Gradle Wrapper
+      run: gradle wrapper
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
@@ -35,7 +39,6 @@ jobs:
     - name: Rename APK for Professional Distribution
       run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Sanatani-Bandhan-v1.0.apk
 
-    # UPLOAD USING LATEST V4 ARTIFACT ACTION
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
