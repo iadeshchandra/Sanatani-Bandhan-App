@@ -1,5 +1,6 @@
 package org.shda;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -42,14 +44,18 @@ public class TransactionActivity extends AppCompatActivity {
         if (session.getCommunityId() == null) { finish(); return; }
 
         View btnAddTransaction = findViewById(R.id.btnAddTransaction); 
-        
         if (btnAddTransaction != null) {
             if ("MEMBER".equals(session.getRole())) {
-                btnAddTransaction.setVisibility(View.GONE);
+                btnAddTransaction.setVisibility(View.GONE); // strict RBAC
             } else {
                 btnAddTransaction.setVisibility(View.VISIBLE);
                 btnAddTransaction.setOnClickListener(v -> showAddChandaDialog());
             }
+        }
+
+        View btnGenerateReport = findViewById(R.id.btnGenerateReport);
+        if (btnGenerateReport != null) {
+            btnGenerateReport.setOnClickListener(v -> triggerReportGeneration());
         }
 
         loadTransactions();
@@ -94,25 +100,30 @@ public class TransactionActivity extends AppCompatActivity {
                             
                             View view = LayoutInflater.from(TransactionActivity.this).inflate(R.layout.item_transaction, transactionsContainer, false);
                             
-                            TextView tvName = view.findViewById(R.id.tvTransName);
-                            TextView tvAmount = view.findViewById(R.id.tvTransAmount);
-                            TextView tvDate = view.findViewById(R.id.tvTransDate);
-                            TextView tvNote = view.findViewById(R.id.tvTransNote);
-
-                            if(tvName != null) tvName.setText(name);
-                            if(tvAmount != null) tvAmount.setText("৳" + amount);
-                            if(tvDate != null && timestamp != null) tvDate.setText(sdf.format(new Date(timestamp)));
+                            ((TextView) view.findViewById(R.id.tvTransName)).setText(name);
+                            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("৳" + amount);
+                            
+                            String formattedDate = timestamp != null ? sdf.format(new Date(timestamp)) : "Unknown Date";
+                            ((TextView) view.findViewById(R.id.tvTransDate)).setText(formattedDate);
                             
                             String finalNote = (note != null ? note : "") + "\n✍️ Collected By: " + (loggedBy != null ? loggedBy : "System");
-                            if(tvNote != null) tvNote.setText(finalNote);
+                            ((TextView) view.findViewById(R.id.tvTransNote)).setText(finalNote);
+
+                            // ✨ NEW: Click any card to instantly generate a Single Receipt PDF!
+                            view.setOnClickListener(v -> {
+                                new AlertDialog.Builder(TransactionActivity.this)
+                                    .setTitle("Generate Receipt")
+                                    .setMessage("Download official receipt for " + name + "?")
+                                    .setPositiveButton("DOWNLOAD PDF", (dialog, which) -> {
+                                        PdfReportService.generateDonorReceipt(TransactionActivity.this, session.getCommunityName(), name, amount, finalNote, formattedDate);
+                                    }).setNegativeButton("CANCEL", null).show();
+                            });
 
                             transactionsContainer.addView(view, 0); 
                         }
                     } catch (Exception e) {}
                 }
-                if (tvTotalDonations != null) {
-                    tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
-                }
+                if (tvTotalDonations != null) tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -146,24 +157,25 @@ public class TransactionActivity extends AppCompatActivity {
         builder.setView(layout);
 
         builder.setPositiveButton("SAVE", (dialog, which) -> {
-            String name = inputName.getText().toString().trim();
+            String rawName = inputName.getText().toString().trim();
             String amountStr = inputAmount.getText().toString().trim();
             String note = inputNote.getText().toString().trim();
             String donorType = rbMember.isChecked() ? "[Member]" : "[Guest]";
 
-            if (name.isEmpty() || amountStr.isEmpty()) { Toast.makeText(this, "Name and Amount required", Toast.LENGTH_SHORT).show(); return; }
+            if (rawName.isEmpty() || amountStr.isEmpty()) { Toast.makeText(this, "Name and Amount required", Toast.LENGTH_SHORT).show(); return; }
 
             try {
                 float amount = Float.parseFloat(amountStr);
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
                 
+                String finalNameToSave = donorType + " " + rawName;
+
                 HashMap<String, Object> transMap = new HashMap<>();
-                transMap.put("name", donorType + " " + name);
+                transMap.put("name", finalNameToSave);
                 transMap.put("amount", amount);
                 transMap.put("note", note);
                 transMap.put("timestamp", System.currentTimeMillis());
                 
-                // 🛡️ DYNAMIC STRICT SIGNATURE
                 String strictSignature;
                 if ("ADMIN".equals(session.getRole())) {
                     strictSignature = "Super Admin - " + session.getUserName(); 
@@ -173,13 +185,67 @@ public class TransactionActivity extends AppCompatActivity {
                 transMap.put("loggedBy", strictSignature);
 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
-                Toast.makeText(this, "Chanda Recorded Securely", Toast.LENGTH_SHORT).show();
                 
-                AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from " + name);
+                // ✨ NEW: AUTOMATICALLY UPDATE MEMBER'S TOTAL BALANCE
+                String memberId = null;
+                if (rawName.contains("(") && rawName.contains(")")) {
+                    memberId = rawName.substring(rawName.lastIndexOf("(") + 1, rawName.lastIndexOf(")"));
+                }
+                if (memberId != null && memberId.startsWith("SB-")) {
+                    DatabaseReference memRef = db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated");
+                    memRef.get().addOnSuccessListener(snap -> {
+                        float currentTotal = 0f;
+                        if (snap.exists() && snap.getValue() != null) { currentTotal = snap.getValue(Float.class); }
+                        memRef.setValue(currentTotal + amount);
+                    });
+                }
+
+                Toast.makeText(this, "Chanda Recorded Securely", Toast.LENGTH_SHORT).show();
+                AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from " + rawName);
                 
             } catch (NumberFormatException e) { Toast.makeText(this, "Invalid Amount", Toast.LENGTH_SHORT).show(); }
         });
         builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
         builder.show();
+    }
+
+    private void triggerReportGeneration() {
+        Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
+        new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+            startCal.set(year, month, dayOfMonth, 0, 0, 0); 
+            new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
+                endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
+                long startTimestamp = startCal.getTimeInMillis(); long endTimestamp = endCal.getTimeInMillis();
+                SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                String reportRange = "Period: " + displayFormat.format(startCal.getTime()) + " to " + displayFormat.format(endCal.getTime());
+
+                Toast.makeText(this, "Auditing Financials...", Toast.LENGTH_SHORT).show();
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
+                  .orderByChild("timestamp").startAt(startTimestamp).endAt(endTimestamp)
+                  .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        List<String> names = new ArrayList<>(); List<Float> amounts = new ArrayList<>();
+                        List<String> notes = new ArrayList<>(); List<String> dates = new ArrayList<>();
+                        float total = 0f; SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+                        
+                        for (DataSnapshot data : snapshot.getChildren()) {
+                            String name = data.child("name").getValue(String.class); Float amt = data.child("amount").getValue(Float.class);
+                            String note = data.child("note").getValue(String.class); Long ts = data.child("timestamp").getValue(Long.class);
+                            String loggedBy = data.child("loggedBy").getValue(String.class);
+                            
+                            if(name != null && amt != null) {
+                                names.add(name); amounts.add(amt); 
+                                String finalNote = (note != null ? note : "") + "\n(Collected by: " + (loggedBy != null ? loggedBy : "System") + ")";
+                                notes.add(finalNote);
+                                dates.add(ts != null ? sdf.format(new Date(ts)) : "Unknown Date"); 
+                                total += amt;
+                            }
+                        }
+                        PdfReportService.generateFinancialReport(TransactionActivity.this, session.getCommunityName(), dates, names, amounts, notes, total, reportRange);
+                    }
+                    @Override public void onCancelled(@NonNull DatabaseError error) {}
+                });
+            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
     }
 }
