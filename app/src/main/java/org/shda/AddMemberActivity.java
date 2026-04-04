@@ -24,7 +24,12 @@ public class AddMemberActivity extends AppCompatActivity {
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
-        if (session.getCommunityId() == null) { finish(); return; }
+        // 🛡️ SECURITY BOUNCER: If a standard MEMBER tries to open this page, kick them out immediately!
+        if (session.getCommunityId() == null || "MEMBER".equals(session.getRole())) { 
+            Toast.makeText(this, "Access Denied. Admins and Managers only.", Toast.LENGTH_LONG).show();
+            finish(); 
+            return; 
+        }
 
         EditText inputName = findViewById(R.id.inputName);
         EditText inputPhone = findViewById(R.id.inputPhone);
@@ -38,7 +43,10 @@ public class AddMemberActivity extends AppCompatActivity {
             String gotra = inputGotra.getText().toString().trim();
             String bloodGroup = inputBloodGroup.getText().toString().trim();
 
-            if (name.isEmpty() || phone.isEmpty()) { Toast.makeText(this, "Name and Phone required", Toast.LENGTH_SHORT).show(); return; }
+            if (name.isEmpty() || phone.isEmpty()) { 
+                Toast.makeText(this, "Name and Phone required", Toast.LENGTH_SHORT).show(); 
+                return; 
+            }
 
             String autoPassword = String.format("%06d", new Random().nextInt(999999));
             String role = "MEMBER"; 
@@ -52,9 +60,14 @@ public class AddMemberActivity extends AppCompatActivity {
                 // 1. Save standard profile in the secure community folder
                 Member newMember = new Member(newMemberId, name, phone, gotra, bloodGroup, System.currentTimeMillis(), role, autoPassword);
                 db.child("communities").child(commId).child("members").child(newMemberId).setValue(newMember);
+                
+                // ✍️ THE DIGITAL SIGNATURE: Silently tag this member profile with the Manager who created it!
+                String signature = session.getRole() + " - " + session.getUserName();
+                db.child("communities").child(commId).child("members").child(newMemberId).child("addedBySignature").setValue(signature);
+
                 db.child("communities").child(commId).child("metadata").child("lastMemberId").setValue(currentIdCounter);
 
-                // 2. SECURITY UPGRADE: Save credentials to the Login Vault
+                // 2. Save credentials to the Login Vault
                 String encodedWorkspaceEmail = session.getWorkspaceEmail().replace(".", ",");
                 HashMap<String, Object> loginData = new HashMap<>();
                 loginData.put("communityId", commId);
@@ -65,8 +78,9 @@ public class AddMemberActivity extends AppCompatActivity {
                 
                 db.child("login_vault").child(encodedWorkspaceEmail).child(newMemberId).setValue(loginData);
 
-                // Log the action
+                // 3. Log the action to your Enterprise Audit Trail
                 AuditLogger.logAction(commId, session.getUserName(), "MEMBER_ADDED", "Added " + role + ": " + name + " (" + newMemberId + ")");
+                
                 showCredentialsDialog(newMemberId, autoPassword, name);
             });
         });
