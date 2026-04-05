@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,8 +11,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -22,8 +30,12 @@ import java.util.Locale;
 public class DashboardActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
+    private PieChart pieChart;
+    
+    private float totalIncome = 0f;
+    private float totalExpense = 0f;
 
-    // ✨ THE 30-MINUTE SHLOKA ROTATION ENGINE (Now JSON Powered)
+    // ✨ THE 30-MINUTE SHLOKA ROTATION ENGINE (JSON Powered)
     private Handler shlokaHandler = new Handler(Looper.getMainLooper());
     private Runnable shlokaRunnable = new Runnable() {
         @Override
@@ -31,7 +43,6 @@ public class DashboardActivity extends AppCompatActivity {
             TextView tv = findViewById(R.id.shlokaText);
             if (tv != null) {
                 tv.animate().alpha(0f).setDuration(500).withEndAction(() -> {
-                    // Passed Context to read the JSON file safely
                     tv.setText(ShlokaEngine.getRandomShloka(DashboardActivity.this));
                     tv.animate().alpha(1f).setDuration(500);
                 });
@@ -44,6 +55,7 @@ public class DashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
+        
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
@@ -53,10 +65,12 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
+        pieChart = findViewById(R.id.pieChart);
         
         setupDates();
         applyPermissions(session.getRole());
         setupNavigation();
+        setupVisualAnalytics(); // Load the Chart!
 
         findViewById(R.id.tvDashboardBranding).setOnClickListener(v -> {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://linktr.ee/Adesh_Chandra"));
@@ -106,6 +120,82 @@ public class DashboardActivity extends AppCompatActivity {
         } else if (role.equals("ADMIN")) {
             findViewById(R.id.btnEditCommunity).setVisibility(View.VISIBLE);
         }
+    }
+
+    // 📊 LIVE VISUAL ANALYTICS LOGIC
+    private void setupVisualAnalytics() {
+        // Setup Chart Appearance
+        pieChart.getDescription().setEnabled(false);
+        pieChart.setHoleColor(Color.WHITE);
+        pieChart.setTransparentCircleRadius(50f);
+        pieChart.setCenterText("Net Balance\nCalculating...");
+        pieChart.setCenterTextSize(14f);
+        pieChart.setCenterTextColor(Color.parseColor("#E65100"));
+        pieChart.getLegend().setTextSize(12f);
+
+        String logsPath = "communities/" + session.getCommunityId() + "/logs";
+
+        // Listen for Chanda (Income)
+        db.child(logsPath).child("Donation").addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                totalIncome = 0f;
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Float amt = data.child("amount").getValue(Float.class);
+                    if (amt != null) totalIncome += amt;
+                }
+                updatePieChart();
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+
+        // Listen for Utsav Costs (Expenses)
+        db.child(logsPath).child("Expense").addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                totalExpense = 0f;
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Float amt = data.child("amount").getValue(Float.class);
+                    if (amt != null) totalExpense += amt;
+                }
+                updatePieChart();
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void updatePieChart() {
+        List<PieEntry> entries = new ArrayList<>();
+        
+        // Add Data
+        if (totalIncome > 0) entries.add(new PieEntry(totalIncome, "Total Chanda"));
+        if (totalExpense > 0) entries.add(new PieEntry(totalExpense, "Utsav Expenses"));
+
+        // If completely empty, show placeholder
+        if (entries.isEmpty()) {
+            entries.add(new PieEntry(1f, "No Data Yet"));
+            pieChart.setCenterText("Welcome!");
+        } else {
+            float netBalance = totalIncome - totalExpense;
+            pieChart.setCenterText("Net Balance\n৳" + netBalance);
+        }
+
+        PieDataSet dataSet = new PieDataSet(entries, "");
+        
+        // Colors: Green for Income, Red for Expense
+        List<Integer> colors = new ArrayList<>();
+        colors.add(Color.parseColor("#388E3C")); // Green
+        if (totalExpense > 0) colors.add(Color.parseColor("#D32F2F")); // Red
+        else if (entries.size() == 1 && totalIncome == 0) colors.add(Color.LTGRAY); // Placeholder
+        dataSet.setColors(colors);
+
+        dataSet.setValueTextColor(Color.WHITE);
+        dataSet.setValueTextSize(14f);
+        
+        PieData data = new PieData(dataSet);
+        pieChart.setData(data);
+        
+        // Animate the chart drawing beautifully
+        pieChart.animateY(1000);
+        pieChart.invalidate(); 
     }
 
     private void setupNavigation() {
