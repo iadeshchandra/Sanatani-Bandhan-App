@@ -104,7 +104,6 @@ public class ExpenseActivity extends AppCompatActivity {
     }
 
     private void fetchAutoCompleteData() {
-        // Fetch Members for "Person Involved"
         db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 memberSearchList.clear();
@@ -116,7 +115,6 @@ public class ExpenseActivity extends AppCompatActivity {
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // Fetch past Events to suggest Puja Names
         db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 eventSearchList.clear();
@@ -183,11 +181,12 @@ public class ExpenseActivity extends AppCompatActivity {
     }
 
     private void renderCards() {
-        transactionsContainer.removeAllViews();
+        // ✨ FIXED: Corrected all references from 'transactionsContainer' to 'expensesContainer'
+        expensesContainer.removeAllViews();
         SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
 
         for (GroupedExpense ge : displayList) {
-            View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, transactionsContainer, false);
+            View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, expensesContainer, false);
             
             ((TextView) view.findViewById(R.id.tvTransName)).setText("🪔 " + ge.eventDisplayName);
             ((TextView) view.findViewById(R.id.tvTransName)).setTextColor(android.graphics.Color.parseColor("#E65100"));
@@ -198,13 +197,12 @@ public class ExpenseActivity extends AppCompatActivity {
             ((TextView) view.findViewById(R.id.tvTransDate)).setText("Last Update: " + sdf.format(new Date(ge.lastUpdated)));
             ((TextView) view.findViewById(R.id.tvTransNote)).setText("Total Items/Sevas: " + ge.history.size() + "\n👉 Tap to download Full Utsav Ledger");
 
-            // 📄 DRILL-DOWN PDF FOR THIS SPECIFIC UTSAV
             view.setOnClickListener(v -> {
                 PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge);
                 Toast.makeText(this, "Generating Utsav Ledger...", Toast.LENGTH_SHORT).show();
             });
 
-            transactionsContainer.addView(view);
+            expensesContainer.addView(view);
         }
     }
 
@@ -280,7 +278,6 @@ public class ExpenseActivity extends AppCompatActivity {
         }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
-    // INTERNAL DATA MODEL FOR GROUPING
     public static class GroupedExpense {
         public String eventDisplayName;
         public float totalSpent = 0f;
