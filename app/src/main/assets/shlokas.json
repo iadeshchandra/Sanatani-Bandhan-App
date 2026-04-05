@@ -1,0 +1,1673 @@
+{
+  "meta": {
+    "title": "SHDA Shloka Vault",
+    "version": "1.0",
+    "total": 110,
+    "languages": ["en", "bn"],
+    "categories": [
+      "Bhagavad Gita",
+      "Upanishads",
+      "Rig Veda",
+      "Atharva Veda",
+      "Yajur Veda",
+      "Ramayana",
+      "Mahabharata",
+      "Chanakya Neeti",
+      "Yoga Sutras",
+      "Vedic Wisdom"
+    ]
+  },
+  "shlokas": [
+
+    {
+      "id": 1,
+      "category": "Bhagavad Gita",
+      "source": "Manu Smriti 8.15",
+      "original": "Dharmo Rakshati Rakshitah",
+      "en": {
+        "quote": "Dharma protects those who protect it.",
+        "meaning": "Righteousness shields those who uphold it."
+      },
+      "bn": {
+        "quote": "ধর্মো রক্ষতি রক্ষিতঃ",
+        "meaning": "যে ধর্মকে রক্ষা করে, ধর্মও তাকে রক্ষা করে।"
+      }
+    },
+
+    {
+      "id": 2,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.47",
+      "original": "Karmanye vadhikaraste Ma Phaleshu Kadachana",
+      "en": {
+        "quote": "You have the right to work, but never to the fruit of work.",
+        "meaning": "Act without attachment to rewards; the deed itself is your duty."
+      },
+      "bn": {
+        "quote": "কর্মণ্যেবাধিকারস্তে মা ফলেষু কদাচন।",
+        "meaning": "তোমার অধিকার শুধু কর্মে, কখনো তার ফলে নয়।"
+      }
+    },
+
+    {
+      "id": 3,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 4.7",
+      "original": "Yada yada hi dharmasya glanir bhavati bharata",
+      "en": {
+        "quote": "Whenever dharma declines and the purpose of life is forgotten, I manifest myself on earth.",
+        "meaning": "The divine appears whenever righteousness fades and chaos rises."
+      },
+      "bn": {
+        "quote": "যখনই ধর্মের অবক্ষয় হয়, তখনই আমি পৃথিবীতে আবির্ভূত হই।",
+        "meaning": "ধর্ম রক্ষার্থে ঈশ্বর বারবার আসেন।"
+      }
+    },
+
+    {
+      "id": 4,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.20",
+      "original": "Na jayate mriyate va kadacin",
+      "en": {
+        "quote": "For the soul there is neither birth nor death at any time. It is unborn, eternal, ever-existing and primeval.",
+        "meaning": "The body perishes but the soul is immortal and indestructible."
+      },
+      "bn": {
+        "quote": "আত্মার কখনো জন্ম নেই, মৃত্যুও নেই। সে অজন্মা, নিত্য, চিরন্তন ও পুরাতন।",
+        "meaning": "দেহের মৃত্যু হলেও আত্মা অমর।"
+      }
+    },
+
+    {
+      "id": 5,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.22",
+      "original": "Vasamsi jirnani yatha vihaya",
+      "en": {
+        "quote": "As a person puts on new garments giving up old ones, the soul similarly accepts new material bodies.",
+        "meaning": "Rebirth is natural — the soul merely changes its garment."
+      },
+      "bn": {
+        "quote": "মানুষ যেমন পুরনো বস্ত্র ত্যাগ করে নতুন বস্ত্র ধারণ করে, তেমনি আত্মাও পুরনো দেহ ছেড়ে নতুন দেহ গ্রহণ করে।",
+        "meaning": "পুনর্জন্মের অপূর্ব ব্যাখ্যা।"
+      }
+    },
+
+    {
+      "id": 6,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita",
+      "original": "",
+      "en": {
+        "quote": "He who has no attachments can really love others, for his love is pure and divine.",
+        "meaning": "True love is selfless and free from desire."
+      },
+      "bn": {
+        "quote": "যার কোনো আসক্তি নেই, সে-ই প্রকৃত ভালোবাসতে পারে — কারণ তার ভালোবাসা নিষ্কাম ও ঐশ্বরিক।",
+        "meaning": "নিঃস্বার্থ প্রেমই সত্যিকারের ভালোবাসা।"
+      }
+    },
+
+    {
+      "id": 7,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 17.3",
+      "original": "Sraddhamayo ayam purushah",
+      "en": {
+        "quote": "A man is made by his belief. As he believes, so he is.",
+        "meaning": "Your identity is shaped by what you truly believe in."
+      },
+      "bn": {
+        "quote": "মানুষ তার বিশ্বাস দিয়ে গড়া। সে যা বিশ্বাস করে, সে তা-ই হয়ে ওঠে।",
+        "meaning": "বিশ্বাসই মানুষের পরিচয় নির্মাণ করে।"
+      }
+    },
+
+    {
+      "id": 8,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 4.38",
+      "original": "Na hi jnanena sadrsam pavitram iha vidyate",
+      "en": {
+        "quote": "There is nothing as purifying on earth as true knowledge.",
+        "meaning": "Knowledge is the greatest purifier of the soul."
+      },
+      "bn": {
+        "quote": "এই পৃথিবীতে প্রকৃত জ্ঞানের মতো পবিত্র আর কিছু নেই।",
+        "meaning": "জ্ঞানই সবচেয়ে বড় শুদ্ধিকারক।"
+      }
+    },
+
+    {
+      "id": 9,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 6.20",
+      "original": "Yatra uparamate chittam niruddham yoga-sevaya",
+      "en": {
+        "quote": "Yoga is the journey of the self, through the self, to the self.",
+        "meaning": "Self-realization is the highest destination of spiritual practice."
+      },
+      "bn": {
+        "quote": "যোগ হলো নিজের মধ্য দিয়ে নিজেকে আবিষ্কারের যাত্রা।",
+        "meaning": "আত্মজ্ঞানই যোগের চূড়ান্ত লক্ষ্য।"
+      }
+    },
+
+    {
+      "id": 10,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 3.21",
+      "original": "Yad yad acarati sreshthas tat tad evetaro janah",
+      "en": {
+        "quote": "Whatever action is performed by a great man, common men follow in his footsteps.",
+        "meaning": "Leaders set the standard; society follows their example."
+      },
+      "bn": {
+        "quote": "একজন মহৎ মানুষ যা করেন, সাধারণ মানুষ তার পদাঙ্ক অনুসরণ করে।",
+        "meaning": "নেতার আচরণই সমাজের আদর্শ।"
+      }
+    },
+
+    {
+      "id": 11,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 18.37",
+      "original": "Yat tad agre visam iva pariname amritopamam",
+      "en": {
+        "quote": "That which seems like poison at first, but tastes like nectar in the end, is the joy of Sattva.",
+        "meaning": "Disciplined effort feels hard at the start but yields lasting joy."
+      },
+      "bn": {
+        "quote": "যা প্রথমে বিষের মতো মনে হয়, কিন্তু শেষে অমৃতের স্বাদ দেয় — সেটাই সাত্ত্বিক সুখ।",
+        "meaning": "কঠিন পরিশ্রমের ফলই প্রকৃত আনন্দ।"
+      }
+    },
+
+    {
+      "id": 12,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.19",
+      "original": "Ya enam vetti hantaram yas chainam manyate hatam",
+      "en": {
+        "quote": "The soul is never born nor dies at any time. It is not slain when the body is slain.",
+        "meaning": "Death is only of the body; the soul is eternal."
+      },
+      "bn": {
+        "quote": "আত্মা কখনো জন্মগ্রহণ করে না বা মরে না। দেহ ধ্বংস হলেও আত্মা ধ্বংস হয় না।",
+        "meaning": "দেহ ক্ষণিক, আত্মা চিরন্তন।"
+      }
+    },
+
+    {
+      "id": 13,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.47",
+      "original": "Karmanye vadhikaraste",
+      "en": {
+        "quote": "Let right deeds be thy motive, not the fruit which comes from them.",
+        "meaning": "Righteousness in action, not reward, should be your driving force."
+      },
+      "bn": {
+        "quote": "সৎকর্মই হোক তোমার প্রেরণা, ফল নয়।",
+        "meaning": "ফলের আশা না করে কর্তব্য পালন করাই শ্রেষ্ঠ পথ।"
+      }
+    },
+
+    {
+      "id": 14,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 4.18",
+      "original": "Karmany akarma yah pasyed akarmani ca karma yah",
+      "en": {
+        "quote": "He who sees inaction in action and action in inaction is wise indeed.",
+        "meaning": "True wisdom lies in understanding the deeper nature of deeds."
+      },
+      "bn": {
+        "quote": "যে কর্মের মধ্যে নিষ্ক্রিয়তা এবং নিষ্ক্রিয়তার মধ্যে কর্ম দেখতে পায় — সে-ই প্রকৃত জ্ঞানী।",
+        "meaning": "কর্ম ও অকর্মের গভীর সত্য বোঝাই জ্ঞান।"
+      }
+    },
+
+    {
+      "id": 15,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 12.12",
+      "original": "Sreyo hi jnanam abhyasaj jnanad dhyanam visisyate",
+      "en": {
+        "quote": "The wise man lets go of all results, whether good or bad, and is focused on the action alone.",
+        "meaning": "Detachment from outcomes is the hallmark of the truly wise."
+      },
+      "bn": {
+        "quote": "জ্ঞানী ব্যক্তি ভালো-মন্দ সব ফল ত্যাগ করেন এবং শুধু কর্মেই মনোযোগ দেন।",
+        "meaning": "ফলাফলের প্রতি উদাসীনতাই প্রজ্ঞার লক্ষণ।"
+      }
+    },
+
+    {
+      "id": 16,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.16",
+      "original": "Nasato vidyate bhavo nabhavo vidyate satah",
+      "en": {
+        "quote": "Fear not what is not real. What is real always was and cannot be destroyed.",
+        "meaning": "Only the eternal truth endures; illusions pass away."
+      },
+      "bn": {
+        "quote": "যা অবাস্তব তাকে ভয় পেও না — তা কখনো ছিল না। যা বাস্তব তা চিরকাল ছিল এবং ধ্বংস হবে না।",
+        "meaning": "সত্যের অবিনাশিতা।"
+      }
+    },
+
+    {
+      "id": 17,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 3.10",
+      "original": "Sahayajnah prajah srshtva puro vaca prajapatih",
+      "en": {
+        "quote": "Through selfless service, you will always be fruitful and find the fulfillment of your desires.",
+        "meaning": "A life of service is the most rewarding life one can live."
+      },
+      "bn": {
+        "quote": "নিঃস্বার্থ সেবার মাধ্যমে তুমি সর্বদা ফলবান হবে এবং তোমার আকাঙ্ক্ষা পূর্ণ হবে।",
+        "meaning": "পরোপকারী জীবনই সর্বোত্তম জীবন।"
+      }
+    },
+
+    {
+      "id": 18,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 3.35",
+      "original": "Sreyan sva-dharmo vigunah para-dharmat svanusthitat",
+      "en": {
+        "quote": "It is better to perform one's own duty imperfectly than to perform another's duty perfectly.",
+        "meaning": "Stay true to your own path rather than mimicking someone else's."
+      },
+      "bn": {
+        "quote": "নিজের ধর্ম অসম্পূর্ণভাবে পালন করা, অন্যের ধর্ম নিখুঁতভাবে পালনের চেয়ে উত্তম।",
+        "meaning": "স্বধর্মই শ্রেষ্ঠ পথ।"
+      }
+    },
+
+    {
+      "id": 19,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 6.40",
+      "original": "Partha naiveha namutra vinasas tasya vidyate",
+      "en": {
+        "quote": "No one who does good work will ever come to a bad end, either here or in the world to come.",
+        "meaning": "Righteous effort is never wasted in this life or the next."
+      },
+      "bn": {
+        "quote": "যে সৎকর্ম করে, সে কখনো মন্দ পরিণতি পায় না — না এই জীবনে, না পরজীবনে।",
+        "meaning": "সৎকর্মের ফল কখনো বিনষ্ট হয় না।"
+      }
+    },
+
+    {
+      "id": 20,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.40",
+      "original": "Nehabhikrama-naso sti pratyavayo na vidyate",
+      "en": {
+        "quote": "On this path effort never goes to waste, and there is no failure.",
+        "meaning": "Every sincere step forward on the righteous path bears fruit."
+      },
+      "bn": {
+        "quote": "এই পথে কোনো প্রচেষ্টাই বিফলে যায় না এবং কোনো ব্যর্থতা নেই।",
+        "meaning": "সৎ প্রচেষ্টা কখনো নিষ্ফল নয়।"
+      }
+    },
+
+    {
+      "id": 21,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 6.5",
+      "original": "Uddhared atmanatmanam natmanam avasadayet",
+      "en": {
+        "quote": "Reshape yourself through the power of your will; never let yourself be degraded by self-will.",
+        "meaning": "You are both your greatest ally and your greatest enemy."
+      },
+      "bn": {
+        "quote": "নিজের ইচ্ছাশক্তি দিয়ে নিজেকে পুনর্গঠিত করো; কখনো স্বেচ্ছাচারিতায় নিজেকে অধঃপতিত হতে দিও না।",
+        "meaning": "ইচ্ছাশক্তিই মানুষের সবচেয়ে বড় সম্পদ।"
+      }
+    },
+
+    {
+      "id": 22,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 6.35",
+      "original": "Asamsayam maha-baho mano durnigraham calam",
+      "en": {
+        "quote": "The mind is restless and difficult to restrain, but it is subdued by practice.",
+        "meaning": "Consistent discipline is the only way to master the restless mind."
+      },
+      "bn": {
+        "quote": "মন চঞ্চল এবং নিয়ন্ত্রণ করা কঠিন, তবে অভ্যাসের মাধ্যমে তা বশে আনা সম্ভব।",
+        "meaning": "মনকে বশ করতে নিরন্তর অভ্যাস চাই।"
+      }
+    },
+
+    {
+      "id": 23,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 17.16",
+      "original": "Manah-prasadah saumyatvam maunam atma-vinigrahah",
+      "en": {
+        "quote": "Calmness, gentleness, silence, self-restraint, and purity — these are the disciplines of the mind.",
+        "meaning": "True mental strength is built on inner peace, not outer force."
+      },
+      "bn": {
+        "quote": "শান্তি, নম্রতা, মৌনতা, আত্মসংযম এবং পবিত্রতা — এগুলোই মনের তপস্যা।",
+        "meaning": "মানসিক শৃঙ্খলার পাঁচটি স্তম্ভ।"
+      }
+    },
+
+    {
+      "id": 24,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.63",
+      "original": "Krodhad bhavati sammohah sammohat smriti-vibhramah",
+      "en": {
+        "quote": "Anger leads to clouding of judgment, which results in bewilderment of the memory.",
+        "meaning": "Rage destroys clarity — the angry person loses both wisdom and memory."
+      },
+      "bn": {
+        "quote": "ক্রোধ বিচারশক্তিকে আচ্ছন্ন করে, যা স্মৃতিবিভ্রম সৃষ্টি করে।",
+        "meaning": "রাগ মানুষের সবচেয়ে বড় শত্রু।"
+      }
+    },
+
+    {
+      "id": 25,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.56",
+      "original": "Duhkhesv anudvigna-manah sukheshu vigata-sprhah",
+      "en": {
+        "quote": "He who is not disturbed in mind even amidst the threefold miseries is the best among men.",
+        "meaning": "True strength is equanimity in the face of all suffering."
+      },
+      "bn": {
+        "quote": "যে তিন ধরনের দুঃখের মধ্যেও মনে বিচলিত হয় না, সে-ই মানুষের মধ্যে শ্রেষ্ঠ।",
+        "meaning": "কষ্টের মাঝেও স্থির থাকাই প্রকৃত শক্তি।"
+      }
+    },
+
+    {
+      "id": 26,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 2.64",
+      "original": "Raga-dvesa-vimuktais tu visayan indriyais caran",
+      "en": {
+        "quote": "The self-controlled soul who moves amongst sense objects, free from attachment or repulsion, wins eternal peace.",
+        "meaning": "Freedom from desire and aversion brings lasting inner peace."
+      },
+      "bn": {
+        "quote": "যে আত্মসংযমী ব্যক্তি ইন্দ্রিয়ের বিষয়ের মধ্যে থেকেও আসক্তি ও বিদ্বেষ থেকে মুক্ত, সে চিরশান্তি পায়।",
+        "meaning": "আসক্তিহীন জীবনই শান্তির জীবন।"
+      }
+    },
+
+    {
+      "id": 27,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 18.66",
+      "original": "Sarva-dharman parityajya mam ekam saranam vraja",
+      "en": {
+        "quote": "Abandoning all duties, come unto Me alone for shelter; sorrow not, I will liberate thee from all sins.",
+        "meaning": "Complete surrender to the divine leads to ultimate liberation."
+      },
+      "bn": {
+        "quote": "সব ধর্ম পরিত্যাগ করে একমাত্র আমার শরণ লও। শোক করো না — আমি তোমাকে সব পাপ থেকে মুক্ত করব।",
+        "meaning": "ঈশ্বরের সম্পূর্ণ শরণই মুক্তির পথ।"
+      }
+    },
+
+    {
+      "id": 28,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 17.20",
+      "original": "Datavyam iti yad danam diyate nupakarine",
+      "en": {
+        "quote": "A gift is pure when it is given from the heart to the right person at the right time and the right place.",
+        "meaning": "True giving is selfless, timely, and offered without expectation."
+      },
+      "bn": {
+        "quote": "যে দান সঠিক সময়ে, সঠিক স্থানে, সঠিক মানুষকে হৃদয় থেকে দেওয়া হয় — সেটাই বিশুদ্ধ দান।",
+        "meaning": "নিঃস্বার্থ দানই সর্বোচ্চ দান।"
+      }
+    },
+
+    {
+      "id": 29,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 18.45",
+      "original": "Sve sve karmany abhiratah samsiddhim labhate narah",
+      "en": {
+        "quote": "By devotion to one's own particular duty, everyone can attain perfection.",
+        "meaning": "Mastery comes from loving what you do and doing it wholeheartedly."
+      },
+      "bn": {
+        "quote": "নিজের নির্দিষ্ট কর্তব্যের প্রতি নিষ্ঠার মাধ্যমে প্রত্যেকে পরিপূর্ণতা অর্জন করতে পারে।",
+        "meaning": "নিজের কাজকে ভালোবেসে করাই পরিপূর্ণতার পথ।"
+      }
+    },
+
+    {
+      "id": 30,
+      "category": "Bhagavad Gita",
+      "source": "Bhagavad Gita 5.29",
+      "original": "Bhoktaram yajna-tapasam sarva-loka-mahesvaram",
+      "en": {
+        "quote": "The peace of God is with them whose mind and soul are in harmony, free from desire and wrath.",
+        "meaning": "Inner harmony — not outer success — brings divine peace."
+      },
+      "bn": {
+        "quote": "যার মন ও আত্মা সুসংগত, যে কামনা ও ক্রোধ থেকে মুক্ত — তার সাথেই ঈশ্বরের শান্তি বিরাজ করে।",
+        "meaning": "মানসিক ভারসাম্যই ঐশ্বরিক শান্তির চাবিকাঠি।"
+      }
+    },
+
+    {
+      "id": 31,
+      "category": "Upanishads",
+      "source": "Brihadaranyaka Upanishad",
+      "original": "Asato ma sadgamaya. Tamaso ma jyotirgamaya. Mrityorma amritam gamaya.",
+      "en": {
+        "quote": "Lead me from falsehood to truth, from darkness to light, from death to immortality.",
+        "meaning": "The highest prayer: to seek truth, light, and eternal life."
+      },
+      "bn": {
+        "quote": "অসতো মা সদ্গময়। তমসো মা জ্যোতির্গময়। মৃত্যোর্মা অমৃতং গময়।",
+        "meaning": "আমাকে মিথ্যা থেকে সত্যের দিকে, অন্ধকার থেকে আলোর দিকে, মৃত্যু থেকে অমরত্বের দিকে নিয়ে যাও।"
+      }
+    },
+
+    {
+      "id": 32,
+      "category": "Upanishads",
+      "source": "Katha Upanishad 1.3.14",
+      "original": "Uttishthata jagrata prapya varan nibodhata",
+      "en": {
+        "quote": "Arise, awake, and stop not till the goal is reached.",
+        "meaning": "Relentless pursuit of your goal is the only path to greatness."
+      },
+      "bn": {
+        "quote": "উত্তিষ্ঠত জাগ্রত প্রাপ্য বরান্নিবোধত।",
+        "meaning": "জাগো, উঠে দাঁড়াও এবং লক্ষ্যে না পৌঁছানো পর্যন্ত থামো না।"
+      }
+    },
+
+    {
+      "id": 33,
+      "category": "Upanishads",
+      "source": "Chandogya Upanishad 6.8.7",
+      "original": "Tat Tvam Asi",
+      "en": {
+        "quote": "Thou art That — You are the universe.",
+        "meaning": "Your deepest self is identical with the ultimate reality."
+      },
+      "bn": {
+        "quote": "তৎ ত্বম্ অসি।",
+        "meaning": "সেটিই তুমি — তুমি নিজেই সেই পরম সত্তা, তুমিই ব্রহ্ম।"
+      }
+    },
+
+    {
+      "id": 34,
+      "category": "Upanishads",
+      "source": "Brihadaranyaka Upanishad 1.4.10",
+      "original": "Aham Brahmasmi",
+      "en": {
+        "quote": "I am the infinite reality.",
+        "meaning": "The individual self and the universal self are one and the same."
+      },
+      "bn": {
+        "quote": "অহম্ ব্রহ্মাস্মি।",
+        "meaning": "আমিই ব্রহ্ম — আমি সেই অসীম, চিরন্তন সত্তা।"
+      }
+    },
+
+    {
+      "id": 35,
+      "category": "Upanishads",
+      "source": "Chandogya Upanishad 6.2.1",
+      "original": "Ekam evadvitiyam",
+      "en": {
+        "quote": "He is One only, without a second.",
+        "meaning": "The ultimate reality is singular, undivided, and complete."
+      },
+      "bn": {
+        "quote": "একম্ এব অদ্বিতীয়ম্।",
+        "meaning": "সে একমাত্র, তাঁর দ্বিতীয় কেউ নেই — পরম সত্তা অদ্বয়।"
+      }
+    },
+
+    {
+      "id": 36,
+      "category": "Upanishads",
+      "source": "Katha Upanishad 1.2.18",
+      "original": "Na jayate mriyate va vipascin",
+      "en": {
+        "quote": "The Self is not born and does not die. It was not produced from anyone; no one was produced from it.",
+        "meaning": "The soul is self-existent, uncaused, and indestructible."
+      },
+      "bn": {
+        "quote": "আত্মার জন্ম নেই, মৃত্যু নেই। সে কারো থেকে সৃষ্ট নয়, তার থেকেও কেউ সৃষ্ট নয়।",
+        "meaning": "আত্মা অনন্ত ও স্বতন্ত্র।"
+      }
+    },
+
+    {
+      "id": 37,
+      "category": "Upanishads",
+      "source": "Katha Upanishad 1.2.20",
+      "original": "Anor aniyan mahato mahiyan atmasya jantor nihito guhayam",
+      "en": {
+        "quote": "The Self is hidden in the hearts of all. It is subtler than the subtlest and greater than the greatest.",
+        "meaning": "The divine lives within every being, infinitely small yet infinitely vast."
+      },
+      "bn": {
+        "quote": "আত্মা সকলের হৃদয়ে লুকিয়ে আছেন। তিনি সূক্ষ্মের চেয়ে সূক্ষ্ম এবং বৃহতের চেয়ে বৃহৎ।",
+        "meaning": "পরমাত্মা সর্বত্র বিরাজমান।"
+      }
+    },
+
+    {
+      "id": 38,
+      "category": "Upanishads",
+      "source": "Taittiriya Upanishad 3.6",
+      "original": "Anandad hy eva khalv imani bhutani jayante",
+      "en": {
+        "quote": "From joy springs all of creation; by joy it is sustained, towards joy it proceeds, and into joy it returns.",
+        "meaning": "The universe is born of bliss, sustained by bliss, and returns to bliss."
+      },
+      "bn": {
+        "quote": "আনন্দ থেকেই সমস্ত সৃষ্টির উৎপত্তি; আনন্দেই তা টিকে থাকে এবং আনন্দেই ফিরে যায়।",
+        "meaning": "সমস্ত অস্তিত্বের উৎস ও গন্তব্য আনন্দ।"
+      }
+    },
+
+    {
+      "id": 39,
+      "category": "Upanishads",
+      "source": "Katha Upanishad 1.3.3",
+      "original": "Atmanam rathinam viddhi sariram ratham eva ca",
+      "en": {
+        "quote": "Know the Self as lord of the chariot, the body as the chariot itself, the intellect as the charioteer.",
+        "meaning": "The soul commands the body; wisdom guides both."
+      },
+      "bn": {
+        "quote": "আত্মাকে রথের মালিক হিসেবে জানো, দেহকে রথ হিসেবে এবং বিবেককে সারথি হিসেবে।",
+        "meaning": "মানুষের অস্তিত্বের এক অপূর্ব রূপক।"
+      }
+    },
+
+    {
+      "id": 40,
+      "category": "Upanishads",
+      "source": "Chandogya Upanishad 3.14.1",
+      "original": "Sarvam khalvidam brahma",
+      "en": {
+        "quote": "All this is indeed Brahman — the entire universe is divine.",
+        "meaning": "Divinity is not separate from creation; it permeates everything."
+      },
+      "bn": {
+        "quote": "সর্বং খল্বিদং ব্রহ্ম।",
+        "meaning": "এই সমগ্র বিশ্বব্রহ্মাণ্ডই ব্রহ্ম — প্রতিটি কণায় ঈশ্বর বিরাজমান।"
+      }
+    },
+
+    {
+      "id": 41,
+      "category": "Upanishads",
+      "source": "Aitareya Upanishad 3.3",
+      "original": "Prajnanam Brahma",
+      "en": {
+        "quote": "Consciousness is Brahman.",
+        "meaning": "Awareness itself is the ultimate reality."
+      },
+      "bn": {
+        "quote": "প্রজ্ঞানম্ ব্রহ্ম।",
+        "meaning": "চেতনাই ব্রহ্ম — জ্ঞানই পরম সত্য।"
+      }
+    },
+
+    {
+      "id": 42,
+      "category": "Upanishads",
+      "source": "Taittiriya Upanishad 2.4",
+      "original": "Yato vaco nivartante aprapya manasa saha",
+      "en": {
+        "quote": "He who knows the bliss of Brahman, from which words and mind return without reaching it, fears nothing.",
+        "meaning": "Those who touch the divine bliss are freed from all fear."
+      },
+      "bn": {
+        "quote": "যে ব্রহ্মের আনন্দ জানে — যেখানে বাণী ও মন পৌঁছাতে পারে না — সে কাউকে ভয় পায় না।",
+        "meaning": "পরম আনন্দের অনুভবই ভয়মুক্তির পথ।"
+      }
+    },
+
+    {
+      "id": 43,
+      "category": "Upanishads",
+      "source": "Mundaka Upanishad 3.1.8",
+      "original": "Na caksusa grhyate nasya rupam",
+      "en": {
+        "quote": "Neither by sight is It grasped, nor by speech, nor by the other senses; not by austerity nor by ritual.",
+        "meaning": "The ultimate truth transcends all human faculties and rituals."
+      },
+      "bn": {
+        "quote": "তাঁকে চোখে দেখা যায় না, বাণীতে বলা যায় না, কোনো ইন্দ্রিয় দিয়ে জানা যায় না; তপস্যা বা আচার দিয়েও নয়।",
+        "meaning": "পরম সত্তা সকল ইন্দ্রিয়ের ঊর্ধ্বে।"
+      }
+    },
+
+    {
+      "id": 44,
+      "category": "Upanishads",
+      "source": "Mundaka Upanishad 3.2.9",
+      "original": "Brahma veda brahmaiva bhavati",
+      "en": {
+        "quote": "He who knows Brahman becomes Brahman.",
+        "meaning": "Perfect knowledge of truth is inseparable from union with truth."
+      },
+      "bn": {
+        "quote": "যে ব্রহ্মকে জানে, সে নিজেই ব্রহ্ম হয়ে যায়।",
+        "meaning": "জ্ঞানের চূড়ান্ত পরিণতিই পরমাত্মার সাথে একত্ব।"
+      }
+    },
+
+    {
+      "id": 45,
+      "category": "Upanishads",
+      "source": "Mundaka Upanishad 3.1.6",
+      "original": "Satyameva jayate",
+      "en": {
+        "quote": "Truth alone triumphs.",
+        "meaning": "No matter how long it takes, truth always prevails over falsehood."
+      },
+      "bn": {
+        "quote": "সত্যমেব জয়তে।",
+        "meaning": "একমাত্র সত্যেরই জয় হয় — মিথ্যার জয় ক্ষণিক।"
+      }
+    },
+
+    {
+      "id": 46,
+      "category": "Upanishads",
+      "source": "Chandogya Upanishad 6.2.1",
+      "original": "Sad eva saumyedam agra asid ekam evadvitiyam",
+      "en": {
+        "quote": "In the beginning there was Existence alone — One only, without a second.",
+        "meaning": "Before creation, only pure being existed — undivided and whole."
+      },
+      "bn": {
+        "quote": "শুরুতে শুধু সত্তা ছিল — একটিই, দ্বিতীয় কেউ ছিল না।",
+        "meaning": "সৃষ্টির আগে একমাত্র পরম সত্তার অস্তিত্ব ছিল।"
+      }
+    },
+
+    {
+      "id": 47,
+      "category": "Rig Veda",
+      "source": "Rig Veda 1.164.46",
+      "original": "Ekam sat vipra bahudha vadanti",
+      "en": {
+        "quote": "Truth is one, sages call it by various names.",
+        "meaning": "All paths and religions point to the same universal truth."
+      },
+      "bn": {
+        "quote": "একং সৎ বিপ্রা বহুধা বদন্তি।",
+        "meaning": "সত্য একটাই — জ্ঞানীরা তাকে বিভিন্ন নামে ডাকেন।"
+      }
+    },
+
+    {
+      "id": 48,
+      "category": "Rig Veda",
+      "source": "Rig Veda 1.89.1",
+      "original": "A no bhadra kratavo yantu visvato",
+      "en": {
+        "quote": "Let noble thoughts come to us from every side.",
+        "meaning": "Be open to wisdom regardless of where it comes from."
+      },
+      "bn": {
+        "quote": "আ নো ভদ্রা ক্রতবো যন্তু বিশ্বতঃ।",
+        "meaning": "চারদিক থেকে মহৎ চিন্তা আমাদের কাছে আসুক।"
+      }
+    },
+
+    {
+      "id": 49,
+      "category": "Rig Veda",
+      "source": "Rig Veda 10.191.2",
+      "original": "Samani va akutih samana hrdayani vah",
+      "en": {
+        "quote": "May we be united in heart, united in speech, united in mind.",
+        "meaning": "Harmony in thought, word, and deed builds a strong community."
+      },
+      "bn": {
+        "quote": "সমানী ব আকূতিঃ সমানা হৃদয়ানি বঃ।",
+        "meaning": "আমাদের হৃদয় এক হোক, বাণী এক হোক, মন এক হোক।"
+      }
+    },
+
+    {
+      "id": 50,
+      "category": "Rig Veda",
+      "source": "Rig Veda 1.125.6",
+      "original": "",
+      "en": {
+        "quote": "The generous person who helps those in need attains glory and obtains treasures.",
+        "meaning": "Generosity is the path to both honor and abundance."
+      },
+      "bn": {
+        "quote": "যে উদার মানুষ প্রয়োজনগ্রস্তকে সাহায্য করে, সে যশ ও সম্পদ লাভ করে।",
+        "meaning": "পরোপকারই সত্যিকার সম্পদ অর্জনের পথ।"
+      }
+    },
+
+    {
+      "id": 51,
+      "category": "Rig Veda",
+      "source": "Rig Veda",
+      "original": "Sarve bhavantu sukhinah sarve santu niramayah",
+      "en": {
+        "quote": "May all be happy, may all be free from disease. May all see what is auspicious; may none suffer.",
+        "meaning": "The universal prayer for the well-being of every living being."
+      },
+      "bn": {
+        "quote": "সর্বে ভবন্তু সুখিনঃ সর্বে সন্তু নিরাময়াঃ।",
+        "meaning": "সবাই সুখী হোক, সবাই রোগমুক্ত হোক, কেউ দুঃখ না পাক।"
+      }
+    },
+
+    {
+      "id": 52,
+      "category": "Rig Veda",
+      "source": "Rig Veda 1.164.46",
+      "original": "Ekam sat",
+      "en": {
+        "quote": "God is One, the wise call it by many names.",
+        "meaning": "Behind all religious names and forms lies a single universal truth."
+      },
+      "bn": {
+        "quote": "ঈশ্বর এক — জ্ঞানীরা তাঁকে বিভিন্ন নামে ডাকেন।",
+        "meaning": "সব ধর্মের মূলে একই সত্য।"
+      }
+    },
+
+    {
+      "id": 53,
+      "category": "Rig Veda",
+      "source": "Rig Veda 10.191.2",
+      "original": "Sam gacchadhvam sam vadadhvam",
+      "en": {
+        "quote": "Move together, speak together, know your minds to be functioning together.",
+        "meaning": "Unity of purpose is the foundation of a thriving people."
+      },
+      "bn": {
+        "quote": "একসাথে চলো, একসাথে কথা বলো, তোমাদের মন একই লক্ষ্যে কাজ করুক।",
+        "meaning": "ঐক্যই শক্তি।"
+      }
+    },
+
+    {
+      "id": 54,
+      "category": "Rig Veda",
+      "source": "Rig Veda",
+      "original": "",
+      "en": {
+        "quote": "Like the sun, the truth cannot be concealed.",
+        "meaning": "Truth always shines through, no matter how deeply it is hidden."
+      },
+      "bn": {
+        "quote": "সূর্যের মতো সত্যকেও কখনো আড়াল করা যায় না।",
+        "meaning": "সত্য সর্বদা প্রকাশ পায়।"
+      }
+    },
+
+    {
+      "id": 55,
+      "category": "Rig Veda",
+      "source": "Rig Veda 10.117.3",
+      "original": "",
+      "en": {
+        "quote": "The one who helps a deserving person achieves both this world and the next.",
+        "meaning": "Righteous giving blesses both this life and the afterlife."
+      },
+      "bn": {
+        "quote": "যোগ্য মানুষকে সাহায্য করে সে এই জীবনে এবং পরকালে উভয়েই সফল হয়।",
+        "meaning": "সৎ দান-ধর্ম ইহলোক ও পরলোক উভয়ই সুন্দর করে।"
+      }
+    },
+
+    {
+      "id": 56,
+      "category": "Rig Veda",
+      "source": "Rig Veda 1.189.1",
+      "original": "Agne naya supatha raye asman",
+      "en": {
+        "quote": "O Agni, lead us on the right path to prosperity, O God who knows all the works.",
+        "meaning": "A prayer for divine guidance on the righteous path of life."
+      },
+      "bn": {
+        "quote": "হে অগ্নি, হে সর্বজ্ঞ ঈশ্বর, আমাদের সমৃদ্ধির সঠিক পথে নিয়ে চলো।",
+        "meaning": "ঐশ্বরিক পথনির্দেশনার প্রার্থনা।"
+      }
+    },
+
+    {
+      "id": 57,
+      "category": "Rig Veda",
+      "source": "Rig Veda",
+      "original": "Uttishthata jagrata",
+      "en": {
+        "quote": "Arise! Awake! Seek out the great ones and learn.",
+        "meaning": "Actively pursue knowledge from those wiser than yourself."
+      },
+      "bn": {
+        "quote": "জাগো, উঠে দাঁড়াও! মহৎ জ্ঞানীদের কাছে যাও এবং শেখো।",
+        "meaning": "জ্ঞান অর্জনের জন্য সক্রিয় হওয়াই বৈদিক আদেশ।"
+      }
+    },
+
+    {
+      "id": 58,
+      "category": "Yajur Veda",
+      "source": "Yajur Veda",
+      "original": "",
+      "en": {
+        "quote": "Truth cannot be suppressed and always is the ultimate victor.",
+        "meaning": "No power can permanently silence the truth."
+      },
+      "bn": {
+        "quote": "সত্যকে দমন করা যায় না এবং সত্যই সর্বদা চূড়ান্ত বিজয়ী।",
+        "meaning": "সত্যের শক্তি অপরাজেয়।"
+      }
+    },
+
+    {
+      "id": 59,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda",
+      "original": "",
+      "en": {
+        "quote": "O mind, be strong. What is destined to happen will happen. Do your duty with devotion.",
+        "meaning": "Accept destiny with courage and perform your duty faithfully."
+      },
+      "bn": {
+        "quote": "হে মন, দৃঢ় হও। যা ঘটার তা ঘটবেই। ভক্তি সহকারে তোমার কর্তব্য পালন করো।",
+        "meaning": "নিয়তিকে মেনে নিয়ে কর্তব্যে মনোযোগ দাও।"
+      }
+    },
+
+    {
+      "id": 60,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda",
+      "original": "",
+      "en": {
+        "quote": "Do not be led by others; awaken your own mind, amass your own experience, and decide for yourself.",
+        "meaning": "Independent thought and personal experience are the truest guides."
+      },
+      "bn": {
+        "quote": "অন্যের দ্বারা পরিচালিত হয়ো না; নিজের মন জাগাও, নিজের অভিজ্ঞতা সঞ্চয় করো এবং নিজেই সিদ্ধান্ত নাও।",
+        "meaning": "স্বাধীন চিন্তাই মানুষের শ্রেষ্ঠ গুণ।"
+      }
+    },
+
+    {
+      "id": 61,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda 12.1.1",
+      "original": "Mata bhumih putro aham prithivyah",
+      "en": {
+        "quote": "Earth is our Mother; protect her, for she sustains all life.",
+        "meaning": "Reverence for nature is a sacred duty, not a choice."
+      },
+      "bn": {
+        "quote": "পৃথিবী আমাদের মাতা — তাঁকে রক্ষা করো, কারণ তিনিই সকল জীবনকে ধারণ করেন।",
+        "meaning": "প্রকৃতির সংরক্ষণই সভ্যতার রক্ষা।"
+      }
+    },
+
+    {
+      "id": 62,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda 6.64.2",
+      "original": "Sammanasah savratasah samana hrdayani vah",
+      "en": {
+        "quote": "United your resolve, united your hearts, may your spirits be at one.",
+        "meaning": "Collective unity in purpose, heart, and spirit is unstoppable."
+      },
+      "bn": {
+        "quote": "তোমাদের সংকল্প এক হোক, হৃদয় এক হোক, আত্মা এক হোক।",
+        "meaning": "একতাই জাতির শক্তি।"
+      }
+    },
+
+    {
+      "id": 63,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda",
+      "original": "",
+      "en": {
+        "quote": "We must live in harmony with the laws of nature. This alone is true wisdom.",
+        "meaning": "Aligning with nature's laws is the foundation of all wisdom."
+      },
+      "bn": {
+        "quote": "আমাদের প্রকৃতির নিয়মের সাথে সামঞ্জস্য রেখে জীবন যাপন করতে হবে। এটাই প্রকৃত জ্ঞান।",
+        "meaning": "প্রকৃতির সাথে মিলে চলাই সত্যিকারের প্রজ্ঞা।"
+      }
+    },
+
+    {
+      "id": 64,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda",
+      "original": "",
+      "en": {
+        "quote": "Sow the seeds of righteousness and you shall harvest a life of peace.",
+        "meaning": "A righteous life always yields the fruits of lasting peace."
+      },
+      "bn": {
+        "quote": "ধার্মিকতার বীজ বপন করো — তুমি শান্তিময় জীবন ফসল হিসেবে পাবে।",
+        "meaning": "সৎ জীবনের ফলই শান্তি।"
+      }
+    },
+
+    {
+      "id": 65,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda",
+      "original": "",
+      "en": {
+        "quote": "He who knows himself knows the universe.",
+        "meaning": "Self-knowledge is the key to understanding all of existence."
+      },
+      "bn": {
+        "quote": "যে নিজেকে জানে, সে মহাবিশ্বকে জানে।",
+        "meaning": "আত্মজ্ঞানই বিশ্বজ্ঞানের চাবিকাঠি।"
+      }
+    },
+
+    {
+      "id": 66,
+      "category": "Atharva Veda",
+      "source": "Atharva Veda",
+      "original": "",
+      "en": {
+        "quote": "A man who honors food honors the divine.",
+        "meaning": "Every meal is an act of gratitude to the forces that sustain life."
+      },
+      "bn": {
+        "quote": "যে মানুষ অন্নকে সম্মান করে, সে ঈশ্বরকেই সম্মান করে।",
+        "meaning": "অন্নব্রহ্ম — খাদ্যেই ঈশ্বরের প্রকাশ।"
+      }
+    },
+
+    {
+      "id": 67,
+      "category": "Ramayana",
+      "source": "Valmiki Ramayana",
+      "original": "Janani janmabhoomischa swargadapi gariyasi",
+      "en": {
+        "quote": "Mother and motherland are superior even to heaven.",
+        "meaning": "No place compares to one's homeland, no bond surpasses that with one's mother."
+      },
+      "bn": {
+        "quote": "জননী জন্মভূমিশ্চ স্বর্গাদপি গরীয়সী।",
+        "meaning": "জননী এবং জন্মভূমি স্বর্গের চেয়েও শ্রেষ্ঠ।"
+      }
+    },
+
+    {
+      "id": 68,
+      "category": "Ramayana",
+      "source": "Valmiki Ramayana",
+      "original": "",
+      "en": {
+        "quote": "Truth is the foundation of all righteousness.",
+        "meaning": "Without truth, no form of justice or virtue can stand."
+      },
+      "bn": {
+        "quote": "সত্যই সকল ধর্মের ভিত্তি।",
+        "meaning": "সত্য ছাড়া কোনো ন্যায়ই টিকে থাকতে পারে না।"
+      }
+    },
+
+    {
+      "id": 69,
+      "category": "Ramayana",
+      "source": "Valmiki Ramayana",
+      "original": "",
+      "en": {
+        "quote": "Patience is the greatest weapon of the righteous.",
+        "meaning": "The enduring spirit of the patient eventually overcomes all obstacles."
+      },
+      "bn": {
+        "quote": "ধৈর্য হলো ধার্মিকের সবচেয়ে বড় অস্ত্র।",
+        "meaning": "সহনশীলতাই শেষ পর্যন্ত জয়ী হয়।"
+      }
+    },
+
+    {
+      "id": 70,
+      "category": "Ramayana",
+      "source": "Valmiki Ramayana",
+      "original": "",
+      "en": {
+        "quote": "Words once spoken cannot be taken back. Guard your tongue as you guard your sword.",
+        "meaning": "Speak with care — words wound more deeply than any blade."
+      },
+      "bn": {
+        "quote": "একবার বলা কথা ফেরানো যায় না। তরবারির মতো নিজের জিভও সংযত রাখো।",
+        "meaning": "বাক্য সংযমই বুদ্ধিমানের লক্ষণ।"
+      }
+    },
+
+    {
+      "id": 71,
+      "category": "Mahabharata",
+      "source": "Mahabharata — Wisdom of Vidura",
+      "original": "",
+      "en": {
+        "quote": "We are kept from our goal not by obstacles, but by a clear path to a lesser goal.",
+        "meaning": "The greatest danger is settling for less when you are capable of more."
+      },
+      "bn": {
+        "quote": "আমরা বাধার কারণে লক্ষ্যে পৌঁছাতে পারি না — বরং ছোট লক্ষ্যের সুস্পষ্ট পথের কারণে।",
+        "meaning": "বড় স্বপ্নে অবিচল থাকাই সাফল্যের চাবিকাঠি।"
+      }
+    },
+
+    {
+      "id": 72,
+      "category": "Mahabharata",
+      "source": "Mahabharata",
+      "original": "",
+      "en": {
+        "quote": "There is no higher virtue than compassion, and no higher vice than cruelty.",
+        "meaning": "Kindness is the pinnacle of human virtue; cruelty is its darkest opposite."
+      },
+      "bn": {
+        "quote": "দয়ার চেয়ে বড় কোনো পুণ্য নেই, এবং নিষ্ঠুরতার চেয়ে বড় কোনো পাপ নেই।",
+        "meaning": "করুণাই মানবতার সর্বোচ্চ প্রকাশ।"
+      }
+    },
+
+    {
+      "id": 73,
+      "category": "Mahabharata",
+      "source": "Mahabharata",
+      "original": "",
+      "en": {
+        "quote": "Time is the root of all things. Respect it, for it waits for no one.",
+        "meaning": "Time is the most precious resource — once lost, it cannot be reclaimed."
+      },
+      "bn": {
+        "quote": "সময়ই সকল বস্তুর মূল। সময়কে সম্মান করো — কারণ সে কারো জন্য অপেক্ষা করে না।",
+        "meaning": "সময়ের মূল্য না বুঝলে জীবন বিফল।"
+      }
+    },
+
+    {
+      "id": 74,
+      "category": "Mahabharata",
+      "source": "Mahabharata, Udyoga Parva",
+      "original": "",
+      "en": {
+        "quote": "Even the mightiest warrior cannot conquer his own ego without wisdom.",
+        "meaning": "The conquest of the inner self is harder than any outer battle."
+      },
+      "bn": {
+        "quote": "সবচেয়ে শক্তিশালী যোদ্ধাও জ্ঞান ছাড়া নিজের অহংকার জয় করতে পারে না।",
+        "meaning": "অহংকার জয়ই সবচেয়ে কঠিন যুদ্ধ।"
+      }
+    },
+
+    {
+      "id": 75,
+      "category": "Mahabharata",
+      "source": "Mahabharata, Shanti Parva",
+      "original": "",
+      "en": {
+        "quote": "He who has abandoned dharma has abandoned himself.",
+        "meaning": "Righteousness is inseparable from one's true identity."
+      },
+      "bn": {
+        "quote": "যে ধর্ম ত্যাগ করেছে, সে নিজেকেই ত্যাগ করেছে।",
+        "meaning": "ধর্মই মানুষের সত্যিকার পরিচয়।"
+      }
+    },
+
+    {
+      "id": 76,
+      "category": "Mahabharata",
+      "source": "Mahabharata",
+      "original": "",
+      "en": {
+        "quote": "A true friend is one who walks in when the rest of the world walks out.",
+        "meaning": "Genuine friendship is proven only in times of adversity."
+      },
+      "bn": {
+        "quote": "প্রকৃত বন্ধু সেই যে দুঃসময়ে পাশে থাকে, যখন বাকি পৃথিবী সরে যায়।",
+        "meaning": "সত্যিকার বন্ধুত্ব কষ্টের সময়েই পরীক্ষিত হয়।"
+      }
+    },
+
+    {
+      "id": 77,
+      "category": "Mahabharata",
+      "source": "Mahabharata, Vidura Niti",
+      "original": "",
+      "en": {
+        "quote": "He who is wise in word but coward in deed teaches nothing but hypocrisy.",
+        "meaning": "Character is judged by actions, not by eloquent words."
+      },
+      "bn": {
+        "quote": "যে কথায় জ্ঞানী কিন্তু কাজে কাপুরুষ, সে শুধু ভণ্ডামিই শেখায়।",
+        "meaning": "কথা ও কাজের মিল না থাকলে চরিত্র নষ্ট হয়।"
+      }
+    },
+
+    {
+      "id": 78,
+      "category": "Mahabharata",
+      "source": "Mahabharata",
+      "original": "",
+      "en": {
+        "quote": "The world does not pardon a weakling. Strength and dignity must be earned.",
+        "meaning": "The world respects strength; weakness invites exploitation."
+      },
+      "bn": {
+        "quote": "দুর্বলকে পৃথিবী ক্ষমা করে না। শক্তি ও মর্যাদা অর্জন করে নিতে হয়।",
+        "meaning": "শক্তিই পৃথিবীর ভাষা।"
+      }
+    },
+
+    {
+      "id": 79,
+      "category": "Mahabharata",
+      "source": "Mahabharata",
+      "original": "",
+      "en": {
+        "quote": "Even a drop of poison ruins the whole pot of milk.",
+        "meaning": "One wrong act can undo a lifetime of good reputation."
+      },
+      "bn": {
+        "quote": "এক ফোঁটা বিষও পুরো দুধের পাত্র নষ্ট করে দেয়।",
+        "meaning": "একটি মন্দ কাজ সমস্ত সুনামকে ধ্বংস করতে পারে।"
+      }
+    },
+
+    {
+      "id": 80,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Knowledge is the ultimate wealth; it cannot be stolen, nor does it decrease when shared.",
+        "meaning": "Unlike material wealth, knowledge multiplies when given away."
+      },
+      "bn": {
+        "quote": "জ্ঞানই সর্বোচ্চ সম্পদ — এটা চুরি করা যায় না, এবং ভাগ করে দিলেও কমে না।",
+        "meaning": "জ্ঞানই একমাত্র সম্পদ যা বিতরণে বাড়ে।"
+      }
+    },
+
+    {
+      "id": 81,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Even if a snake is not poisonous, it should pretend to be venomous.",
+        "meaning": "Never show weakness; the world exploits those who appear defenseless."
+      },
+      "bn": {
+        "quote": "সাপ বিষাক্ত না হলেও তাকে বিষাক্ত বলে ভান করতে হয়।",
+        "meaning": "দুর্বলতা দেখালে পৃথিবী সুযোগ নেয়; শক্তিশালী দেখানো বুদ্ধিমানের কাজ।"
+      }
+    },
+
+    {
+      "id": 82,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "A man is great by deeds, not by birth.",
+        "meaning": "Your actions define you, not the family you were born into."
+      },
+      "bn": {
+        "quote": "মানুষ কর্মে মহান হয়, জন্মে নয়।",
+        "meaning": "বংশ নয়, কর্মই প্রকৃত পরিচয় তৈরি করে।"
+      }
+    },
+
+    {
+      "id": 83,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Education is the best friend. An educated person is respected everywhere.",
+        "meaning": "Learning is the one companion that stays with you through every phase of life."
+      },
+      "bn": {
+        "quote": "শিক্ষাই সর্বোত্তম বন্ধু। শিক্ষিত মানুষ সর্বত্র সম্মান পায়।",
+        "meaning": "জ্ঞানই সবচেয়ে বিশ্বস্ত সঙ্গী।"
+      }
+    },
+
+    {
+      "id": 84,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Once you start working on something, don't be afraid of failure and don't abandon it.",
+        "meaning": "Persistence in the face of failure is the secret to all achievement."
+      },
+      "bn": {
+        "quote": "একবার কোনো কাজ শুরু করলে ব্যর্থতাকে ভয় পেও না এবং সেটা ছেড়ে দিও না।",
+        "meaning": "অধ্যবসায়ই সাফল্যের রহস্য।"
+      }
+    },
+
+    {
+      "id": 85,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Before you start some work, always ask: Why am I doing it, what might the results be, and will I be successful?",
+        "meaning": "Purposeful planning before action is the mark of a wise person."
+      },
+      "bn": {
+        "quote": "কোনো কাজ শুরু করার আগে সর্বদা নিজেকে জিজ্ঞেস করো: কেন করছি, ফল কী হতে পারে, এবং আমি কি সফল হব?",
+        "meaning": "পরিকল্পিত কর্মই সঠিক কর্ম।"
+      }
+    },
+
+    {
+      "id": 86,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "The biggest guru-mantra is: never share your secrets with anybody. It will destroy you.",
+        "meaning": "Protecting your plans and intentions is essential self-preservation."
+      },
+      "bn": {
+        "quote": "সবচেয়ে বড় গুরুমন্ত্র হলো: কখনো কাউকে তোমার গোপন কথা বলো না — এটা তোমাকে ধ্বংস করে দেবে।",
+        "meaning": "গোপনীয়তাই আত্মরক্ষার প্রথম শর্ত।"
+      }
+    },
+
+    {
+      "id": 87,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "There is some self-interest behind every friendship. There is no friendship without self-interests. This is a bitter truth.",
+        "meaning": "Understanding the nature of relationships is the beginning of wisdom."
+      },
+      "bn": {
+        "quote": "প্রতিটি বন্ধুত্বের পেছনে কিছু না কিছু স্বার্থ থাকে। স্বার্থহীন বন্ধুত্ব বলে কিছু নেই — এটা একটা তিক্ত সত্য।",
+        "meaning": "বাস্তব জীবনের কঠোর সত্য বোঝাই বুদ্ধিমত্তা।"
+      }
+    },
+
+    {
+      "id": 88,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "As soon as the fear approaches near, attack and destroy it.",
+        "meaning": "Confront your fears head-on rather than retreating from them."
+      },
+      "bn": {
+        "quote": "ভয় কাছে আসামাত্র সেটাকে আক্রমণ করো এবং ধ্বংস করো।",
+        "meaning": "ভয়কে এড়ানো নয়, মোকাবেলাই সাহসিকতা।"
+      }
+    },
+
+    {
+      "id": 89,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "The fragrance of flowers spreads only in the direction of the wind. But the goodness of a person spreads in all directions.",
+        "meaning": "True virtue needs no wind to carry it — it travels everywhere on its own."
+      },
+      "bn": {
+        "quote": "ফুলের সুগন্ধ শুধু বাতাসের দিকে ছড়ায়। কিন্তু একজন ভালো মানুষের সুনাম সব দিকেই ছড়িয়ে পড়ে।",
+        "meaning": "সুচরিত্রের প্রভাব সীমানা মানে না।"
+      }
+    },
+
+    {
+      "id": 90,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Books are as useful to a stupid person as a mirror is useful to a blind person.",
+        "meaning": "Knowledge has no value unless applied by a mind ready to use it."
+      },
+      "bn": {
+        "quote": "মূর্খের কাছে বইয়ের যতটুকু উপকারিতা, একজন অন্ধের কাছে আয়নার ততটুকুই উপকারিতা।",
+        "meaning": "জ্ঞান কাজে না লাগালে তা অর্থহীন।"
+      }
+    },
+
+    {
+      "id": 91,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Time perfects men as well as destroys them.",
+        "meaning": "How you use time determines whether it builds or breaks you."
+      },
+      "bn": {
+        "quote": "সময় মানুষকে পরিপূর্ণ করে, আবার ধ্বংসও করে।",
+        "meaning": "সময়ের সদ্ব্যবহারই জীবনের পার্থক্য তৈরি করে।"
+      }
+    },
+
+    {
+      "id": 92,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "A man is born alone and dies alone; and he experiences the good and bad consequences of his karma alone.",
+        "meaning": "Each person bears the full weight of their own actions, alone."
+      },
+      "bn": {
+        "quote": "মানুষ একা জন্মায় এবং একাই মরে; এবং সে তার কর্মের ভালো-মন্দ পরিণতিও একাই ভোগ করে।",
+        "meaning": "কর্মের ফল নিজেই বহন করতে হয়।"
+      }
+    },
+
+    {
+      "id": 93,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Wealth, a friend, a wife, and a kingdom may be regained; but this body when lost may never be acquired again.",
+        "meaning": "Health is the one asset that cannot be recovered once destroyed."
+      },
+      "bn": {
+        "quote": "সম্পদ, বন্ধু, স্ত্রী, রাজ্য — সব ফিরে পাওয়া সম্ভব; কিন্তু এই দেহ একবার হারালে আর পাওয়া যায় না।",
+        "meaning": "স্বাস্থ্যই সবচেয়ে বড় সম্পদ।"
+      }
+    },
+
+    {
+      "id": 94,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "There are three gems upon this earth: food, water, and pleasing words. Fools consider pieces of rocks as gems.",
+        "meaning": "Life's greatest treasures are simple — sustenance, water, and kindness."
+      },
+      "bn": {
+        "quote": "পৃথিবীতে তিনটি রত্ন আছে: খাদ্য, জল এবং মধুর বাণী। মূর্খরা পাথরের টুকরোকে রত্ন মনে করে।",
+        "meaning": "জীবনের আসল মূল্যবান জিনিস চেনাই প্রজ্ঞা।"
+      }
+    },
+
+    {
+      "id": 95,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "One who is in search of knowledge should give up the search of pleasure; one in search of pleasure should give up knowledge.",
+        "meaning": "The pursuit of wisdom and the pursuit of pleasure cannot coexist."
+      },
+      "bn": {
+        "quote": "যে জ্ঞান খোঁজে সে সুখের সন্ধান ছেড়ে দিক; যে সুখ খোঁজে সে জ্ঞানের সন্ধান ছেড়ে দিক।",
+        "meaning": "জ্ঞান ও ভোগের একসাথে চলা সম্ভব নয়।"
+      }
+    },
+
+    {
+      "id": 96,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Do not reveal what you have thought upon doing; keep it secret and be determined to carry it into execution.",
+        "meaning": "Act in silence; announce through results, not promises."
+      },
+      "bn": {
+        "quote": "তুমি কী করতে চাইছ তা প্রকাশ করো না; বিজ্ঞ পরামর্শে তা গোপন রাখো এবং তা সম্পন্ন করার সংকল্প ধরে রাখো।",
+        "meaning": "পরিকল্পনা প্রকাশ না করে নীরবে বাস্তবায়ন করো।"
+      }
+    },
+
+    {
+      "id": 97,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Whatever a man intends to do should be done with whole-hearted effort — learn this from the lion.",
+        "meaning": "Give everything you do your total, undivided commitment."
+      },
+      "bn": {
+        "quote": "সিংহের কাছ থেকে যে একটি শ্রেষ্ঠ গুণ শেখার আছে তা হলো: মানুষ যা করতে চায় তা পূর্ণ মনোযোগ দিয়ে করতে হয়।",
+        "meaning": "পরিপূর্ণ মনোযোগেই সাফল্য আসে।"
+      }
+    },
+
+    {
+      "id": 98,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Never settle for anything less than what you deserve. It is not pride, it is self-respect.",
+        "meaning": "Knowing your worth and demanding it is a sign of dignity, not arrogance."
+      },
+      "bn": {
+        "quote": "নিজের প্রাপ্যের চেয়ে কম কখনো মেনে নিও না। এটা অহংকার নয়, এটা আত্মসম্মান।",
+        "meaning": "আত্মসম্মানবোধই ব্যক্তিত্বের ভিত্তি।"
+      }
+    },
+
+    {
+      "id": 99,
+      "category": "Chanakya Neeti",
+      "source": "Chanakya Neeti",
+      "original": "",
+      "en": {
+        "quote": "Test a servant in duty, a relative in difficulty, a friend in adversity, and a wife in misfortune.",
+        "meaning": "Hard times reveal a person's true character like nothing else can."
+      },
+      "bn": {
+        "quote": "সেবককে কাজের সময়ে, আত্মীয়কে বিপদে, বন্ধুকে দুর্দশায় এবং স্ত্রীকে দুর্ভাগ্যে পরীক্ষা করো।",
+        "meaning": "কঠিন সময়েই মানুষের আসল চেহারা বেরিয়ে আসে।"
+      }
+    },
+
+    {
+      "id": 100,
+      "category": "Yoga Sutras",
+      "source": "Patanjali Yoga Sutras 1.2",
+      "original": "Yogas chitta vritti nirodhah",
+      "en": {
+        "quote": "Yoga is the cessation of the fluctuations of the mind.",
+        "meaning": "Stilling the restless mind is the core purpose of all yogic practice."
+      },
+      "bn": {
+        "quote": "যোগশ্চিত্তবৃত্তিনিরোধঃ।",
+        "meaning": "যোগ হলো মনের চঞ্চলতার নিরোধ — মনকে স্থির করাই যোগের সারকথা।"
+      }
+    },
+
+    {
+      "id": 101,
+      "category": "Yoga Sutras",
+      "source": "Patanjali Yoga Sutras 2.46",
+      "original": "Sthira sukham asanam",
+      "en": {
+        "quote": "Posture should be steady and comfortable.",
+        "meaning": "Balance of effort and ease is the foundation of all practice."
+      },
+      "bn": {
+        "quote": "স্থিরসুখম্ আসনম্।",
+        "meaning": "আসন হওয়া উচিত স্থির ও সুখকর — শরীর ও মনের সামঞ্জস্যই যোগের শুরু।"
+      }
+    },
+
+    {
+      "id": 102,
+      "category": "Vedic Wisdom",
+      "source": "Mahabharata",
+      "original": "Ahimsa paramo dharma",
+      "en": {
+        "quote": "Non-violence is the highest religion.",
+        "meaning": "Causing no harm to any being is the most sacred of all principles."
+      },
+      "bn": {
+        "quote": "অহিংসা পরমো ধর্মঃ।",
+        "meaning": "অহিংসাই সর্বোচ্চ ধর্ম — হিংসা যেকোনো ধর্মের বিরুদ্ধে।"
+      }
+    },
+
+    {
+      "id": 103,
+      "category": "Vedic Wisdom",
+      "source": "Maha Upanishad 6.71",
+      "original": "Vasudhaiva kutumbakam",
+      "en": {
+        "quote": "The whole world is one family.",
+        "meaning": "Every human being is kin — no boundary separates us at the deepest level."
+      },
+      "bn": {
+        "quote": "বসুধৈব কুটুম্বকম্।",
+        "meaning": "সমগ্র পৃথিবী একটি পরিবার — সকল মানুষ আপনজন।"
+      }
+    },
+
+    {
+      "id": 104,
+      "category": "Vedic Wisdom",
+      "source": "Ancient Vedic Prayer",
+      "original": "Sarve bhavantu sukhinah sarve santu niramayah",
+      "en": {
+        "quote": "May all beings be happy; may all beings be free from suffering.",
+        "meaning": "The highest aspiration: universal happiness and freedom from pain."
+      },
+      "bn": {
+        "quote": "সর্বে ভবন্তু সুখিনঃ সর্বে সন্তু নিরাময়াঃ।",
+        "meaning": "সকল প্রাণী সুখী হোক, সকলে রোগমুক্ত হোক — এটাই বৈদিক প্রার্থনার সারকথা।"
+      }
+    },
+
+    {
+      "id": 105,
+      "category": "Vedic Wisdom",
+      "source": "Ancient Sanskrit Prayer",
+      "original": "Lokah samastah sukhino bhavantu",
+      "en": {
+        "quote": "May all beings everywhere be happy and free.",
+        "meaning": "A boundless prayer for the liberation and joy of every living creature."
+      },
+      "bn": {
+        "quote": "লোকাঃ সমস্তাঃ সুখিনো ভবন্তু।",
+        "meaning": "পৃথিবীর সকল প্রাণী সুখী ও মুক্ত হোক — সার্বজনীন কল্যাণের প্রার্থনা।"
+      }
+    },
+
+    {
+      "id": 106,
+      "category": "Vedic Wisdom",
+      "source": "Ancient Vedic Thought",
+      "original": "",
+      "en": {
+        "quote": "What you think, you become. What you feel, you attract. What you imagine, you create.",
+        "meaning": "The mind is the architect of your entire reality."
+      },
+      "bn": {
+        "quote": "তুমি যা ভাবো তা হয়ে ওঠো। যা অনুভব করো তা আকর্ষণ করো। যা কল্পনা করো তা সৃষ্টি হয়।",
+        "meaning": "মনের শক্তিই বাস্তবতা নির্মাণ করে।"
+      }
+    },
+
+    {
+      "id": 107,
+      "category": "Vedic Wisdom",
+      "source": "Ancient Vedic Wisdom",
+      "original": "",
+      "en": {
+        "quote": "He who knows others is wise. He who knows himself is enlightened.",
+        "meaning": "Self-knowledge surpasses all other forms of knowledge."
+      },
+      "bn": {
+        "quote": "যে অন্যকে জানে সে জ্ঞানী। যে নিজেকে জানে সে আলোকিত।",
+        "meaning": "আত্মজ্ঞানই সর্বোচ্চ জ্ঞান।"
+      }
+    },
+
+    {
+      "id": 108,
+      "category": "Vedic Wisdom",
+      "source": "Vedic Peace Mantra",
+      "original": "Om shanti shanti shanti",
+      "en": {
+        "quote": "Peace in body, peace in mind, peace in spirit.",
+        "meaning": "True peace exists when body, mind, and soul are all in harmony."
+      },
+      "bn": {
+        "quote": "ওম শান্তি শান্তি শান্তি।",
+        "meaning": "দেহে শান্তি, মনে শান্তি, আত্মায় শান্তি — ত্রিস্তরীয় শান্তির প্রার্থনা।"
+      }
+    },
+
+    {
+      "id": 109,
+      "category": "Vedic Wisdom",
+      "source": "Mundaka Upanishad",
+      "original": "Tameva bhantam anubhati sarvam tasya bhasa sarvam idam vibhati",
+      "en": {
+        "quote": "By His light alone does everything shine; by His brilliance all this is illumined.",
+        "meaning": "All light — of sun, moon, and stars — is a reflection of the divine light."
+      },
+      "bn": {
+        "quote": "তমেব ভান্তম অনুভাতি সর্বম্, তস্য ভাসা সর্বম্ ইদং বিভাতি।",
+        "meaning": "তাঁর আলোতেই সব কিছু আলোকিত; তাঁর দ্যুতিতেই এই সমগ্র বিশ্ব উদ্ভাসিত।"
+      }
+    },
+
+    {
+      "id": 110,
+      "category": "Vedic Wisdom",
+      "source": "Vedic Philosophy",
+      "original": "",
+      "en": {
+        "quote": "The aim of life is to live, and to live means to be aware — joyously, serenely, divinely aware.",
+        "meaning": "True living is conscious, grateful, and rooted in the divine."
+      },
+      "bn": {
+        "quote": "জীবনের লক্ষ্য হলো বেঁচে থাকা, আর বেঁচে থাকা মানে সচেতন হওয়া — আনন্দের সাথে, শান্তির সাথে, ঐশ্বরিকভাবে সচেতন।",
+        "meaning": "সত্যিকার জীবন হলো সচেতন, কৃতজ্ঞ ও ঈশ্বরমুখী জীবন।"
+      }
+    }
+
+  ]
+}
