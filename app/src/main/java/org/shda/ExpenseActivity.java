@@ -1,12 +1,19 @@
 package org.shda;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -15,7 +22,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 
@@ -24,9 +34,20 @@ public class ExpenseActivity extends AppCompatActivity {
     private SessionManager session;
     private LinearLayout expensesContainer;
     private TextView tvTotalExpense;
+    private EditText inputSearch;
+    private Spinner spinnerSort;
+
     private float totalExpenseValue = 0f;
-    private List<Expense> allExpenses = new ArrayList<>();
     private boolean isAdminOrManager;
+
+    // Auto-complete lists
+    private List<String> memberSearchList = new ArrayList<>();
+    private List<String> eventSearchList = new ArrayList<>();
+
+    // CRM Grouping Data Models
+    private HashMap<String, GroupedExpense> groupedMap = new HashMap<>();
+    private List<GroupedExpense> displayList = new ArrayList<>();
+    private String currentSort = "Recent First";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,11 +58,20 @@ public class ExpenseActivity extends AppCompatActivity {
         session = new SessionManager(this);
         expensesContainer = findViewById(R.id.expensesContainer);
         tvTotalExpense = findViewById(R.id.tvTotalExpense);
+        inputSearch = findViewById(R.id.inputSearch);
+        spinnerSort = findViewById(R.id.spinnerSort);
 
         if (session.getCommunityId() == null) { finish(); return; }
 
         isAdminOrManager = "ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole());
 
+        setupRBAC();
+        setupSearchAndSort();
+        fetchAutoCompleteData();
+        loadExpenses();
+    }
+
+    private void setupRBAC() {
         View btnAddExpense = findViewById(R.id.btnAddExpense);
         if (btnAddExpense != null) {
             if (!isAdminOrManager) {
@@ -51,15 +81,52 @@ public class ExpenseActivity extends AppCompatActivity {
             }
         }
         
-        View btnGenerateReport = findViewById(R.id.btnGenerateReport);
-        if (btnGenerateReport != null) {
-            btnGenerateReport.setOnClickListener(v -> {
-                String range = "All Time Utsav Expenses";
-                PdfReportService.generateExpenseReport(this, session.getCommunityName(), allExpenses, totalExpenseValue, range);
-            });
-        }
+        findViewById(R.id.btnGenerateReport).setOnClickListener(v -> triggerMasterReportGeneration());
+    }
 
-        loadExpenses();
+    private void setupSearchAndSort() {
+        String[] sortOptions = {"Recent First", "Oldest First", "Highest Cost", "Name (A-Z)"};
+        ArrayAdapter<String> sortAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, sortOptions);
+        spinnerSort.setAdapter(sortAdapter);
+
+        spinnerSort.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                currentSort = sortOptions[position]; applyFilterAndSort();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        inputSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { applyFilterAndSort(); }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void fetchAutoCompleteData() {
+        // Fetch Members for "Person Involved"
+        db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                memberSearchList.clear();
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Member m = data.getValue(Member.class);
+                    if (m != null) memberSearchList.add(m.name + " (" + m.id + ")");
+                }
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+
+        // Fetch past Events to suggest Puja Names
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                eventSearchList.clear();
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    String evtName = data.child("eventName").getValue(String.class);
+                    if (evtName != null && !eventSearchList.contains(evtName)) eventSearchList.add(evtName);
+                }
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
     private void loadExpenses() {
@@ -67,49 +134,78 @@ public class ExpenseActivity extends AppCompatActivity {
           .addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                expensesContainer.removeAllViews();
-                allExpenses.clear();
-                totalExpenseValue = 0f;
-                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                groupedMap.clear(); totalExpenseValue = 0f;
 
                 for (DataSnapshot data : snapshot.getChildren()) {
                     try {
                         Expense exp = data.getValue(Expense.class);
-                        if (exp != null) {
-                            allExpenses.add(exp);
+                        if (exp != null && exp.eventName != null) {
                             totalExpenseValue += exp.amount;
+                            
+                            String groupKey = exp.eventName.toLowerCase().trim();
 
-                            com.google.android.material.card.MaterialCardView card = new com.google.android.material.card.MaterialCardView(ExpenseActivity.this);
-                            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-                            params.setMargins(0, 0, 0, 24); card.setLayoutParams(params);
-                            card.setCardElevation(4f); card.setRadius(16f); card.setCardBackgroundColor(android.graphics.Color.parseColor("#FFF3E0"));
-
-                            LinearLayout layout = new LinearLayout(ExpenseActivity.this);
-                            layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(40, 40, 40, 40);
-
-                            TextView tvEvent = new TextView(ExpenseActivity.this); tvEvent.setText("🪔 Utsav: " + exp.eventName); tvEvent.setTextSize(18f); tvEvent.setTypeface(null, android.graphics.Typeface.BOLD); tvEvent.setTextColor(android.graphics.Color.parseColor("#E65100"));
-                            TextView tvItem = new TextView(ExpenseActivity.this); tvItem.setText("Seva/Item: " + exp.itemName); tvItem.setTextSize(16f); tvItem.setTextColor(android.graphics.Color.parseColor("#424242"));
-                            TextView tvAmt = new TextView(ExpenseActivity.this); tvAmt.setText("Amount: ৳" + exp.amount); tvAmt.setTextSize(16f); tvAmt.setTypeface(null, android.graphics.Typeface.BOLD); tvAmt.setTextColor(android.graphics.Color.parseColor("#D32F2F"));
-                            TextView tvPerson = new TextView(ExpenseActivity.this); tvPerson.setText("Assigned to: " + exp.involvedPerson); tvPerson.setTextSize(14f);
-                            TextView tvLog = new TextView(ExpenseActivity.this); tvLog.setText("Logged by: " + exp.loggedBy + " on " + sdf.format(new Date(exp.timestamp))); tvLog.setTextSize(12f); tvLog.setTextColor(android.graphics.Color.GRAY);
-
-                            layout.addView(tvEvent); layout.addView(tvItem); layout.addView(tvAmt); layout.addView(tvPerson); layout.addView(tvLog);
-                            card.addView(layout);
-
-                            if (isAdminOrManager) {
-                                card.setOnLongClickListener(v -> {
-                                    showEditDeleteDialog(exp);
-                                    return true;
-                                });
+                            if (!groupedMap.containsKey(groupKey)) {
+                                GroupedExpense ge = new GroupedExpense();
+                                ge.eventDisplayName = exp.eventName;
+                                groupedMap.put(groupKey, ge);
                             }
-                            expensesContainer.addView(card, 0); 
+
+                            GroupedExpense ge = groupedMap.get(groupKey);
+                            ge.totalSpent += exp.amount;
+                            if (exp.timestamp > ge.lastUpdated) ge.lastUpdated = exp.timestamp;
+                            ge.history.add(exp);
                         }
                     } catch (Exception e) {}
                 }
-                if (tvTotalExpense != null) tvTotalExpense.setText("Total Utsav Expenses: ৳" + totalExpenseValue);
+                tvTotalExpense.setText("Total Mandir Expenses: ৳" + totalExpenseValue);
+                applyFilterAndSort();
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
+
+    private void applyFilterAndSort() {
+        displayList.clear();
+        String query = inputSearch.getText().toString().toLowerCase().trim();
+
+        for (GroupedExpense ge : groupedMap.values()) {
+            if (ge.eventDisplayName.toLowerCase().contains(query)) { displayList.add(ge); }
+        }
+
+        Collections.sort(displayList, (a, b) -> {
+            if (currentSort.equals("Recent First")) return Long.compare(b.lastUpdated, a.lastUpdated);
+            if (currentSort.equals("Oldest First")) return Long.compare(a.lastUpdated, b.lastUpdated);
+            if (currentSort.equals("Highest Cost")) return Float.compare(b.totalSpent, a.totalSpent);
+            return a.eventDisplayName.compareToIgnoreCase(b.eventDisplayName);
+        });
+
+        renderCards();
+    }
+
+    private void renderCards() {
+        transactionsContainer.removeAllViews();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+
+        for (GroupedExpense ge : displayList) {
+            View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, transactionsContainer, false);
+            
+            ((TextView) view.findViewById(R.id.tvTransName)).setText("🪔 " + ge.eventDisplayName);
+            ((TextView) view.findViewById(R.id.tvTransName)).setTextColor(android.graphics.Color.parseColor("#E65100"));
+            
+            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("Total Spent: ৳" + ge.totalSpent);
+            ((TextView) view.findViewById(R.id.tvTransAmount)).setTextColor(android.graphics.Color.parseColor("#D32F2F"));
+            
+            ((TextView) view.findViewById(R.id.tvTransDate)).setText("Last Update: " + sdf.format(new Date(ge.lastUpdated)));
+            ((TextView) view.findViewById(R.id.tvTransNote)).setText("Total Items/Sevas: " + ge.history.size() + "\n👉 Tap to download Full Utsav Ledger");
+
+            // 📄 DRILL-DOWN PDF FOR THIS SPECIFIC UTSAV
+            view.setOnClickListener(v -> {
+                PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge);
+                Toast.makeText(this, "Generating Utsav Ledger...", Toast.LENGTH_SHORT).show();
+            });
+
+            transactionsContainer.addView(view);
+        }
     }
 
     private void showExpenseDialog(Expense existingExp) {
@@ -118,10 +214,15 @@ public class ExpenseActivity extends AppCompatActivity {
 
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-        final EditText inputEvent = new EditText(this); inputEvent.setHint("Utsav/Puja Name (e.g. Durga Puja 2026)"); 
+        final AutoCompleteTextView inputEvent = new AutoCompleteTextView(this); inputEvent.setHint("Utsav/Puja Name (e.g. Durga Puja)"); 
+        inputEvent.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, eventSearchList)); inputEvent.setThreshold(1);
+        
         final EditText inputItem = new EditText(this); inputItem.setHint("Item Details (e.g. Flowers, Murti)");
+        
         final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        final EditText inputPerson = new EditText(this); inputPerson.setHint("Person Involved (Who bought it?)");
+        
+        final AutoCompleteTextView inputPerson = new AutoCompleteTextView(this); inputPerson.setHint("Handled By (Member Name)"); 
+        inputPerson.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList)); inputPerson.setThreshold(1);
 
         if (existingExp != null) {
             inputEvent.setText(existingExp.eventName); inputItem.setText(existingExp.itemName); 
@@ -143,15 +244,9 @@ public class ExpenseActivity extends AppCompatActivity {
                 float amt = Float.parseFloat(amtStr);
                 String expId = existingExp == null ? db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey() : existingExp.id;
                 
-                // 🛡️ DYNAMIC STRICT SIGNATURE
-                String strictSignature;
-                if ("ADMIN".equals(session.getRole())) {
-                    strictSignature = "Super Admin - " + session.getUserName();
-                } else {
-                    strictSignature = "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
-                }
+                String strictSignature = "ADMIN".equals(session.getRole()) ? "Super Admin - " + session.getUserName() : "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
 
-                Expense newExp = new Expense(expId, event, item, amt, person.isEmpty() ? "Self" : person, 
+                Expense newExp = new Expense(expId, event, item, amt, person.isEmpty() ? session.getUserName() : person, 
                                              existingExp == null ? System.currentTimeMillis() : existingExp.timestamp, 
                                              strictSignature);
 
@@ -163,17 +258,33 @@ public class ExpenseActivity extends AppCompatActivity {
         builder.show();
     }
 
-    private void showEditDeleteDialog(Expense exp) {
-        new AlertDialog.Builder(this)
-            .setTitle("Manage Expense")
-            .setMessage("Do you want to Edit or Delete this entry for " + exp.itemName + "?")
-            .setPositiveButton("EDIT", (dialog, which) -> showExpenseDialog(exp))
-            .setNegativeButton("DELETE", (dialog, which) -> {
-                db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(exp.id).removeValue();
-                Toast.makeText(this, "Expense Deleted", Toast.LENGTH_SHORT).show();
-                AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "EXPENSE_DELETED", "Deleted: " + exp.itemName + " (৳" + exp.amount + ")");
-            })
-            .setNeutralButton("CANCEL", null)
-            .show();
+    private void triggerMasterReportGeneration() {
+        Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
+        new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+            startCal.set(year, month, dayOfMonth, 0, 0, 0); 
+            new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
+                endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
+                long startTs = startCal.getTimeInMillis(); long endTs = endCal.getTimeInMillis();
+                String reportRange = "Period: " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(startCal.getTime()) + " to " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(endCal.getTime());
+
+                List<Expense> filteredLogs = new ArrayList<>();
+                float total = 0f;
+                for(GroupedExpense ge : groupedMap.values()) {
+                    for(Expense e : ge.history) {
+                        if(e.timestamp >= startTs && e.timestamp <= endTs) { filteredLogs.add(e); total += e.amount; }
+                    }
+                }
+                PdfReportService.generateExpenseReport(this, session.getCommunityName(), filteredLogs, total, reportRange);
+
+            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    // INTERNAL DATA MODEL FOR GROUPING
+    public static class GroupedExpense {
+        public String eventDisplayName;
+        public float totalSpent = 0f;
+        public long lastUpdated = 0L;
+        public List<Expense> history = new ArrayList<>();
     }
 }
