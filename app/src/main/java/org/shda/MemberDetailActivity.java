@@ -7,10 +7,12 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class MemberDetailActivity extends AppCompatActivity {
@@ -22,7 +24,6 @@ public class MemberDetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // MATCHING YOUR EXACT XML FILE NAME HERE:
         setContentView(R.layout.activity_member_detail);
 
         db = FirebaseDatabase.getInstance().getReference();
@@ -31,10 +32,16 @@ public class MemberDetailActivity extends AppCompatActivity {
 
         if (memberId == null || session.getCommunityId() == null) { finish(); return; }
 
-        // 🔒 RBAC: Hide Super Admin Controls if the logged-in user is just a MEMBER
         LinearLayout layoutAdminControls = findViewById(R.id.layoutAdminControls);
         if ("MEMBER".equals(session.getRole()) && layoutAdminControls != null) {
             layoutAdminControls.setVisibility(View.GONE);
+        }
+
+        // QUICK CHANDA BUTTON LOGIC
+        Button btnQuickDonation = findViewById(R.id.btnQuickDonation);
+        if (btnQuickDonation != null && ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole()))) {
+            btnQuickDonation.setVisibility(View.VISIBLE);
+            btnQuickDonation.setOnClickListener(v -> showQuickDonationDialog());
         }
 
         loadMemberData();
@@ -80,7 +87,6 @@ public class MemberDetailActivity extends AppCompatActivity {
         TextView tvJoined = findViewById(R.id.tvProfileJoined); 
         if(tvJoined != null) tvJoined.setText("Joined: " + sdf.format(new Date(currentMember.timestamp)));
 
-        // ✨ Reveal Optional KYC Fields if they exist
         TextView tvFather = findViewById(R.id.tvProfileFather);
         if (tvFather != null && currentMember.fatherName != null && !currentMember.fatherName.isEmpty()) { tvFather.setVisibility(View.VISIBLE); tvFather.setText("Father: " + currentMember.fatherName); }
         
@@ -97,14 +103,55 @@ public class MemberDetailActivity extends AppCompatActivity {
         if (tvSignature != null && currentMember.addedBySignature != null && !currentMember.addedBySignature.isEmpty()) { tvSignature.setVisibility(View.VISIBLE); tvSignature.setText("✍️ Profile verified by: " + currentMember.addedBySignature); }
     }
 
+    private void showQuickDonationDialog() {
+        if (currentMember == null) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Record Chanda for " + currentMember.name);
+
+        LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
+        final android.widget.EditText inputAmount = new android.widget.EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
+        final android.widget.EditText inputNote = new android.widget.EditText(this); inputNote.setHint("Purpose / Note"); layout.addView(inputNote);
+
+        builder.setView(layout);
+        builder.setPositiveButton("SAVE & RECEIPT", (dialog, which) -> {
+            String amtStr = inputAmount.getText().toString().trim();
+            String note = inputNote.getText().toString().trim();
+            if (amtStr.isEmpty()) { Toast.makeText(this, "Amount required", Toast.LENGTH_SHORT).show(); return; }
+
+            try {
+                float amount = Float.parseFloat(amtStr);
+                String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
+                
+                String strictSignature = "ADMIN".equals(session.getRole()) ? "Super Admin - " + session.getUserName() : "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
+                String finalName = "[Member] " + currentMember.name + " (" + currentMember.id + ")";
+                
+                HashMap<String, Object> transMap = new HashMap<>();
+                transMap.put("name", finalName); 
+                transMap.put("amount", amount); 
+                transMap.put("note", note);
+                transMap.put("timestamp", System.currentTimeMillis()); 
+                transMap.put("loggedBy", strictSignature);
+
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
+                db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated").setValue(currentMember.totalDonated + amount);
+                
+                AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from profile: " + currentMember.name);
+                Toast.makeText(this, "Chanda Added Successfully!", Toast.LENGTH_SHORT).show();
+
+                String dateStr = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
+                String finalNote = note + "\n✍️ Collected By: " + strictSignature;
+                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalName, amount, finalNote, dateStr);
+
+            } catch (Exception e) {}
+        });
+        builder.setNegativeButton("CANCEL", null); builder.show();
+    }
+
     private void changeRole(String newRole) {
         if ("ADMIN".equals(currentMember.role)) { Toast.makeText(this, "Cannot change Super Admin role", Toast.LENGTH_SHORT).show(); return; }
-        
         db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("role").setValue(newRole);
-        
         String encodedEmail = session.getWorkspaceEmail().replace(".", ",");
         db.child("login_vault").child(encodedEmail).child(memberId).child("role").setValue(newRole);
-        
         Toast.makeText(this, "Role updated to " + newRole, Toast.LENGTH_SHORT).show();
         AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "ROLE_CHANGED", "Changed role of " + currentMember.name + " to " + newRole);
     }
