@@ -19,11 +19,9 @@
         android:text="Total Collected: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#E65100" android:layout_marginBottom="12dp" android:gravity="end"/>
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp" android:gravity="center_vertical">
-        
         <EditText android:id="@+id/inputSearch" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp"
-            android:hint="Search Donor Name..." android:background="@android:drawable/edit_text" android:padding="10dp" android:layout_marginEnd="8dp"/>
-            
-        <Spinner android:id="@+id/spinnerSort" android:layout_width="120dp" android:layout_height="50dp" android:background="@android:drawable/btn_dropdown"/>
+            android:hint="Search Name or SB-ID..." android:background="@android:drawable/edit_text" android:padding="10dp" android:layout_marginEnd="8dp"/>
+        <Spinner android:id="@+id/spinnerSort" android:layout_width="130dp" android:layout_height="50dp" android:background="@android:drawable/btn_dropdown"/>
     </LinearLayout>
 
     <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
