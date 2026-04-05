@@ -42,7 +42,6 @@ public class TransactionActivity extends AppCompatActivity {
     private List<String> memberSearchList = new ArrayList<>(); 
     private List<String> guestSearchList = new ArrayList<>();
 
-    // Enterprise CRM Data Models
     private HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
     private List<GroupedDonation> displayList = new ArrayList<>();
     private String currentSort = "Recent First";
@@ -114,14 +113,19 @@ public class TransactionActivity extends AppCompatActivity {
         });
     }
 
+    private String extractIdFromName(String rawName) {
+        if (rawName != null && rawName.contains("(") && rawName.contains(")")) {
+            return rawName.substring(rawName.lastIndexOf("(") + 1, rawName.lastIndexOf(")")).trim();
+        }
+        return null;
+    }
+
     private void loadTransactions() {
         db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
           .addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                groupedMap.clear();
-                guestSearchList.clear();
-                totalDonationsValue = 0f;
+                groupedMap.clear(); guestSearchList.clear(); totalDonationsValue = 0f;
 
                 for (DataSnapshot data : snapshot.getChildren()) {
                     try {
@@ -130,30 +134,27 @@ public class TransactionActivity extends AppCompatActivity {
                         String note = data.child("note").getValue(String.class);
                         Long timestamp = data.child("timestamp").getValue(Long.class);
                         String loggedBy = data.child("loggedBy").getValue(String.class);
-                        String phone = data.child("phone").getValue(String.class);
-                        String address = data.child("address").getValue(String.class);
-                        String collectedBy = data.child("collectedBy").getValue(String.class);
 
                         if (name != null && amount != null && timestamp != null) {
                             totalDonationsValue += amount;
                             
-                            // CRM Grouping Logic
-                            if (!groupedMap.containsKey(name)) {
+                            // 🧠 ROBUST GROUPING LOGIC: Groups by SB-ID instead of string name
+                            String groupKey = extractIdFromName(name);
+                            if (groupKey == null) groupKey = name.toLowerCase().trim(); // Fallback for guests
+
+                            if (!groupedMap.containsKey(groupKey)) {
                                 GroupedDonation gd = new GroupedDonation();
-                                gd.displayName = name;
-                                groupedMap.put(name, gd);
-                                if (name.startsWith("[Guest]")) {
-                                    guestSearchList.add(name.replace("[Guest] ", ""));
-                                }
+                                gd.displayName = name; 
+                                groupedMap.put(groupKey, gd);
+                                if (name.contains("[Guest]")) guestSearchList.add(name.replace("[Guest]", "").trim());
                             }
-                            
-                            GroupedDonation gd = groupedMap.get(name);
+
+                            GroupedDonation gd = groupedMap.get(groupKey);
                             gd.totalDonated += amount;
                             if (timestamp > gd.lastDonationTime) { gd.lastDonationTime = timestamp; }
                             
                             SingleDonation sd = new SingleDonation();
-                            sd.amount = amount; sd.timestamp = timestamp; sd.note = note;
-                            sd.loggedBy = loggedBy; sd.phone = phone; sd.address = address; sd.collectedBy = collectedBy;
+                            sd.amount = amount; sd.timestamp = timestamp; sd.note = note; sd.loggedBy = loggedBy;
                             gd.history.add(sd);
                         }
                     } catch (Exception e) {}
@@ -192,55 +193,41 @@ public class TransactionActivity extends AppCompatActivity {
             ((TextView) view.findViewById(R.id.tvTransName)).setText(gd.displayName);
             ((TextView) view.findViewById(R.id.tvTransAmount)).setText("Total: ৳" + gd.totalDonated);
             ((TextView) view.findViewById(R.id.tvTransDate)).setText("Last Chanda: " + sdf.format(new Date(gd.lastDonationTime)));
-            ((TextView) view.findViewById(R.id.tvTransNote)).setText("Total Entries: " + gd.history.size() + "\n(Tap to download full statement)");
+            ((TextView) view.findViewById(R.id.tvTransNote)).setText("Total Entries: " + gd.history.size() + "\n👉 Tap card to download Ledger PDF");
 
-            // 📄 DRILL-DOWN PDF STATEMENT
             view.setOnClickListener(v -> {
                 PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd);
-                Toast.makeText(this, "Generating Ledger PDF...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Generating Statement PDF...", Toast.LENGTH_SHORT).show();
             });
 
             transactionsContainer.addView(view);
         }
     }
 
-    // ✨ DYNAMIC FORM BASED ON MEMBER OR GUEST
     private void showDynamicChandaDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Record Smart Chanda");
 
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-        // Radio Buttons (Properly configured to not select both!)
         RadioGroup rgType = new RadioGroup(this); rgType.setOrientation(LinearLayout.HORIZONTAL);
         android.widget.RadioButton rbMember = new android.widget.RadioButton(this); rbMember.setId(View.generateViewId()); rbMember.setText("Member");
         android.widget.RadioButton rbGuest = new android.widget.RadioButton(this); rbGuest.setId(View.generateViewId()); rbGuest.setText("Guest");
         rgType.addView(rbMember); rgType.addView(rbGuest); rbMember.setChecked(true);
         layout.addView(rgType);
 
-        // Core Fields
         final AutoCompleteTextView inputName = new AutoCompleteTextView(this); inputName.setHint("Donor Name / SB-ID"); 
         inputName.setThreshold(1); layout.addView(inputName);
         
         final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳) *"); inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
         final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Gotra / Note *"); layout.addView(inputNote);
 
-        // Guest Specific Fields (Hidden by default)
-        final EditText inputPhone = new EditText(this); inputPhone.setHint("Phone Number"); inputPhone.setInputType(InputType.TYPE_CLASS_PHONE); inputPhone.setVisibility(View.GONE); layout.addView(inputPhone);
-        final EditText inputAddress = new EditText(this); inputAddress.setHint("Address (Optional)"); inputAddress.setVisibility(View.GONE); layout.addView(inputAddress);
-        
-        final AutoCompleteTextView inputCollectedBy = new AutoCompleteTextView(this); inputCollectedBy.setHint("Collected By (Optional)"); 
-        inputCollectedBy.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList)); inputCollectedBy.setThreshold(1); inputCollectedBy.setVisibility(View.GONE); layout.addView(inputCollectedBy);
-
-        // Dynamic Toggle Logic
         inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList));
         rgType.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == rbMember.getId()) {
                 inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList));
-                inputPhone.setVisibility(View.GONE); inputAddress.setVisibility(View.GONE); inputCollectedBy.setVisibility(View.GONE);
             } else {
                 inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, guestSearchList));
-                inputPhone.setVisibility(View.VISIBLE); inputAddress.setVisibility(View.VISIBLE); inputCollectedBy.setVisibility(View.VISIBLE);
             }
         });
 
@@ -266,48 +253,20 @@ public class TransactionActivity extends AppCompatActivity {
                 transMap.put("timestamp", System.currentTimeMillis());
                 transMap.put("loggedBy", strictSignature);
 
-                if (!isMember) {
-                    transMap.put("phone", inputPhone.getText().toString().trim());
-                    transMap.put("address", inputAddress.getText().toString().trim());
-                    String collector = inputCollectedBy.getText().toString().trim();
-                    transMap.put("collectedBy", collector.isEmpty() ? session.getUserName() : collector);
-                }
-
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
-                
-                if (isMember) {
-                    String memberId = extractIdFromName(rawName);
-                    if (memberId != null) {
-                        DatabaseReference memRef = db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated");
-                        memRef.get().addOnSuccessListener(snap -> {
-                            float currentTotal = snap.exists() && snap.getValue() != null ? snap.getValue(Float.class) : 0f;
-                            memRef.setValue(currentTotal + amount);
-                        });
-                    }
-                }
 
                 AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from " + rawName);
                 Toast.makeText(this, "Chanda Recorded. Generating PDF...", Toast.LENGTH_SHORT).show();
                 
-                // Single Instance Receipt
                 String dateStr = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
-                String receiptNote = note + (isMember ? "" : "\nCollector: " + transMap.get("collectedBy"));
-                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalNameToSave, amount, receiptNote, dateStr);
+                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalNameToSave, amount, note + "\n✍️ Logged by: " + strictSignature, dateStr);
                 
             } catch (Exception e) {}
         });
         builder.setNegativeButton("CANCEL", null); builder.show();
     }
 
-    private String extractIdFromName(String nameWithId) {
-        if (nameWithId.contains("(") && nameWithId.contains(")")) {
-            return nameWithId.substring(nameWithId.lastIndexOf("(") + 1, nameWithId.lastIndexOf(")"));
-        }
-        return null;
-    }
-
     private void triggerMasterReportGeneration() {
-        // Keeps standard date-range ledger logic
         Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
         new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
             startCal.set(year, month, dayOfMonth, 0, 0, 0); 
@@ -339,7 +298,6 @@ public class TransactionActivity extends AppCompatActivity {
         }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
-    // INTERNAL DATA MODELS
     public static class GroupedDonation {
         public String displayName;
         public float totalDonated = 0f;
@@ -349,6 +307,6 @@ public class TransactionActivity extends AppCompatActivity {
     public static class SingleDonation {
         public float amount;
         public long timestamp;
-        public String note, loggedBy, phone, address, collectedBy;
+        public String note, loggedBy;
     }
 }
