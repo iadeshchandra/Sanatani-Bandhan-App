@@ -4,19 +4,27 @@
     android:orientation="vertical" android:background="#FAF9F6" android:padding="16dp">
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Smart Chanda Book" android:textSize="26sp" android:textStyle="bold"
+        android:text="Smart Chanda Ledger" android:textSize="26sp" android:textStyle="bold"
         android:textColor="#2E7D32" android:layout_marginBottom="16dp"/>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="12dp">
         <Button android:id="@+id/btnAddTransaction" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
-            android:text="+ Record Chanda" android:backgroundTint="#2E7D32" android:layout_marginEnd="8dp"/>
+            android:text="+ Record Chanda" android:backgroundTint="#2E7D32" android:layout_marginEnd="6dp"/>
         
         <Button android:id="@+id/btnGenerateReport" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
-            android:text="Export PDF" android:backgroundTint="#37474F" android:layout_marginStart="8dp"/>
+            android:text="Export Master PDF" android:backgroundTint="#37474F" android:layout_marginStart="6dp"/>
     </LinearLayout>
 
     <TextView android:id="@+id/tvTotalDonations" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="Total Chanda: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#2E7D32" android:layout_marginBottom="12dp" android:gravity="end"/>
+        android:text="Total Collected: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#E65100" android:layout_marginBottom="12dp" android:gravity="end"/>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp" android:gravity="center_vertical">
+        
+        <EditText android:id="@+id/inputSearch" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp"
+            android:hint="Search Donor Name..." android:background="@android:drawable/edit_text" android:padding="10dp" android:layout_marginEnd="8dp"/>
+            
+        <Spinner android:id="@+id/spinnerSort" android:layout_width="120dp" android:layout_height="50dp" android:background="@android:drawable/btn_dropdown"/>
+    </LinearLayout>
 
     <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
         <LinearLayout android:id="@+id/transactionsContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
