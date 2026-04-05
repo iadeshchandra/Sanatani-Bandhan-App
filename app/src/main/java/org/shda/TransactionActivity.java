@@ -2,13 +2,19 @@ package org.shda;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioGroup;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -18,6 +24,7 @@ import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -28,8 +35,17 @@ public class TransactionActivity extends AppCompatActivity {
     private SessionManager session;
     private LinearLayout transactionsContainer;
     private TextView tvTotalDonations;
+    private EditText inputSearch;
+    private Spinner spinnerSort;
+
     private float totalDonationsValue = 0f;
     private List<String> memberSearchList = new ArrayList<>(); 
+    private List<String> guestSearchList = new ArrayList<>();
+
+    // Enterprise CRM Data Models
+    private HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
+    private List<GroupedDonation> displayList = new ArrayList<>();
+    private String currentSort = "Recent First";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,26 +56,48 @@ public class TransactionActivity extends AppCompatActivity {
         session = new SessionManager(this);
         transactionsContainer = findViewById(R.id.transactionsContainer);
         tvTotalDonations = findViewById(R.id.tvTotalDonations);
+        inputSearch = findViewById(R.id.inputSearch);
+        spinnerSort = findViewById(R.id.spinnerSort);
 
         if (session.getCommunityId() == null) { finish(); return; }
 
+        setupRBAC();
+        setupSearchAndSort();
+        loadTransactions();
+        fetchMembersForAutoComplete();
+    }
+
+    private void setupRBAC() {
         View btnAddTransaction = findViewById(R.id.btnAddTransaction); 
         if (btnAddTransaction != null) {
             if ("MEMBER".equals(session.getRole())) {
-                btnAddTransaction.setVisibility(View.GONE); // strict RBAC
+                btnAddTransaction.setVisibility(View.GONE);
             } else {
                 btnAddTransaction.setVisibility(View.VISIBLE);
-                btnAddTransaction.setOnClickListener(v -> showAddChandaDialog());
+                btnAddTransaction.setOnClickListener(v -> showDynamicChandaDialog());
             }
         }
+        findViewById(R.id.btnGenerateReport).setOnClickListener(v -> triggerMasterReportGeneration());
+    }
 
-        View btnGenerateReport = findViewById(R.id.btnGenerateReport);
-        if (btnGenerateReport != null) {
-            btnGenerateReport.setOnClickListener(v -> triggerReportGeneration());
-        }
+    private void setupSearchAndSort() {
+        String[] sortOptions = {"Recent First", "Oldest First", "Name (A-Z)"};
+        ArrayAdapter<String> sortAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, sortOptions);
+        spinnerSort.setAdapter(sortAdapter);
 
-        loadTransactions();
-        fetchMembersForAutoComplete();
+        spinnerSort.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                currentSort = sortOptions[position];
+                applyFilterAndSort();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        inputSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { applyFilterAndSort(); }
+            @Override public void afterTextChanged(Editable s) {}
+        });
     }
 
     private void fetchMembersForAutoComplete() {
@@ -69,9 +107,7 @@ public class TransactionActivity extends AppCompatActivity {
                 memberSearchList.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Member m = data.getValue(Member.class);
-                    if (m != null) {
-                        memberSearchList.add(m.name + " (" + m.id + ")");
-                    }
+                    if (m != null) memberSearchList.add(m.name + " (" + m.id + ")");
                 }
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
@@ -83,9 +119,9 @@ public class TransactionActivity extends AppCompatActivity {
           .addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                transactionsContainer.removeAllViews();
+                groupedMap.clear();
+                guestSearchList.clear();
                 totalDonationsValue = 0f;
-                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
 
                 for (DataSnapshot data : snapshot.getChildren()) {
                     try {
@@ -94,151 +130,205 @@ public class TransactionActivity extends AppCompatActivity {
                         String note = data.child("note").getValue(String.class);
                         Long timestamp = data.child("timestamp").getValue(Long.class);
                         String loggedBy = data.child("loggedBy").getValue(String.class);
+                        String phone = data.child("phone").getValue(String.class);
+                        String address = data.child("address").getValue(String.class);
+                        String collectedBy = data.child("collectedBy").getValue(String.class);
 
-                        if (name != null && amount != null) {
+                        if (name != null && amount != null && timestamp != null) {
                             totalDonationsValue += amount;
                             
-                            View view = LayoutInflater.from(TransactionActivity.this).inflate(R.layout.item_transaction, transactionsContainer, false);
+                            // CRM Grouping Logic
+                            if (!groupedMap.containsKey(name)) {
+                                GroupedDonation gd = new GroupedDonation();
+                                gd.displayName = name;
+                                groupedMap.put(name, gd);
+                                if (name.startsWith("[Guest]")) {
+                                    guestSearchList.add(name.replace("[Guest] ", ""));
+                                }
+                            }
                             
-                            ((TextView) view.findViewById(R.id.tvTransName)).setText(name);
-                            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("৳" + amount);
+                            GroupedDonation gd = groupedMap.get(name);
+                            gd.totalDonated += amount;
+                            if (timestamp > gd.lastDonationTime) { gd.lastDonationTime = timestamp; }
                             
-                            String formattedDate = timestamp != null ? sdf.format(new Date(timestamp)) : "Unknown Date";
-                            ((TextView) view.findViewById(R.id.tvTransDate)).setText(formattedDate);
-                            
-                            String finalNote = (note != null ? note : "") + "\n✍️ Collected By: " + (loggedBy != null ? loggedBy : "System");
-                            ((TextView) view.findViewById(R.id.tvTransNote)).setText(finalNote);
-
-                            // ✨ NEW: Click any card to instantly generate a Single Receipt PDF!
-                            view.setOnClickListener(v -> {
-                                new AlertDialog.Builder(TransactionActivity.this)
-                                    .setTitle("Generate Receipt")
-                                    .setMessage("Download official receipt for " + name + "?")
-                                    .setPositiveButton("DOWNLOAD PDF", (dialog, which) -> {
-                                        PdfReportService.generateDonorReceipt(TransactionActivity.this, session.getCommunityName(), name, amount, finalNote, formattedDate);
-                                    }).setNegativeButton("CANCEL", null).show();
-                            });
-
-                            transactionsContainer.addView(view, 0); 
+                            SingleDonation sd = new SingleDonation();
+                            sd.amount = amount; sd.timestamp = timestamp; sd.note = note;
+                            sd.loggedBy = loggedBy; sd.phone = phone; sd.address = address; sd.collectedBy = collectedBy;
+                            gd.history.add(sd);
                         }
                     } catch (Exception e) {}
                 }
-                if (tvTotalDonations != null) tvTotalDonations.setText("Total Chanda: ৳" + totalDonationsValue);
+                tvTotalDonations.setText("Total Collected: ৳" + totalDonationsValue);
+                applyFilterAndSort();
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    private void showAddChandaDialog() {
+    private void applyFilterAndSort() {
+        displayList.clear();
+        String query = inputSearch.getText().toString().toLowerCase().trim();
+
+        for (GroupedDonation gd : groupedMap.values()) {
+            if (gd.displayName.toLowerCase().contains(query)) { displayList.add(gd); }
+        }
+
+        Collections.sort(displayList, (a, b) -> {
+            if (currentSort.equals("Recent First")) return Long.compare(b.lastDonationTime, a.lastDonationTime);
+            if (currentSort.equals("Oldest First")) return Long.compare(a.lastDonationTime, b.lastDonationTime);
+            return a.displayName.compareToIgnoreCase(b.displayName); // A-Z
+        });
+
+        renderCards();
+    }
+
+    private void renderCards() {
+        transactionsContainer.removeAllViews();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+
+        for (GroupedDonation gd : displayList) {
+            View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, transactionsContainer, false);
+            
+            ((TextView) view.findViewById(R.id.tvTransName)).setText(gd.displayName);
+            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("Total: ৳" + gd.totalDonated);
+            ((TextView) view.findViewById(R.id.tvTransDate)).setText("Last Chanda: " + sdf.format(new Date(gd.lastDonationTime)));
+            ((TextView) view.findViewById(R.id.tvTransNote)).setText("Total Entries: " + gd.history.size() + "\n(Tap to download full statement)");
+
+            // 📄 DRILL-DOWN PDF STATEMENT
+            view.setOnClickListener(v -> {
+                PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd);
+                Toast.makeText(this, "Generating Ledger PDF...", Toast.LENGTH_SHORT).show();
+            });
+
+            transactionsContainer.addView(view);
+        }
+    }
+
+    // ✨ DYNAMIC FORM BASED ON MEMBER OR GUEST
+    private void showDynamicChandaDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Record Smart Chanda");
 
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(50, 20, 50, 0);
+        LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-        android.widget.RadioGroup rgType = new android.widget.RadioGroup(this);
-        rgType.setOrientation(LinearLayout.HORIZONTAL);
-        android.widget.RadioButton rbMember = new android.widget.RadioButton(this); rbMember.setText("Member"); rbMember.setChecked(true);
-        android.widget.RadioButton rbGuest = new android.widget.RadioButton(this); rbGuest.setText("Guest");
-        rgType.addView(rbMember); rgType.addView(rbGuest);
+        // Radio Buttons (Properly configured to not select both!)
+        RadioGroup rgType = new RadioGroup(this); rgType.setOrientation(LinearLayout.HORIZONTAL);
+        android.widget.RadioButton rbMember = new android.widget.RadioButton(this); rbMember.setId(View.generateViewId()); rbMember.setText("Member");
+        android.widget.RadioButton rbGuest = new android.widget.RadioButton(this); rbGuest.setId(View.generateViewId()); rbGuest.setText("Guest");
+        rgType.addView(rbMember); rgType.addView(rbGuest); rbMember.setChecked(true);
         layout.addView(rgType);
 
-        final AutoCompleteTextView inputName = new AutoCompleteTextView(this); 
-        inputName.setHint("Donor Name / SB-ID"); 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList);
-        inputName.setAdapter(adapter);
-        inputName.setThreshold(1); 
-        layout.addView(inputName);
+        // Core Fields
+        final AutoCompleteTextView inputName = new AutoCompleteTextView(this); inputName.setHint("Donor Name / SB-ID"); 
+        inputName.setThreshold(1); layout.addView(inputName);
+        
+        final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳) *"); inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
+        final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Gotra / Note *"); layout.addView(inputNote);
 
-        final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
-        final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Gotra / Note"); layout.addView(inputNote);
+        // Guest Specific Fields (Hidden by default)
+        final EditText inputPhone = new EditText(this); inputPhone.setHint("Phone Number"); inputPhone.setInputType(InputType.TYPE_CLASS_PHONE); inputPhone.setVisibility(View.GONE); layout.addView(inputPhone);
+        final EditText inputAddress = new EditText(this); inputAddress.setHint("Address (Optional)"); inputAddress.setVisibility(View.GONE); layout.addView(inputAddress);
+        
+        final AutoCompleteTextView inputCollectedBy = new AutoCompleteTextView(this); inputCollectedBy.setHint("Collected By (Optional)"); 
+        inputCollectedBy.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList)); inputCollectedBy.setThreshold(1); inputCollectedBy.setVisibility(View.GONE); layout.addView(inputCollectedBy);
+
+        // Dynamic Toggle Logic
+        inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList));
+        rgType.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == rbMember.getId()) {
+                inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList));
+                inputPhone.setVisibility(View.GONE); inputAddress.setVisibility(View.GONE); inputCollectedBy.setVisibility(View.GONE);
+            } else {
+                inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, guestSearchList));
+                inputPhone.setVisibility(View.VISIBLE); inputAddress.setVisibility(View.VISIBLE); inputCollectedBy.setVisibility(View.VISIBLE);
+            }
+        });
 
         builder.setView(layout);
-
-        builder.setPositiveButton("SAVE", (dialog, which) -> {
+        builder.setPositiveButton("SAVE & RECEIPT", (dialog, which) -> {
             String rawName = inputName.getText().toString().trim();
             String amountStr = inputAmount.getText().toString().trim();
             String note = inputNote.getText().toString().trim();
-            String donorType = rbMember.isChecked() ? "[Member]" : "[Guest]";
+            boolean isMember = rbMember.isChecked();
 
-            if (rawName.isEmpty() || amountStr.isEmpty()) { Toast.makeText(this, "Name and Amount required", Toast.LENGTH_SHORT).show(); return; }
+            if (rawName.isEmpty() || amountStr.isEmpty() || note.isEmpty()) { Toast.makeText(this, "Name, Amount, and Note required", Toast.LENGTH_SHORT).show(); return; }
 
             try {
                 float amount = Float.parseFloat(amountStr);
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
-                
-                String finalNameToSave = donorType + " " + rawName;
+                String finalNameToSave = (isMember ? "[Member] " : "[Guest] ") + rawName;
+                String strictSignature = "ADMIN".equals(session.getRole()) ? "Super Admin - " + session.getUserName() : "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
 
                 HashMap<String, Object> transMap = new HashMap<>();
                 transMap.put("name", finalNameToSave);
                 transMap.put("amount", amount);
                 transMap.put("note", note);
                 transMap.put("timestamp", System.currentTimeMillis());
-                
-                String strictSignature;
-                if ("ADMIN".equals(session.getRole())) {
-                    strictSignature = "Super Admin - " + session.getUserName(); 
-                } else {
-                    strictSignature = "Manager - " + session.getUserName() + " (" + session.getUserId() + ")"; 
-                }
                 transMap.put("loggedBy", strictSignature);
+
+                if (!isMember) {
+                    transMap.put("phone", inputPhone.getText().toString().trim());
+                    transMap.put("address", inputAddress.getText().toString().trim());
+                    String collector = inputCollectedBy.getText().toString().trim();
+                    transMap.put("collectedBy", collector.isEmpty() ? session.getUserName() : collector);
+                }
 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
                 
-                // ✨ NEW: AUTOMATICALLY UPDATE MEMBER'S TOTAL BALANCE
-                String memberId = null;
-                if (rawName.contains("(") && rawName.contains(")")) {
-                    memberId = rawName.substring(rawName.lastIndexOf("(") + 1, rawName.lastIndexOf(")"));
-                }
-                if (memberId != null && memberId.startsWith("SB-")) {
-                    DatabaseReference memRef = db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated");
-                    memRef.get().addOnSuccessListener(snap -> {
-                        float currentTotal = 0f;
-                        if (snap.exists() && snap.getValue() != null) { currentTotal = snap.getValue(Float.class); }
-                        memRef.setValue(currentTotal + amount);
-                    });
+                if (isMember) {
+                    String memberId = extractIdFromName(rawName);
+                    if (memberId != null) {
+                        DatabaseReference memRef = db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated");
+                        memRef.get().addOnSuccessListener(snap -> {
+                            float currentTotal = snap.exists() && snap.getValue() != null ? snap.getValue(Float.class) : 0f;
+                            memRef.setValue(currentTotal + amount);
+                        });
+                    }
                 }
 
-                Toast.makeText(this, "Chanda Recorded Securely", Toast.LENGTH_SHORT).show();
                 AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from " + rawName);
+                Toast.makeText(this, "Chanda Recorded. Generating PDF...", Toast.LENGTH_SHORT).show();
                 
-            } catch (NumberFormatException e) { Toast.makeText(this, "Invalid Amount", Toast.LENGTH_SHORT).show(); }
+                // Single Instance Receipt
+                String dateStr = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
+                String receiptNote = note + (isMember ? "" : "\nCollector: " + transMap.get("collectedBy"));
+                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalNameToSave, amount, receiptNote, dateStr);
+                
+            } catch (Exception e) {}
         });
-        builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
-        builder.show();
+        builder.setNegativeButton("CANCEL", null); builder.show();
     }
 
-    private void triggerReportGeneration() {
+    private String extractIdFromName(String nameWithId) {
+        if (nameWithId.contains("(") && nameWithId.contains(")")) {
+            return nameWithId.substring(nameWithId.lastIndexOf("(") + 1, nameWithId.lastIndexOf(")"));
+        }
+        return null;
+    }
+
+    private void triggerMasterReportGeneration() {
+        // Keeps standard date-range ledger logic
         Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
         new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
             startCal.set(year, month, dayOfMonth, 0, 0, 0); 
             new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
                 endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
                 long startTimestamp = startCal.getTimeInMillis(); long endTimestamp = endCal.getTimeInMillis();
-                SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-                String reportRange = "Period: " + displayFormat.format(startCal.getTime()) + " to " + displayFormat.format(endCal.getTime());
+                String reportRange = "Period: " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(startCal.getTime()) + " to " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(endCal.getTime());
 
-                Toast.makeText(this, "Auditing Financials...", Toast.LENGTH_SHORT).show();
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
                   .orderByChild("timestamp").startAt(startTimestamp).endAt(endTimestamp)
                   .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                         List<String> names = new ArrayList<>(); List<Float> amounts = new ArrayList<>();
                         List<String> notes = new ArrayList<>(); List<String> dates = new ArrayList<>();
-                        float total = 0f; SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
-                        
+                        float total = 0f; SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
                         for (DataSnapshot data : snapshot.getChildren()) {
                             String name = data.child("name").getValue(String.class); Float amt = data.child("amount").getValue(Float.class);
                             String note = data.child("note").getValue(String.class); Long ts = data.child("timestamp").getValue(Long.class);
-                            String loggedBy = data.child("loggedBy").getValue(String.class);
-                            
                             if(name != null && amt != null) {
-                                names.add(name); amounts.add(amt); 
-                                String finalNote = (note != null ? note : "") + "\n(Collected by: " + (loggedBy != null ? loggedBy : "System") + ")";
-                                notes.add(finalNote);
-                                dates.add(ts != null ? sdf.format(new Date(ts)) : "Unknown Date"); 
-                                total += amt;
+                                names.add(name); amounts.add(amt); notes.add(note != null ? note : "No note");
+                                dates.add(ts != null ? sdf.format(new Date(ts)) : "Unknown Date"); total += amt;
                             }
                         }
                         PdfReportService.generateFinancialReport(TransactionActivity.this, session.getCommunityName(), dates, names, amounts, notes, total, reportRange);
@@ -247,5 +337,18 @@ public class TransactionActivity extends AppCompatActivity {
                 });
             }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
         }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    // INTERNAL DATA MODELS
+    public static class GroupedDonation {
+        public String displayName;
+        public float totalDonated = 0f;
+        public long lastDonationTime = 0L;
+        public List<SingleDonation> history = new ArrayList<>();
+    }
+    public static class SingleDonation {
+        public float amount;
+        public long timestamp;
+        public String note, loggedBy, phone, address, collectedBy;
     }
 }
