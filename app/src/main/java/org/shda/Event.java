@@ -1,20 +1,19 @@
 package org.shda;
 
 public class Event {
-    public String id;
-    public String title;
-    public String date;
-    public String description;
-    public long timestamp;
+    public String id, title, dateStr, description, location, createdBy;
+    public long timestamp, eventDateTs;
 
-    // Required by Firebase
     public Event() {}
 
-    public Event(String id, String title, String date, String description, long timestamp) {
+    public Event(String id, String title, String dateStr, long eventDateTs, String description, String location, long timestamp, String createdBy) {
         this.id = id;
         this.title = title;
-        this.date = date;
+        this.dateStr = dateStr;
+        this.eventDateTs = eventDateTs;
         this.description = description;
+        this.location = location;
         this.timestamp = timestamp;
+        this.createdBy = createdBy;
     }
 }
