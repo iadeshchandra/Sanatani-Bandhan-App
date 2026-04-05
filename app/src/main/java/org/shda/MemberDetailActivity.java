@@ -37,7 +37,6 @@ public class MemberDetailActivity extends AppCompatActivity {
             layoutAdminControls.setVisibility(View.GONE);
         }
 
-        // QUICK CHANDA BUTTON LOGIC
         Button btnQuickDonation = findViewById(R.id.btnQuickDonation);
         if (btnQuickDonation != null && ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole()))) {
             btnQuickDonation.setVisibility(View.VISIBLE);
@@ -45,13 +44,12 @@ public class MemberDetailActivity extends AppCompatActivity {
         }
 
         loadMemberData();
+        calculateTrueDonationStats(); // 🚀 The Auto-Repair Engine!
 
         Button btnExport = findViewById(R.id.btnExportProfilePdf);
         if(btnExport != null) {
             btnExport.setOnClickListener(v -> {
-                if (currentMember != null) {
-                    PdfReportService.generateMemberProfile(this, session.getCommunityName(), currentMember);
-                }
+                if (currentMember != null) PdfReportService.generateMemberProfile(this, session.getCommunityName(), currentMember);
             });
         }
 
@@ -74,6 +72,43 @@ public class MemberDetailActivity extends AppCompatActivity {
         });
     }
 
+    // ✨ THIS FIXES THE DESYNC ERROR SILENTLY
+    private void calculateTrueDonationStats() {
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
+          .addValueEventListener(new ValueEventListener() {
+              @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                  float realTotal = 0f;
+                  long lastDate = 0L;
+                  
+                  for(DataSnapshot data : snapshot.getChildren()) {
+                      String name = data.child("name").getValue(String.class);
+                      Float amt = data.child("amount").getValue(Float.class);
+                      Long ts = data.child("timestamp").getValue(Long.class);
+                      
+                      // Match only if the ledger entry contains this member's ID
+                      if (name != null && name.contains("(" + memberId + ")") && amt != null) {
+                          realTotal += amt;
+                          if (ts != null && ts > lastDate) lastDate = ts;
+                      }
+                  }
+                  
+                  TextView tvDonated = findViewById(R.id.tvProfileDonated);
+                  if (tvDonated != null) {
+                      String statText = "Total Donated: ৳" + realTotal;
+                      if (lastDate > 0) {
+                          statText += "\nLast Chanda: " + new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date(lastDate));
+                      }
+                      tvDonated.setText(statText);
+                  }
+                  
+                  // 🔥 AUTO-REPAIR THE DATABASE SO THE MEMBER DIRECTORY FIXES ITSELF!
+                  db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated").setValue(realTotal);
+                  if (currentMember != null) currentMember.totalDonated = realTotal;
+              }
+              @Override public void onCancelled(@NonNull DatabaseError error) {}
+          });
+    }
+
     private void populateUI() {
         TextView tvId = findViewById(R.id.tvProfileId); if(tvId != null) tvId.setText(currentMember.id);
         TextView tvName = findViewById(R.id.tvProfileName); if(tvName != null) tvName.setText(currentMember.name);
@@ -81,7 +116,6 @@ public class MemberDetailActivity extends AppCompatActivity {
         TextView tvPhone = findViewById(R.id.tvProfilePhone); if(tvPhone != null) tvPhone.setText("📞 " + currentMember.phone);
         TextView tvGotra = findViewById(R.id.tvProfileGotra); if(tvGotra != null) tvGotra.setText("🕉 Gotra: " + currentMember.gotra);
         TextView tvBlood = findViewById(R.id.tvProfileBlood); if(tvBlood != null) tvBlood.setText("🩸 Blood Group: " + currentMember.bloodGroup);
-        TextView tvDonated = findViewById(R.id.tvProfileDonated); if(tvDonated != null) tvDonated.setText("Total Donated: ৳" + currentMember.totalDonated);
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
         TextView tvJoined = findViewById(R.id.tvProfileJoined); 
@@ -121,22 +155,19 @@ public class MemberDetailActivity extends AppCompatActivity {
             try {
                 float amount = Float.parseFloat(amtStr);
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
-                
                 String strictSignature = "ADMIN".equals(session.getRole()) ? "Super Admin - " + session.getUserName() : "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
+                
                 String finalName = "[Member] " + currentMember.name + " (" + currentMember.id + ")";
                 
-                HashMap<String, Object> transMap = new HashMap<>();
-                transMap.put("name", finalName); 
-                transMap.put("amount", amount); 
-                transMap.put("note", note);
-                transMap.put("timestamp", System.currentTimeMillis()); 
-                transMap.put("loggedBy", strictSignature);
+                java.util.HashMap<String, Object> transMap = new java.util.HashMap<>();
+                transMap.put("name", finalName); transMap.put("amount", amount); transMap.put("note", note);
+                transMap.put("timestamp", System.currentTimeMillis()); transMap.put("loggedBy", strictSignature);
 
+                // Save to Ledger (The Auto-Repair engine will automatically pick this up and fix the balance!)
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
-                db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated").setValue(currentMember.totalDonated + amount);
                 
                 AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from profile: " + currentMember.name);
-                Toast.makeText(this, "Chanda Added Successfully!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Chanda Added! Generating PDF...", Toast.LENGTH_SHORT).show();
 
                 String dateStr = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
                 String finalNote = note + "\n✍️ Collected By: " + strictSignature;
