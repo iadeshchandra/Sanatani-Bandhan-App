@@ -36,6 +36,8 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <Button android:id="@+id/btnQuickDonation" android:layout_width="match_parent" android:layout_height="60dp" android:text="+ Add Chanda for this Member" android:backgroundTint="#2E7D32" android:layout_marginBottom="12dp" android:visibility="gone"/>
+
         <Button android:id="@+id/btnExportProfilePdf" android:layout_width="match_parent" android:layout_height="60dp" android:text="Export Member Profile PDF" android:backgroundTint="#1976D2" android:layout_marginBottom="24dp"/>
 
         <LinearLayout android:id="@+id/layoutAdminControls" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
