@@ -7,19 +7,24 @@
         android:text="Utsav &amp; Seva Tracker" android:textSize="26sp" android:textStyle="bold"
         android:textColor="#E65100" android:layout_marginBottom="16dp"/>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="16dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="12dp">
         <Button android:id="@+id/btnAddExpense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
-            android:text="+ Add Expense" android:backgroundTint="#E65100" android:layout_marginEnd="8dp"/>
+            android:text="+ Record Expense" android:backgroundTint="#E65100" android:layout_marginEnd="6dp"/>
         
         <Button android:id="@+id/btnGenerateReport" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp"
-            android:text="Export PDF" android:backgroundTint="#37474F" android:layout_marginStart="8dp"/>
+            android:text="Export Master PDF" android:backgroundTint="#37474F" android:layout_marginStart="6dp"/>
     </LinearLayout>
 
     <TextView android:id="@+id/tvTotalExpense" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="Total Utsav Expenses: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginBottom="12dp" android:gravity="end"/>
+        android:text="Total Mandir Expenses: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginBottom="12dp" android:gravity="end"/>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="12dp" android:gravity="center_vertical">
+        <EditText android:id="@+id/inputSearch" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp"
+            android:hint="Search Utsav Name..." android:background="@android:drawable/edit_text" android:padding="10dp" android:layout_marginEnd="8dp"/>
+        <Spinner android:id="@+id/spinnerSort" android:layout_width="130dp" android:layout_height="50dp" android:background="@android:drawable/btn_dropdown"/>
+    </LinearLayout>
 
     <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
         <LinearLayout android:id="@+id/expensesContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
     </ScrollView>
-    
 </LinearLayout>
