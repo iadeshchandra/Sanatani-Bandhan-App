@@ -23,20 +23,19 @@ public class DashboardActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
 
-    // ✨ THE 30-MINUTE SHLOKA ROTATION ENGINE
+    // ✨ THE 30-MINUTE SHLOKA ROTATION ENGINE (Now JSON Powered)
     private Handler shlokaHandler = new Handler(Looper.getMainLooper());
     private Runnable shlokaRunnable = new Runnable() {
         @Override
         public void run() {
             TextView tv = findViewById(R.id.shlokaText);
             if (tv != null) {
-                // Fade out, change text, fade in for a beautiful transition
                 tv.animate().alpha(0f).setDuration(500).withEndAction(() -> {
-                    tv.setText(ShlokaEngine.getRandomShloka());
+                    // Passed Context to read the JSON file safely
+                    tv.setText(ShlokaEngine.getRandomShloka(DashboardActivity.this));
                     tv.animate().alpha(1f).setDuration(500);
                 });
             }
-            // Re-run this exact function every 30 minutes (30 mins * 60 secs * 1000 ms)
             shlokaHandler.postDelayed(this, 30 * 60 * 1000);
         }
     };
@@ -76,14 +75,12 @@ public class DashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Start the Shloka timer as soon as the user opens the Dashboard
         shlokaHandler.post(shlokaRunnable);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        // Stop the timer if they leave the app so it doesn't drain the battery!
         shlokaHandler.removeCallbacks(shlokaRunnable);
     }
 
