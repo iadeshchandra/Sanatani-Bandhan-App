@@ -3,6 +3,8 @@ package org.shda;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,6 +23,24 @@ public class DashboardActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
 
+    // ✨ THE 30-MINUTE SHLOKA ROTATION ENGINE
+    private Handler shlokaHandler = new Handler(Looper.getMainLooper());
+    private Runnable shlokaRunnable = new Runnable() {
+        @Override
+        public void run() {
+            TextView tv = findViewById(R.id.shlokaText);
+            if (tv != null) {
+                // Fade out, change text, fade in for a beautiful transition
+                tv.animate().alpha(0f).setDuration(500).withEndAction(() -> {
+                    tv.setText(ShlokaEngine.getRandomShloka());
+                    tv.animate().alpha(1f).setDuration(500);
+                });
+            }
+            // Re-run this exact function every 30 minutes (30 mins * 60 secs * 1000 ms)
+            shlokaHandler.postDelayed(this, 30 * 60 * 1000);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,7 +54,7 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
-        setupDynamicShloka();
+        
         setupDates();
         applyPermissions(session.getRole());
         setupNavigation();
@@ -53,6 +73,20 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Start the Shloka timer as soon as the user opens the Dashboard
+        shlokaHandler.post(shlokaRunnable);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Stop the timer if they leave the app so it doesn't drain the battery!
+        shlokaHandler.removeCallbacks(shlokaRunnable);
+    }
+
     private void setupDates() {
         TextView tvDateEnglish = findViewById(R.id.tvDateEnglish);
         TextView tvDateBengali = findViewById(R.id.tvDateBengali);
@@ -66,7 +100,6 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void applyPermissions(String role) {
-        // 🌟 FINANCIAL TRANSPARENCY: Members can see ALL cards and Income Reports!
         if (role.equals("MEMBER")) {
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
             findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
@@ -75,14 +108,6 @@ public class DashboardActivity extends AppCompatActivity {
             findViewById(R.id.btnEditCommunity).setVisibility(View.GONE);
         } else if (role.equals("ADMIN")) {
             findViewById(R.id.btnEditCommunity).setVisibility(View.VISIBLE);
-        }
-    }
-
-    // ✨ DYNAMIC SHLOKA INTEGRATION
-    private void setupDynamicShloka() {
-        TextView tv = findViewById(R.id.shlokaText);
-        if (tv != null) {
-            tv.setText(ShlokaEngine.getDailyShloka());
         }
     }
 
