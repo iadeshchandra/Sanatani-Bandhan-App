@@ -134,13 +134,17 @@ public class TransactionActivity extends AppCompatActivity {
                         String note = data.child("note").getValue(String.class);
                         Long timestamp = data.child("timestamp").getValue(Long.class);
                         String loggedBy = data.child("loggedBy").getValue(String.class);
+                        
+                        // ✨ RESTORED GUEST VARIABLES
+                        String phone = data.child("phone").getValue(String.class);
+                        String address = data.child("address").getValue(String.class);
+                        String collectedBy = data.child("collectedBy").getValue(String.class);
 
                         if (name != null && amount != null && timestamp != null) {
                             totalDonationsValue += amount;
                             
-                            // 🧠 ROBUST GROUPING LOGIC: Groups by SB-ID instead of string name
                             String groupKey = extractIdFromName(name);
-                            if (groupKey == null) groupKey = name.toLowerCase().trim(); // Fallback for guests
+                            if (groupKey == null) groupKey = name.toLowerCase().trim();
 
                             if (!groupedMap.containsKey(groupKey)) {
                                 GroupedDonation gd = new GroupedDonation();
@@ -155,6 +159,7 @@ public class TransactionActivity extends AppCompatActivity {
                             
                             SingleDonation sd = new SingleDonation();
                             sd.amount = amount; sd.timestamp = timestamp; sd.note = note; sd.loggedBy = loggedBy;
+                            sd.phone = phone; sd.address = address; sd.collectedBy = collectedBy; // Linked to model
                             gd.history.add(sd);
                         }
                     } catch (Exception e) {}
@@ -222,12 +227,20 @@ public class TransactionActivity extends AppCompatActivity {
         final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳) *"); inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
         final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Gotra / Note *"); layout.addView(inputNote);
 
+        final EditText inputPhone = new EditText(this); inputPhone.setHint("Phone Number"); inputPhone.setInputType(InputType.TYPE_CLASS_PHONE); inputPhone.setVisibility(View.GONE); layout.addView(inputPhone);
+        final EditText inputAddress = new EditText(this); inputAddress.setHint("Address (Optional)"); inputAddress.setVisibility(View.GONE); layout.addView(inputAddress);
+        
+        final AutoCompleteTextView inputCollectedBy = new AutoCompleteTextView(this); inputCollectedBy.setHint("Collected By (Optional)"); 
+        inputCollectedBy.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList)); inputCollectedBy.setThreshold(1); inputCollectedBy.setVisibility(View.GONE); layout.addView(inputCollectedBy);
+
         inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList));
         rgType.setOnCheckedChangeListener((group, checkedId) -> {
             if (checkedId == rbMember.getId()) {
                 inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList));
+                inputPhone.setVisibility(View.GONE); inputAddress.setVisibility(View.GONE); inputCollectedBy.setVisibility(View.GONE);
             } else {
                 inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, guestSearchList));
+                inputPhone.setVisibility(View.VISIBLE); inputAddress.setVisibility(View.VISIBLE); inputCollectedBy.setVisibility(View.VISIBLE);
             }
         });
 
@@ -253,13 +266,32 @@ public class TransactionActivity extends AppCompatActivity {
                 transMap.put("timestamp", System.currentTimeMillis());
                 transMap.put("loggedBy", strictSignature);
 
+                if (!isMember) {
+                    transMap.put("phone", inputPhone.getText().toString().trim());
+                    transMap.put("address", inputAddress.getText().toString().trim());
+                    String collector = inputCollectedBy.getText().toString().trim();
+                    transMap.put("collectedBy", collector.isEmpty() ? session.getUserName() : collector);
+                }
+
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
+                
+                if (isMember) {
+                    String memberId = extractIdFromName(rawName);
+                    if (memberId != null) {
+                        DatabaseReference memRef = db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated");
+                        memRef.get().addOnSuccessListener(snap -> {
+                            float currentTotal = snap.exists() && snap.getValue() != null ? snap.getValue(Float.class) : 0f;
+                            memRef.setValue(currentTotal + amount);
+                        });
+                    }
+                }
 
                 AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from " + rawName);
                 Toast.makeText(this, "Chanda Recorded. Generating PDF...", Toast.LENGTH_SHORT).show();
                 
                 String dateStr = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
-                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalNameToSave, amount, note + "\n✍️ Logged by: " + strictSignature, dateStr);
+                String receiptNote = note + (isMember ? "" : "\nCollector: " + (transMap.get("collectedBy") != null ? transMap.get("collectedBy") : ""));
+                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalNameToSave, amount, receiptNote + "\n✍️ Logged by: " + strictSignature, dateStr);
                 
             } catch (Exception e) {}
         });
@@ -298,6 +330,7 @@ public class TransactionActivity extends AppCompatActivity {
         }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
     }
 
+    // ✨ RESTORED DATA MODELS
     public static class GroupedDonation {
         public String displayName;
         public float totalDonated = 0f;
@@ -307,6 +340,6 @@ public class TransactionActivity extends AppCompatActivity {
     public static class SingleDonation {
         public float amount;
         public long timestamp;
-        public String note, loggedBy;
+        public String note, loggedBy, phone, address, collectedBy; 
     }
 }
