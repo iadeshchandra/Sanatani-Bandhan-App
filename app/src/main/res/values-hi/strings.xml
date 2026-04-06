@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">सनातनी बंधन</string>
+    <string name="btn_member_directory">👥 सदस्य सूची</string>
+    <string name="btn_smart_chanda">💰 स्मार्ट चंदा</string>
+    <string name="btn_utsav_expenses">🪔 उत्सव खर्च</string>
+    <string name="btn_sanatani_polls">🗳️ सनातनी पोल</string>
+    <string name="btn_mandir_events">📅 मंदिर आयोजन</string>
+    <string name="btn_mass_sandesh">📢 सामूहिक संदेश</string>
+    <string name="btn_generate_pdfs">📄 वित्तीय पीडीएफ बनाएं</string>
+    <string name="btn_security_audit">🛡️ सुरक्षा ऑडिट डाउनलोड करें</string>
+    <string name="btn_workspace_settings">⚙️ कार्यक्षेत्र सेटिंग्स</string>
+    <string name="btn_change_language">🌐 भाषा बदलें</string>
+    <string name="btn_logout">लॉग आउट</string>
+    <string name="txt_financial_overview">वित्तीय अवलोकन</string>
+    <string name="txt_filter_dates">🗓️ दिनांक सीमा से फ़िल्टर करें</string>
+    <string name="txt_developed_by">श्रद्धा के साथ निर्मित ❤️ आदेश चंद्र</string>
+</resources>
