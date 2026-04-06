@@ -1,8 +1,10 @@
 package org.shda;
 
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -12,14 +14,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 
 public class MemberDetailActivity extends AppCompatActivity {
+
     private DatabaseReference db;
     private SessionManager session;
-    private String memberId;
-    private Member currentMember;
+    private String passedMemberId;
+    private Member activeMember;
+
+    private TextView tvId, tvName, tvRole, tvPhone, tvGotra, tvBlood, tvJoined, tvVerified, tvDonated;
+    private LinearLayout containerAdminControls;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,162 +33,104 @@ public class MemberDetailActivity extends AppCompatActivity {
 
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
-        memberId = getIntent().getStringExtra("MEMBER_ID");
+        passedMemberId = getIntent().getStringExtra("MEMBER_ID");
 
-        if (memberId == null || session.getCommunityId() == null) { finish(); return; }
+        if (passedMemberId == null) { finish(); return; }
 
-        LinearLayout layoutAdminControls = findViewById(R.id.layoutAdminControls);
-        if ("MEMBER".equals(session.getRole()) && layoutAdminControls != null) {
-            layoutAdminControls.setVisibility(View.GONE);
+        tvId = findViewById(R.id.tvInsightId);
+        tvName = findViewById(R.id.tvInsightName);
+        tvRole = findViewById(R.id.tvInsightRole);
+        tvPhone = findViewById(R.id.tvInsightPhone);
+        tvGotra = findViewById(R.id.tvInsightGotra);
+        tvBlood = findViewById(R.id.tvInsightBlood);
+        tvJoined = findViewById(R.id.tvInsightJoined);
+        tvVerified = findViewById(R.id.tvInsightVerified);
+        tvDonated = findViewById(R.id.tvInsightDonated);
+        containerAdminControls = findViewById(R.id.containerAdminControls);
+
+        loadMemberDetails();
+
+        // Standard Button Actions
+        findViewById(R.id.btnInsightPdf).setOnClickListener(v -> {
+            if (activeMember != null) PdfReportService.generateMemberProfile(this, session.getCommunityName(), activeMember);
+        });
+
+        Button btnAddDonation = findViewById(R.id.btnInsightAddDonation);
+        if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
+            btnAddDonation.setOnClickListener(v -> showQuickDonationDialog());
+        } else {
+            btnAddDonation.setVisibility(View.GONE);
         }
 
-        Button btnQuickDonation = findViewById(R.id.btnQuickDonation);
-        if (btnQuickDonation != null && ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole()))) {
-            btnQuickDonation.setVisibility(View.VISIBLE);
-            btnQuickDonation.setOnClickListener(v -> showQuickDonationDialog());
+        // Admin Only Buttons
+        if ("ADMIN".equals(session.getRole())) {
+            containerAdminControls.setVisibility(View.VISIBLE);
+            findViewById(R.id.btnPromote).setOnClickListener(v -> changeMemberRole("MANAGER"));
+            findViewById(R.id.btnDemote).setOnClickListener(v -> changeMemberRole("MEMBER"));
         }
-
-        loadMemberData();
-        calculateTrueDonationStats(); // 🚀 The Auto-Repair Engine!
-
-        Button btnExport = findViewById(R.id.btnExportProfilePdf);
-        if(btnExport != null) {
-            btnExport.setOnClickListener(v -> {
-                if (currentMember != null) PdfReportService.generateMemberProfile(this, session.getCommunityName(), currentMember);
-            });
-        }
-
-        Button btnPromote = findViewById(R.id.btnPromote);
-        if(btnPromote != null) btnPromote.setOnClickListener(v -> changeRole("MANAGER"));
-        
-        Button btnDemote = findViewById(R.id.btnDemote);
-        if(btnDemote != null) btnDemote.setOnClickListener(v -> changeRole("MEMBER"));
     }
 
-    private void loadMemberData() {
-        db.child("communities").child(session.getCommunityId()).child("members").child(memberId)
-          .addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                currentMember = snapshot.getValue(Member.class);
-                if (currentMember != null) { populateUI(); }
+    private void loadMemberDetails() {
+        DatabaseReference memberRef = db.child("communities").child(session.getCommunityId()).child("members").child(passedMemberId);
+        memberRef.keepSynced(true);
+        memberRef.addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                activeMember = snapshot.getValue(Member.class);
+                if (activeMember != null) {
+                    tvId.setText(activeMember.id);
+                    tvName.setText(activeMember.name);
+                    tvRole.setText(activeMember.role);
+                    
+                    tvPhone.setText("📞 " + (activeMember.phone != null ? activeMember.phone : "N/A"));
+                    tvGotra.setText("🕉️ Gotra: " + (activeMember.gotra != null && !activeMember.gotra.isEmpty() ? activeMember.gotra : "N/A"));
+                    tvBlood.setText("🩸 Blood Group: " + (activeMember.bloodGroup != null && !activeMember.bloodGroup.isEmpty() ? activeMember.bloodGroup : "N/A"));
+                    
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                    String joinDate = activeMember.timestamp > 0 ? sdf.format(new Date(activeMember.timestamp)) : "Unknown";
+                    tvJoined.setText("Joined: " + joinDate);
+                    
+                    tvVerified.setText("✍️ Profile verified by: " + (activeMember.addedBySignature != null ? activeMember.addedBySignature : "System"));
+                    tvDonated.setText("Total Donated: ৳" + activeMember.totalDonated);
+                }
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    // ✨ THIS FIXES THE DESYNC ERROR SILENTLY
-    private void calculateTrueDonationStats() {
-        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
-          .addValueEventListener(new ValueEventListener() {
-              @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                  float realTotal = 0f;
-                  long lastDate = 0L;
-                  
-                  for(DataSnapshot data : snapshot.getChildren()) {
-                      String name = data.child("name").getValue(String.class);
-                      Float amt = data.child("amount").getValue(Float.class);
-                      Long ts = data.child("timestamp").getValue(Long.class);
-                      
-                      // Match only if the ledger entry contains this member's ID
-                      if (name != null && name.contains("(" + memberId + ")") && amt != null) {
-                          realTotal += amt;
-                          if (ts != null && ts > lastDate) lastDate = ts;
-                      }
-                  }
-                  
-                  TextView tvDonated = findViewById(R.id.tvProfileDonated);
-                  if (tvDonated != null) {
-                      String statText = "Total Donated: ৳" + realTotal;
-                      if (lastDate > 0) {
-                          statText += "\nLast Chanda: " + new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date(lastDate));
-                      }
-                      tvDonated.setText(statText);
-                  }
-                  
-                  // 🔥 AUTO-REPAIR THE DATABASE SO THE MEMBER DIRECTORY FIXES ITSELF!
-                  db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("totalDonated").setValue(realTotal);
-                  if (currentMember != null) currentMember.totalDonated = realTotal;
-              }
-              @Override public void onCancelled(@NonNull DatabaseError error) {}
-          });
-    }
-
-    private void populateUI() {
-        TextView tvId = findViewById(R.id.tvProfileId); if(tvId != null) tvId.setText(currentMember.id);
-        TextView tvName = findViewById(R.id.tvProfileName); if(tvName != null) tvName.setText(currentMember.name);
-        TextView tvRole = findViewById(R.id.tvProfileRole); if(tvRole != null) tvRole.setText(currentMember.role);
-        TextView tvPhone = findViewById(R.id.tvProfilePhone); if(tvPhone != null) tvPhone.setText("📞 " + currentMember.phone);
-        TextView tvGotra = findViewById(R.id.tvProfileGotra); if(tvGotra != null) tvGotra.setText("🕉 Gotra: " + currentMember.gotra);
-        TextView tvBlood = findViewById(R.id.tvProfileBlood); if(tvBlood != null) tvBlood.setText("🩸 Blood Group: " + currentMember.bloodGroup);
-
-        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-        TextView tvJoined = findViewById(R.id.tvProfileJoined); 
-        if(tvJoined != null) tvJoined.setText("Joined: " + sdf.format(new Date(currentMember.timestamp)));
-
-        TextView tvFather = findViewById(R.id.tvProfileFather);
-        if (tvFather != null && currentMember.fatherName != null && !currentMember.fatherName.isEmpty()) { tvFather.setVisibility(View.VISIBLE); tvFather.setText("Father: " + currentMember.fatherName); }
-        
-        TextView tvMother = findViewById(R.id.tvProfileMother);
-        if (tvMother != null && currentMember.motherName != null && !currentMember.motherName.isEmpty()) { tvMother.setVisibility(View.VISIBLE); tvMother.setText("Mother: " + currentMember.motherName); }
-        
-        TextView tvNid = findViewById(R.id.tvProfileNid);
-        if (tvNid != null && currentMember.nid != null && !currentMember.nid.isEmpty()) { tvNid.setVisibility(View.VISIBLE); tvNid.setText("NID: " + currentMember.nid); }
-        
-        TextView tvAddress = findViewById(R.id.tvProfileAddress);
-        if (tvAddress != null && currentMember.address != null && !currentMember.address.isEmpty()) { tvAddress.setVisibility(View.VISIBLE); tvAddress.setText("Address: " + currentMember.address); }
-
-        TextView tvSignature = findViewById(R.id.tvProfileSignature);
-        if (tvSignature != null && currentMember.addedBySignature != null && !currentMember.addedBySignature.isEmpty()) { tvSignature.setVisibility(View.VISIBLE); tvSignature.setText("✍️ Profile verified by: " + currentMember.addedBySignature); }
-    }
-
     private void showQuickDonationDialog() {
-        if (currentMember == null) return;
+        if (activeMember == null) return;
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Record Chanda for " + currentMember.name);
+        builder.setTitle("Add Donation for " + activeMember.name);
 
-        LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
-        final android.widget.EditText inputAmount = new android.widget.EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL); layout.addView(inputAmount);
-        final android.widget.EditText inputNote = new android.widget.EditText(this); inputNote.setHint("Purpose / Note"); layout.addView(inputNote);
-
+        final EditText inputAmt = new EditText(this);
+        inputAmt.setHint("Amount in BDT (৳)");
+        inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        
+        LinearLayout layout = new LinearLayout(this);
+        layout.setPadding(50, 20, 50, 20);
+        layout.addView(inputAmt);
         builder.setView(layout);
-        builder.setPositiveButton("SAVE & RECEIPT", (dialog, which) -> {
-            String amtStr = inputAmount.getText().toString().trim();
-            String note = inputNote.getText().toString().trim();
-            if (amtStr.isEmpty()) { Toast.makeText(this, "Amount required", Toast.LENGTH_SHORT).show(); return; }
 
-            try {
-                float amount = Float.parseFloat(amtStr);
+        builder.setPositiveButton("RECORD", (dialog, which) -> {
+            String amtStr = inputAmt.getText().toString();
+            if (!amtStr.isEmpty()) {
+                float amt = Float.parseFloat(amtStr);
+                db.child("communities").child(session.getCommunityId()).child("members").child(activeMember.id).child("totalDonated").setValue(ServerValue.increment(amt));
+                
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
-                String strictSignature = "ADMIN".equals(session.getRole()) ? "Super Admin - " + session.getUserName() : "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
+                TransactionActivity.SingleDonation sd = new TransactionActivity.SingleDonation(transId, activeMember.name, amt, "Added via Profile Insights", "", "", session.getUserName(), System.currentTimeMillis(), session.getRole());
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
                 
-                String finalName = "[Member] " + currentMember.name + " (" + currentMember.id + ")";
-                
-                java.util.HashMap<String, Object> transMap = new java.util.HashMap<>();
-                transMap.put("name", finalName); transMap.put("amount", amount); transMap.put("note", note);
-                transMap.put("timestamp", System.currentTimeMillis()); transMap.put("loggedBy", strictSignature);
-
-                // Save to Ledger (The Auto-Repair engine will automatically pick this up and fix the balance!)
-                db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(transMap);
-                
-                AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "CHANDA_RECORDED", "Recorded ৳" + amount + " from profile: " + currentMember.name);
-                Toast.makeText(this, "Chanda Added! Generating PDF...", Toast.LENGTH_SHORT).show();
-
-                String dateStr = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date());
-                String finalNote = note + "\n✍️ Collected By: " + strictSignature;
-                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), finalName, amount, finalNote, dateStr);
-
-            } catch (Exception e) {}
+                Toast.makeText(this, "৳" + amt + " donation recorded!", Toast.LENGTH_SHORT).show();
+            }
         });
-        builder.setNegativeButton("CANCEL", null); builder.show();
+        builder.setNegativeButton("CANCEL", null);
+        builder.show();
     }
 
-    private void changeRole(String newRole) {
-        if ("ADMIN".equals(currentMember.role)) { Toast.makeText(this, "Cannot change Super Admin role", Toast.LENGTH_SHORT).show(); return; }
-        db.child("communities").child(session.getCommunityId()).child("members").child(memberId).child("role").setValue(newRole);
-        String encodedEmail = session.getWorkspaceEmail().replace(".", ",");
-        db.child("login_vault").child(encodedEmail).child(memberId).child("role").setValue(newRole);
-        Toast.makeText(this, "Role updated to " + newRole, Toast.LENGTH_SHORT).show();
-        AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "ROLE_CHANGED", "Changed role of " + currentMember.name + " to " + newRole);
+    private void changeMemberRole(String newRole) {
+        if (activeMember == null) return;
+        db.child("communities").child(session.getCommunityId()).child("members").child(activeMember.id).child("role").setValue(newRole);
+        Toast.makeText(this, activeMember.name + " is now a " + newRole + "!", Toast.LENGTH_SHORT).show();
     }
 }
