@@ -83,7 +83,6 @@ public class PollActivity extends AppCompatActivity {
                 
                 boolean isClosed = now > poll.endTimestamp;
                 
-                // Set Header Data
                 TextView tvStatus = view.findViewById(R.id.tvPollStatus);
                 tvStatus.setText(isClosed ? "🔴 CLOSED" : "🟢 ACTIVE");
                 tvStatus.setTextColor(Color.parseColor(isClosed ? "#D32F2F" : "#2E7D32"));
@@ -92,7 +91,6 @@ public class PollActivity extends AppCompatActivity {
                 ((TextView) view.findViewById(R.id.tvPollCreator)).setText("Created by " + poll.createdBy);
                 ((TextView) view.findViewById(R.id.tvPollQuestion)).setText("📊 " + poll.question);
 
-                // Calculate Votes
                 int totalVotes = poll.votes != null ? poll.votes.size() : 0;
                 int countA = 0, countB = 0, countC = 0, countD = 0;
                 boolean hasVoted = false;
@@ -115,9 +113,8 @@ public class PollActivity extends AppCompatActivity {
                 LinearLayout optionsContainer = view.findViewById(R.id.pollOptionsContainer);
                 Button btnVote = view.findViewById(R.id.btnVote);
 
-                // ✨ SMART UI LOGIC: Show results inline if voted or closed!
                 if (isClosed || hasVoted) {
-                    btnVote.setVisibility(View.GONE); // Hide vote button
+                    btnVote.setVisibility(View.GONE); 
                     
                     addResultBar(optionsContainer, poll.optionA, countA, totalVotes, myVote.equals("A"));
                     addResultBar(optionsContainer, poll.optionB, countB, totalVotes, myVote.equals("B"));
@@ -132,7 +129,6 @@ public class PollActivity extends AppCompatActivity {
                     optionsContainer.addView(tvTotal);
 
                 } else {
-                    // Active and not voted: Show simple list and Vote Button
                     btnVote.setVisibility(View.VISIBLE);
                     btnVote.setOnClickListener(v -> showVotingDialog(poll));
                     
@@ -151,7 +147,6 @@ public class PollActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ UI HELPER: Draws the beautiful inline Progress Bars
     private void addResultBar(LinearLayout container, String optionText, int votes, int totalVotes, boolean isMyVote) {
         int percentage = totalVotes == 0 ? 0 : Math.round(((float) votes / totalVotes) * 100);
         
@@ -176,7 +171,6 @@ public class PollActivity extends AppCompatActivity {
         textRow.addView(tvOpt);
         textRow.addView(tvPct);
 
-        // Native Progress Bar Track
         LinearLayout barRow = new LinearLayout(this);
         barRow.setOrientation(LinearLayout.HORIZONTAL);
         barRow.setPadding(0, 8, 0, 0);
@@ -230,7 +224,7 @@ public class PollActivity extends AppCompatActivity {
             long days = Long.parseLong(daysStr); long endTs = System.currentTimeMillis() + (days * 24 * 60 * 60 * 1000);
             String pollId = db.child("communities").child(session.getCommunityId()).child("polls").push().getKey();
             
-            // ✨ THE FIX: Bulletproof Direct Database Write overrides constructor issues!
+            // 100% Compile-Safe HashMap mapping
             HashMap<String, Object> pollMap = new HashMap<>();
             pollMap.put("id", pollId);
             pollMap.put("question", q);
@@ -260,7 +254,6 @@ public class PollActivity extends AppCompatActivity {
         builder.show();
     }
 
-    // ✨ Master Definition
     public static class Poll {
         public String id, question, optionA, optionB, optionC, optionD, createdBy;
         public long timestamp, endTimestamp;
