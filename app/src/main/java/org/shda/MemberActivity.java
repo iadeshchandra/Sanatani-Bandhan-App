@@ -6,23 +6,30 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class MemberActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout membersContainer;
-    private EditText inputSearch;
+    private AutoCompleteTextView inputSearch;
     private List<Member> fullMemberList = new ArrayList<>();
+    
+    // Maps Member Name -> "Last Donated: 12 Apr 2026"
+    private HashMap<String, String> lastDonationTracker = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,69 +41,91 @@ public class MemberActivity extends AppCompatActivity {
 
         if (session.getCommunityId() == null) { finish(); return; }
 
-        try {
-            membersContainer = findViewById(R.id.membersContainer);
-            inputSearch = findViewById(R.id.inputSearch);
-            
-            View btnAddNew = findViewById(R.id.btnAddNew);
-            if (btnAddNew != null) {
-                btnAddNew.setOnClickListener(v -> startActivity(new Intent(MemberActivity.this, AddMemberActivity.class)));
-            }
-
-            View btnSharePdf = findViewById(R.id.btnSharePdf);
-            if (btnSharePdf != null) {
-                btnSharePdf.setOnClickListener(v -> {
-                    if (!fullMemberList.isEmpty()) {
-                        PdfReportService.generateMemberDirectory(this, session.getCommunityName(), fullMemberList);
-                    } else {
-                        Toast.makeText(this, "No members to export", Toast.LENGTH_SHORT).show();
-                    }
-                });
-            }
-        } catch (Exception e) { 
-            e.printStackTrace(); 
-        }
+        membersContainer = findViewById(R.id.membersContainer);
+        inputSearch = findViewById(R.id.inputSearch);
+        
+        findViewById(R.id.btnAddNew).setOnClickListener(v -> startActivity(new Intent(this, AddMemberActivity.class)));
+        findViewById(R.id.btnSharePdf).setOnClickListener(v -> {
+            if (!fullMemberList.isEmpty()) PdfReportService.generateMemberDirectory(this, session.getCommunityName(), fullMemberList);
+        });
 
         setupOfflineEngineAndLoadData();
         setupSearch();
     }
 
     private void setupOfflineEngineAndLoadData() {
+        // 1. Load Members
         DatabaseReference membersRef = db.child("communities").child(session.getCommunityId()).child("members");
         membersRef.keepSynced(true);
         membersRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 fullMemberList.clear();
+                List<String> suggestions = new ArrayList<>();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Member m = data.getValue(Member.class);
-                    if (m != null) fullMemberList.add(m);
+                    if (m != null) {
+                        fullMemberList.add(m);
+                        suggestions.add(m.name);
+                        suggestions.add(m.id);
+                    }
                 }
+                
+                // ✨ Power up the Auto-Complete Dropdown
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(MemberActivity.this, android.R.layout.simple_dropdown_item_1line, suggestions);
+                inputSearch.setAdapter(adapter);
+                
                 renderList(fullMemberList);
             }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {}
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+
+        // 2. Load Last Donations silently to map them
+        DatabaseReference donationsRef = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation");
+        donationsRef.keepSynced(true);
+        donationsRef.addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                lastDonationTracker.clear();
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yy, hh:mm a", Locale.getDefault());
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    String name = data.child("name").getValue(String.class);
+                    Long ts = data.child("timestamp").getValue(Long.class);
+                    Float amt = data.child("amount").getValue(Float.class);
+                    if (name != null && ts != null && amt != null) {
+                        // Because Firebase loads in order, this will naturally overwrite and keep the newest date
+                        lastDonationTracker.put(name, "Last: ৳" + amt + " on " + sdf.format(new Date(ts)));
+                    }
+                }
+                renderList(fullMemberList); // Re-render to show dates
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
     private void setupSearch() {
-        if (inputSearch == null) return;
         inputSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                String query = s.toString().toLowerCase().trim();
-                List<Member> filteredList = new ArrayList<>();
-                for (Member m : fullMemberList) {
-                    if ((m.name != null && m.name.toLowerCase().contains(query)) || 
-                        (m.id != null && m.id.toLowerCase().contains(query)) ||
-                        (m.phone != null && m.phone.contains(query))) {
-                        filteredList.add(m);
-                    }
-                }
-                renderList(filteredList);
+                filterList(s.toString());
             }
             @Override public void afterTextChanged(Editable s) {}
         });
+        
+        inputSearch.setOnItemClickListener((parent, view, position, id) -> {
+            filterList(inputSearch.getText().toString());
+        });
+    }
+    
+    private void filterList(String query) {
+        query = query.toLowerCase().trim();
+        List<Member> filteredList = new ArrayList<>();
+        for (Member m : fullMemberList) {
+            if ((m.name != null && m.name.toLowerCase().contains(query)) || 
+                (m.id != null && m.id.toLowerCase().contains(query)) ||
+                (m.phone != null && m.phone.contains(query))) {
+                filteredList.add(m);
+            }
+        }
+        renderList(filteredList);
     }
 
     private void renderList(List<Member> listToRender) {
@@ -104,48 +133,26 @@ public class MemberActivity extends AppCompatActivity {
         membersContainer.removeAllViews();
 
         for (Member member : listToRender) {
-            try {
-                View view = LayoutInflater.from(this).inflate(R.layout.item_member, membersContainer, false);
-                ((TextView) view.findViewById(R.id.tvMemberName)).setText(member.name);
-                ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id + " | " + member.phone);
-                ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Donated: ৳" + member.totalDonated);
-
-                view.setOnClickListener(v -> showSafeMemberProfile(member));
-                membersContainer.addView(view);
-            } catch (Exception e) {
-                TextView fallbackText = new TextView(this);
-                fallbackText.setText("👤 " + member.name + " (" + member.id + ")\nDonated: ৳" + member.totalDonated);
-                fallbackText.setPadding(40, 40, 40, 40);
-                fallbackText.setTextSize(16f);
-                fallbackText.setOnClickListener(v -> showSafeMemberProfile(member));
-                membersContainer.addView(fallbackText);
-            }
-        }
-    }
-
-    private void showSafeMemberProfile(Member member) {
-        try {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("👤 " + member.name);
+            View view = LayoutInflater.from(this).inflate(R.layout.item_member, membersContainer, false);
+            ((TextView) view.findViewById(R.id.tvMemberName)).setText(member.name);
+            ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id + " | 📞 " + member.phone);
+            ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Donated: ৳" + member.totalDonated);
             
-            String phone = member.phone != null ? member.phone : "N/A";
-            String gotra = member.gotra != null && !member.gotra.isEmpty() ? member.gotra : "Not specified";
-            String bloodGroup = member.bloodGroup != null && !member.bloodGroup.isEmpty() ? member.bloodGroup : "Not specified";
+            // Apply last donation if found
+            TextView tvLast = view.findViewById(R.id.tvLastDonation);
+            if (lastDonationTracker.containsKey(member.name)) {
+                tvLast.setText(lastDonationTracker.get(member.name));
+            } else {
+                tvLast.setText("No donations yet");
+            }
 
-            String details = "SB-ID: " + member.id + "\n"
-                           + "Phone: " + phone + "\n"
-                           + "Gotra: " + gotra + "\n"
-                           + "Blood Group: " + bloodGroup + "\n\n"
-                           + "Total Donated: ৳" + member.totalDonated;
-
-            builder.setMessage(details);
-            builder.setPositiveButton("📄 Export PDF", (dialog, which) -> {
-                PdfReportService.generateMemberProfile(MemberActivity.this, session.getCommunityName(), member);
+            // ✨ Open Dedicated Insights Screen
+            view.setOnClickListener(v -> {
+                Intent intent = new Intent(MemberActivity.this, MemberDetailActivity.class);
+                intent.putExtra("MEMBER_ID", member.id);
+                startActivity(intent);
             });
-            builder.setNegativeButton("Close", null);
-            builder.show();
-        } catch (Exception e) {
-            Toast.makeText(this, "Could not open profile.", Toast.LENGTH_SHORT).show();
+            membersContainer.addView(view);
         }
     }
 }
