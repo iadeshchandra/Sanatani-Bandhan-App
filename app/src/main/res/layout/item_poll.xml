@@ -2,34 +2,18 @@
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp" app:cardCornerRadius="12dp"
-    app:cardElevation="4dp" app:cardBackgroundColor="#E3F2FD">
+    app:cardCornerRadius="8dp" app:cardElevation="2dp" android:layout_marginBottom="12dp">
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-
-        <TextView android:id="@+id/tvPollExpiry" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginBottom="8dp"/>
         
-        <TextView android:id="@+id/tvPollQuestion" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#0D47A1"/>
-        <TextView android:id="@+id/tvLiveCounts" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#1565C0" android:layout_marginTop="8dp" android:textStyle="bold"/>
+        <TextView android:id="@+id/tvPollQuestion" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="4dp"/>
         
-        <TextView android:id="@+id/tvOfficialComment" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#424242" android:textStyle="italic" android:layout_marginTop="8dp" android:visibility="gone" android:padding="8dp" android:background="#BBDEFB"/>
-
-        <LinearLayout android:id="@+id/layoutVoting" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="12dp" android:weightSum="2">
-            <Button android:id="@+id/btnOptionA" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginEnd="4dp" android:backgroundTint="#1976D2"/>
-            <Button android:id="@+id/btnOptionB" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:backgroundTint="#F57C00"/>
+        <TextView android:id="@+id/tvPollStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold" android:layout_marginBottom="12dp"/>
+        
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
+            <Button android:id="@+id/btnVote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="45dp" android:text="Vote" android:backgroundTint="#1976D2" android:layout_marginEnd="4dp"/>
+            <Button android:id="@+id/btnDownloadPollPdf" android:layout_width="0dp" android:layout_weight="1" android:layout_height="45dp" android:text="PDF Insight" android:backgroundTint="#455A64" android:layout_marginStart="4dp"/>
         </LinearLayout>
-
-        <LinearLayout android:id="@+id/layoutVoting2" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="8dp" android:weightSum="2">
-            <Button android:id="@+id/btnOptionC" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginEnd="4dp" android:backgroundTint="#388E3C" android:visibility="gone"/>
-            <Button android:id="@+id/btnOptionD" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="4dp" android:backgroundTint="#7B1FA2" android:visibility="gone"/>
-        </LinearLayout>
-
-        <TextView android:id="@+id/tvPollStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#2E7D32" android:textStyle="bold" android:layout_marginTop="12dp" android:visibility="gone" android:gravity="center"/>
-
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="12dp">
-            <Button android:id="@+id/btnAddComment" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Add Remark" android:textSize="10sp" android:backgroundTint="#757575" android:visibility="gone" android:layout_marginEnd="8dp"/>
-            <Button android:id="@+id/btnDownloadPollData" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Download Insight PDF" android:textSize="11sp" android:backgroundTint="#0D47A1"/>
-        </LinearLayout>
-
+        
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
