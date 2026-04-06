@@ -19,7 +19,6 @@ public class FCMNotificationService extends FirebaseMessagingService {
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
 
-        // Check if message contains a notification payload.
         if (remoteMessage.getNotification() != null) {
             String title = remoteMessage.getNotification().getTitle();
             String body = remoteMessage.getNotification().getBody();
@@ -37,7 +36,7 @@ public class FCMNotificationService extends FirebaseMessagingService {
 
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, channelId)
-                        .setSmallIcon(R.mipmap.ic_launcher_round)
+                        .setSmallIcon(R.mipmap.ic_launcher)
                         .setContentTitle(title)
                         .setContentText(messageBody)
                         .setAutoCancel(true)
@@ -46,7 +45,6 @@ public class FCMNotificationService extends FirebaseMessagingService {
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // Android 8.0+ requires a Notification Channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     channelId, "Mandir Announcements", NotificationManager.IMPORTANCE_HIGH);
@@ -57,8 +55,5 @@ public class FCMNotificationService extends FirebaseMessagingService {
     }
 
     @Override
-    public void onNewToken(@NonNull String token) {
-        // Here you would normally save the token to Firebase Database under the user's profile
-        // so the Admin can send targeted messages to specific phones.
-    }
+    public void onNewToken(@NonNull String token) {}
 }
