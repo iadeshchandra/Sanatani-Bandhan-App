@@ -220,7 +220,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // ✨ RESTORED & UPGRADED: Expense Reports
     public static void generateExpenseReport(Context context, String communityName, List<Expense> expenseList, float totalExpense, String reportRange) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); 
@@ -277,7 +276,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // ✨ RESTORED & UPGRADED: Poll Reports
     public static void generatePollReport(Context context, String communityName, Poll poll, boolean isSuperAdmin) {
         try {
             File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
@@ -338,7 +336,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // 8. SECURITY AUDIT
     public static class AuditEntry {
         public String date, user, action, details, role;
         public AuditEntry(String d, String u, String a, String det, String r) { date=d; user=u; action=a; details=det; role=r; }
@@ -393,5 +390,14 @@ public class PdfReportService {
             document.add(new Paragraph("\n[End of Official Audit Record]").setItalic().setFontSize(9).setTextAlignment(TextAlignment.CENTER).setFontColor(new DeviceRgb(150,150,150)));
             document.close(); shareFile(context, file, communityName + " - Security Audit");
         } catch (Exception e) {}
+    }
+
+    // ✨ RESTORED THE MAGIC SHARING HELPER!
+    private static void shareFile(Context context, File file, String subject) {
+        Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
+        Intent shareIntent = new Intent(Intent.ACTION_SEND); shareIntent.setType("application/pdf");
+        shareIntent.putExtra(Intent.EXTRA_STREAM, uri); shareIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        context.startActivity(Intent.createChooser(shareIntent, "Share PDF via..."));
     }
 }
