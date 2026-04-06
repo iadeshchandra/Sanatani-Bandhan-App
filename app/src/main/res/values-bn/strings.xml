@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">সনাতনী বন্ধন</string>
+    <string name="btn_member_directory">👥 সদস্য তালিকা</string>
+    <string name="btn_smart_chanda">💰 স্মার্ট চাঁদা</string>
+    <string name="btn_utsav_expenses">🪔 উৎসব খরচ</string>
+    <string name="btn_sanatani_polls">🗳️ সনাতনী পোল</string>
+    <string name="btn_mandir_events">📅 মন্দির ইভেন্ট</string>
+    <string name="btn_mass_sandesh">📢 গণ বার্তা</string>
+    <string name="btn_generate_pdfs">📄 আর্থিক পিডিএফ তৈরি করুন</string>
+    <string name="btn_security_audit">🛡️ সিকিউরিটি অডিট ডাউনলোড</string>
+    <string name="btn_workspace_settings">⚙️ ওয়ার্কস্পেস সেটিংস</string>
+    <string name="btn_change_language">🌐 ভাষা পরিবর্তন করুন</string>
+    <string name="btn_logout">লগআউট</string>
+    <string name="txt_financial_overview">আর্থিক বিবরণী</string>
+    <string name="txt_filter_dates">🗓️ তারিখ অনুযায়ী ফিল্টার করুন</string>
+    <string name="txt_developed_by">শ্রদ্ধার সাথে তৈরি করেছেন ❤️ আদেশ চন্দ্র</string>
+</resources>
