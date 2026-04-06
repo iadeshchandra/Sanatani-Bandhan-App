@@ -33,16 +33,15 @@ public class TransactionActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout transactionsContainer;
-    private TextView tvTotalChanda;
+    private TextView tvTotalDonations;
     private EditText inputSearch;
     private Spinner spinnerSort;
 
     private float totalChandaValue = 0f;
     private boolean isAdminOrManager;
 
-    // Auto-complete lists
     private List<String> memberSearchList = new ArrayList<>();
-    private HashMap<String, String> memberIdMap = new HashMap<>(); // Maps "Name (ID)" -> "ID"
+    private HashMap<String, String> memberIdMap = new HashMap<>(); 
 
     private HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
     private List<GroupedDonation> displayList = new ArrayList<>();
@@ -56,7 +55,7 @@ public class TransactionActivity extends AppCompatActivity {
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
         transactionsContainer = findViewById(R.id.transactionsContainer);
-        tvTotalChanda = findViewById(R.id.tvTotalChanda);
+        tvTotalDonations = findViewById(R.id.tvTotalDonations);
         inputSearch = findViewById(R.id.inputSearch);
         spinnerSort = findViewById(R.id.spinnerSort);
 
@@ -70,10 +69,10 @@ public class TransactionActivity extends AppCompatActivity {
     }
 
     private void setupRBAC() {
-        View btnAddDonation = findViewById(R.id.btnAddDonation);
-        if (btnAddDonation != null) {
-            if (!isAdminOrManager) btnAddDonation.setVisibility(View.GONE);
-            else btnAddDonation.setOnClickListener(v -> showDonationDialog());
+        View btnAddTransaction = findViewById(R.id.btnAddTransaction);
+        if (btnAddTransaction != null) {
+            if (!isAdminOrManager) btnAddTransaction.setVisibility(View.GONE);
+            else btnAddTransaction.setOnClickListener(v -> showDonationDialog());
         }
         findViewById(R.id.btnGenerateReport).setOnClickListener(v -> triggerMasterReportGeneration());
     }
@@ -105,7 +104,7 @@ public class TransactionActivity extends AppCompatActivity {
                     if (m != null) {
                         String displayText = m.name + " (" + m.id + ")";
                         memberSearchList.add(displayText);
-                        memberIdMap.put(displayText, m.id); // Save ID for notifications!
+                        memberIdMap.put(displayText, m.id); 
                     }
                 }
             }
@@ -138,7 +137,7 @@ public class TransactionActivity extends AppCompatActivity {
                         }
                     } catch (Exception e) {}
                 }
-                tvTotalChanda.setText("Total Smart Chanda: ৳" + totalChandaValue);
+                tvTotalDonations.setText("Total Collected: ৳" + totalChandaValue);
                 applyFilterAndSort();
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
@@ -207,7 +206,6 @@ public class TransactionActivity extends AppCompatActivity {
                 SingleDonation sd = new SingleDonation(transId, nameInput, amt, inputNote.getText().toString().trim(), "", "", session.getUserName(), ts, strictSignature);
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
                 
-                // ✨ NOTIFICATION ENGINE: Send Alert to the specific member!
                 if (memberIdMap.containsKey(nameInput)) {
                     String targetMemberId = memberIdMap.get(nameInput);
                     String notifId = db.child("communities").child(session.getCommunityId()).child("notifications").child(targetMemberId).push().getKey();
@@ -240,7 +238,6 @@ public class TransactionActivity extends AppCompatActivity {
     }
 
     private void triggerMasterReportGeneration() {
-       // Code hidden for brevity - generates PDF based on date
        Toast.makeText(this, "Use Dashboard to generate Master PDF", Toast.LENGTH_SHORT).show();
     }
 
