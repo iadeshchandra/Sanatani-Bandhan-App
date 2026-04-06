@@ -48,7 +48,6 @@ public class DashboardActivity extends AppCompatActivity {
     private long filterStartTs = 0L;
     private long filterEndTs = Long.MAX_VALUE;
 
-    // 🌐 LANGUAGE ENGINE OVERRIDE
     @Override
     protected void attachBaseContext(Context newBase) {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
@@ -85,7 +84,6 @@ public class DashboardActivity extends AppCompatActivity {
         applyPermissions(session.getRole());
         setupNavigation();
         setupVisualAnalytics(); 
-        
         listenForSmartNotifications();
 
         btnFilterChartDate.setOnClickListener(v -> showChartDateFilterDialog());
@@ -98,18 +96,33 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
 
+        // ✨ NEW: HELP & SUPPORT CLICK LISTENER
+        findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
+
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut(); session.logout();
             startActivity(new Intent(this, LoginActivity.class)); finish();
         });
     }
 
-    // 🔔 SMART PUSH NOTIFICATION ENGINE
+    // ✨ NEW: WHATSAPP SUPPORT ENGINE
+    private void contactSupport() {
+        try {
+            // Update this with your actual phone number, keeping the country code (+880 for BD)
+            String supportNumber = "+8801700000000"; 
+            String message = "Namaskar Adesh, I need some technical support with the Sanatani Bandhan app.";
+            
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://api.whatsapp.com/send?phone=" + supportNumber + "&text=" + Uri.encode(message)));
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "WhatsApp is not installed.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void listenForSmartNotifications() {
         if (session.getUserId() == null) return;
-
         DatabaseReference notifRef = db.child("communities").child(session.getCommunityId()).child("notifications").child(session.getUserId());
-        
         notifRef.addChildEventListener(new ChildEventListener() {
             @Override public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 AppNotification notif = snapshot.getValue(AppNotification.class);
@@ -152,15 +165,11 @@ public class DashboardActivity extends AppCompatActivity {
     @Override protected void onResume() { super.onResume(); shlokaHandler.post(shlokaRunnable); }
     @Override protected void onPause() { super.onPause(); shlokaHandler.removeCallbacks(shlokaRunnable); }
 
-    // ✨ UPDATED: PANCHANG (TITHI) ALERT ENGINE ADDED HERE
     private void setupDates() {
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
         ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
-        
         TextView tvTithi = findViewById(R.id.tvTithiAlert);
-        if (tvTithi != null) {
-            tvTithi.setText(PanchangEngine.getTodayTithiAlert());
-        }
+        if (tvTithi != null) tvTithi.setText(PanchangEngine.getTodayTithiAlert());
     }
 
     private void applyPermissions(String role) {
