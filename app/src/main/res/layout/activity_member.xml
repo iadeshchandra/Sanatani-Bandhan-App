@@ -4,20 +4,22 @@
     android:orientation="vertical" android:background="#FAF9F6" android:padding="16dp">
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Member Directory" android:textSize="24sp" android:textStyle="bold" android:textColor="#E65100"/>
-    
+        android:text="Member Directory" android:textSize="26sp" android:textStyle="bold"
+        android:textColor="#212121" android:layout_marginBottom="4dp"/>
+        
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
         android:text="Sanatani Bandhan CRM" android:textSize="14sp" android:textColor="#757575" android:layout_marginBottom="16dp"/>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="16dp">
-        <Button android:id="@+id/btnGoToAdd" android:layout_width="0dp" android:layout_height="55dp"
-            android:layout_weight="1" android:text="+ Add New" android:backgroundTint="#1976D2" android:layout_marginEnd="8dp"/>
-        <Button android:id="@+id/btnSharePdf" android:layout_width="0dp" android:layout_height="55dp"
-            android:layout_weight="1" android:text="Share PDF" android:backgroundTint="#388E3C" android:layout_marginStart="8dp"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="16dp">
+        <Button android:id="@+id/btnAddNew" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp"
+            android:text="+ ADD NEW" android:backgroundTint="#1976D2" android:layout_marginEnd="6dp"/>
+
+        <Button android:id="@+id/btnSharePdf" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp"
+            android:text="SHARE PDF" android:backgroundTint="#388E3C" android:layout_marginStart="6dp"/>
     </LinearLayout>
 
-    <EditText android:id="@+id/searchBar" android:layout_width="match_parent" android:layout_height="50dp"
-        android:hint="Search by Name or SB-ID..." android:background="#FFFFFF" android:paddingHorizontal="16dp" android:elevation="2dp" android:layout_marginBottom="16dp"/>
+    <EditText android:id="@+id/inputSearch" android:layout_width="match_parent" android:layout_height="55dp"
+        android:hint="Search by Name or SB-ID..." android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp"/>
 
     <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
         <LinearLayout android:id="@+id/membersContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
