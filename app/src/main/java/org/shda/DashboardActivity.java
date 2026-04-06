@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
@@ -12,6 +13,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
@@ -34,10 +36,14 @@ public class DashboardActivity extends AppCompatActivity {
     
     private float totalIncome = 0f;
     private float totalExpense = 0f;
-    
-    // ✨ Chart Filter Limits
     private long filterStartTs = 0L;
     private long filterEndTs = Long.MAX_VALUE;
+
+    // ✨ CRITICAL FOR LANGUAGES: Forces Android to load our custom dictionary
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
 
     private Handler shlokaHandler = new Handler(Looper.getMainLooper());
     private Runnable shlokaRunnable = new Runnable() {
@@ -78,9 +84,11 @@ public class DashboardActivity extends AppCompatActivity {
             startActivity(browserIntent);
         });
 
-        // ✨ RESTORED: Settings & Logout Logic
         findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
         
+        // 🌐 LANGUAGE SWITCHER TRIGGER
+        findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
+
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut(); session.logout();
             startActivity(new Intent(this, LoginActivity.class)); finish();
@@ -111,7 +119,6 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    // 📊 CHART LOGIC
     private void setupVisualAnalytics() {
         pieChart.getDescription().setEnabled(false); pieChart.setHoleColor(Color.WHITE);
         pieChart.setTransparentCircleRadius(50f); pieChart.setCenterTextSize(14f); pieChart.setCenterTextColor(Color.parseColor("#E65100"));
@@ -122,8 +129,7 @@ public class DashboardActivity extends AppCompatActivity {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 totalIncome = 0f;
                 for (DataSnapshot data : snapshot.getChildren()) {
-                    Long ts = data.child("timestamp").getValue(Long.class);
-                    Float amt = data.child("amount").getValue(Float.class);
+                    Long ts = data.child("timestamp").getValue(Long.class); Float amt = data.child("amount").getValue(Float.class);
                     if (amt != null && ts != null && ts >= filterStartTs && ts <= filterEndTs) { totalIncome += amt; }
                 }
                 updatePieChart();
@@ -135,8 +141,7 @@ public class DashboardActivity extends AppCompatActivity {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 totalExpense = 0f;
                 for (DataSnapshot data : snapshot.getChildren()) {
-                    Long ts = data.child("timestamp").getValue(Long.class);
-                    Float amt = data.child("amount").getValue(Float.class);
+                    Long ts = data.child("timestamp").getValue(Long.class); Float amt = data.child("amount").getValue(Float.class);
                     if (amt != null && ts != null && ts >= filterStartTs && ts <= filterEndTs) { totalExpense += amt; }
                 }
                 updatePieChart();
@@ -147,11 +152,11 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void updatePieChart() {
         List<PieEntry> entries = new ArrayList<>();
-        if (totalIncome > 0) entries.add(new PieEntry(totalIncome, "Total Chanda"));
-        if (totalExpense > 0) entries.add(new PieEntry(totalExpense, "Utsav Expenses"));
+        if (totalIncome > 0) entries.add(new PieEntry(totalIncome, ""));
+        if (totalExpense > 0) entries.add(new PieEntry(totalExpense, ""));
 
         if (entries.isEmpty()) {
-            entries.add(new PieEntry(1f, "No Data for Period")); pieChart.setCenterText("No Data");
+            entries.add(new PieEntry(1f, "")); pieChart.setCenterText("No Data");
         } else {
             pieChart.setCenterText("Net Balance\n৳" + (totalIncome - totalExpense));
         }
@@ -174,11 +179,30 @@ public class DashboardActivity extends AppCompatActivity {
                 
                 SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yy", Locale.getDefault());
                 btnFilterChartDate.setText("🗓️ " + sdf.format(startCal.getTime()) + " to " + sdf.format(endCal.getTime()));
-                
                 setupVisualAnalytics();
-                
             }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
         }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    }
+
+    // 🌐 THE LANGUAGE SELECTION DIALOG
+    private void showLanguageDialog() {
+        String[] languages = {"English", "বাংলা (Bengali)", "हिन्दी (Hindi)"};
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Select Language / ভাষা নির্বাচন করুন");
+        
+        builder.setItems(languages, (dialog, which) -> {
+            if (which == 0) LocaleHelper.setLocale(DashboardActivity.this, "en");
+            else if (which == 1) LocaleHelper.setLocale(DashboardActivity.this, "bn");
+            else if (which == 2) LocaleHelper.setLocale(DashboardActivity.this, "hi");
+            
+            // Instantly restarts the screen to apply the new language!
+            Intent intent = new Intent(DashboardActivity.this, DashboardActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            finish();
+        });
+        builder.show();
     }
 
     private void setupNavigation() {
@@ -189,7 +213,6 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
 
-        // ✨ RESTORED: Generate Financial PDFs Logic
         Button btnGenerateReports = findViewById(R.id.btnGenerateReports);
         if (btnGenerateReports != null) {
             btnGenerateReports.setOnClickListener(v -> {
@@ -198,13 +221,11 @@ public class DashboardActivity extends AppCompatActivity {
                     startCal.set(year, month, dayOfMonth, 0, 0, 0); 
                     new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
                         endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
-                        long startTimestamp = startCal.getTimeInMillis(); long endTimestamp = endCal.getTimeInMillis();
-                        SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-                        String reportRange = "Period: " + displayFormat.format(startCal.getTime()) + " to " + displayFormat.format(endCal.getTime());
+                        long startTs = startCal.getTimeInMillis(); long endTs = endCal.getTimeInMillis();
+                        String reportRange = "Period: " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(startCal.getTime()) + " to " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(endCal.getTime());
 
-                        Toast.makeText(this, "Auditing Financials...", Toast.LENGTH_SHORT).show();
                         db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
-                          .orderByChild("timestamp").startAt(startTimestamp).endAt(endTimestamp)
+                          .orderByChild("timestamp").startAt(startTs).endAt(endTs)
                           .addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                                 List<String> names = new ArrayList<>(); List<Float> amounts = new ArrayList<>();
@@ -227,7 +248,6 @@ public class DashboardActivity extends AppCompatActivity {
             });
         }
 
-        // ✨ RESTORED: Download Security Audit Logic
         Button btnDownloadAudit = findViewById(R.id.btnDownloadAudit);
         if (btnDownloadAudit != null) {
             btnDownloadAudit.setOnClickListener(v -> {
@@ -236,13 +256,11 @@ public class DashboardActivity extends AppCompatActivity {
                     startCal.set(year, month, dayOfMonth, 0, 0, 0); 
                     new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
                         endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
-                        long startTimestamp = startCal.getTimeInMillis(); long endTimestamp = endCal.getTimeInMillis();
-                        SimpleDateFormat displayFormat = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-                        String reportRange = "Audit Period: " + displayFormat.format(startCal.getTime()) + " to " + displayFormat.format(endCal.getTime());
+                        long startTs = startCal.getTimeInMillis(); long endTs = endCal.getTimeInMillis();
+                        String reportRange = "Audit Period: " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(startCal.getTime()) + " to " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(endCal.getTime());
 
-                        Toast.makeText(this, "Compiling Audit Logs...", Toast.LENGTH_SHORT).show();
                         db.child("communities").child(session.getCommunityId()).child("audit_logs")
-                          .orderByChild("timestamp").startAt(startTimestamp).endAt(endTimestamp)
+                          .orderByChild("timestamp").startAt(startTs).endAt(endTs)
                           .addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                                 List<String> auditEntries = new ArrayList<>();
@@ -268,16 +286,11 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void showEditCommunityDialog() {
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Edit Community Name");
-        builder.setMessage("This name will appear on all new PDFs and reports.");
 
         final android.widget.EditText input = new android.widget.EditText(this);
         input.setText(session.getCommunityName());
-        
-        android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.MATCH_PARENT);
-        input.setLayoutParams(lp);
         
         android.widget.LinearLayout container = new android.widget.LinearLayout(this);
         container.setPadding(50, 20, 50, 0); container.addView(input);
@@ -285,24 +298,19 @@ public class DashboardActivity extends AppCompatActivity {
 
         builder.setPositiveButton("SAVE", (dialog, which) -> {
             String newName = input.getText().toString().trim();
-            if (!newName.isEmpty()) { updateCommunityNameInDatabase(newName); } 
-            else { Toast.makeText(this, "Name cannot be empty", Toast.LENGTH_SHORT).show(); }
+            if (!newName.isEmpty()) {
+                String uid = FirebaseAuth.getInstance().getCurrentUser() != null ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+                if (uid != null) {
+                    db.child("users").child(uid).child("communityName").setValue(newName)
+                        .addOnSuccessListener(aVoid -> {
+                            session.updateCommunityName(newName);
+                            ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
+                            Toast.makeText(this, "Updated", Toast.LENGTH_SHORT).show();
+                        });
+                }
+            } 
         });
         builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
         builder.show();
-    }
-
-    private void updateCommunityNameInDatabase(String newName) {
-        String uid = FirebaseAuth.getInstance().getCurrentUser() != null ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
-        if (uid != null) {
-            db.child("users").child(uid).child("communityName").setValue(newName)
-                .addOnSuccessListener(aVoid -> {
-                    session.updateCommunityName(newName);
-                    ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
-                    Toast.makeText(this, "Community Name Updated", Toast.LENGTH_SHORT).show();
-                    AuditLogger.logAction(session.getCommunityId(), session.getUserName(), "SETTINGS_CHANGED", "Updated community name to: " + newName);
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to update name", Toast.LENGTH_SHORT).show());
-        } else { Toast.makeText(this, "Authentication error. Only Admins can do this.", Toast.LENGTH_SHORT).show(); }
     }
 }
