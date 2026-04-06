@@ -109,7 +109,7 @@ public class DashboardActivity extends AppCompatActivity {
     private void contactSupport() {
         try {
             // Update this with your actual phone number, keeping the country code (+880 for BD)
-            String supportNumber = "+8801700000000"; 
+            String supportNumber = "+8801608533529"; 
             String message = "Namaskar Adesh, I need some technical support with the Sanatani Bandhan app.";
             
             Intent intent = new Intent(Intent.ACTION_VIEW);
