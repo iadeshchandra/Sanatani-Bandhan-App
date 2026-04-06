@@ -1,13 +1,13 @@
 package org.shda;
 
 import android.os.Bundle;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
+import java.util.HashMap;
 
 public class UserProfileActivity extends AppCompatActivity {
     private DatabaseReference db;
@@ -47,7 +47,7 @@ public class UserProfileActivity extends AppCompatActivity {
     private void loadUserData() {
         if (session.getUserId() == null) return;
         DatabaseReference userRef = db.child("communities").child(session.getCommunityId()).child("members").child(session.getUserId());
-        userRef.keepSynced(true); // Ensures offline access to their own profile
+        userRef.keepSynced(true); 
         userRef.addListenerForSingleValueEvent(new ValueEventListener() {
               @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                   currentMember = snapshot.getValue(Member.class);
@@ -75,18 +75,17 @@ public class UserProfileActivity extends AppCompatActivity {
 
         DatabaseReference userRef = db.child("communities").child(session.getCommunityId()).child("members").child(session.getUserId());
         
-        // ✨ Log strict history of changes for Audit
+        // ✨ FIXED AUDIT LOG PUSH
         String changes = "Profile self-updated. New Data -> Phone: " + newPhone + ", Gotra: " + newGotra + ", Blood: " + newBlood;
         String historyId = db.child("communities").child(session.getCommunityId()).child("audit_logs").push().getKey();
         
-        PdfReportService.AuditEntry selfAudit = new PdfReportService.AuditEntry(
-                String.valueOf(System.currentTimeMillis()), session.getUserName(), "SELF_UPDATE", changes, session.getRole()
-        );
+        HashMap<String, Object> auditMap = new HashMap<>();
+        auditMap.put("managerName", session.getUserName());
+        auditMap.put("actionType", "SELF_UPDATE");
+        auditMap.put("description", changes);
+        auditMap.put("timestamp", System.currentTimeMillis());
         
-        // Push to master audit log
-        db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(
-                new org.shda.DashboardActivity.AuditLogEntry(session.getUserName(), "SELF_UPDATE", changes, System.currentTimeMillis())
-        );
+        db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
 
         // Update active profile silently
         userRef.child("phone").setValue(newPhone);
