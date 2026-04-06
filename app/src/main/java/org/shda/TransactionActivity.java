@@ -204,6 +204,8 @@ public class TransactionActivity extends AppCompatActivity {
                 long ts = System.currentTimeMillis();
 
                 SingleDonation sd = new SingleDonation(transId, nameInput, amt, inputNote.getText().toString().trim(), "", "", session.getUserName(), ts, strictSignature);
+                
+                // ✨ OFFLINE FIX: Save directly to queue without waiting
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
                 
                 if (memberIdMap.containsKey(nameInput)) {
@@ -216,24 +218,19 @@ public class TransactionActivity extends AppCompatActivity {
 
                 updateMemberTotal(nameInput, amt);
                 PdfReportService.generateDonorReceipt(this, session.getCommunityName(), nameInput, amt, inputNote.getText().toString(), new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(new Date()));
-                Toast.makeText(this, "Chanda Recorded & Receipt Generated!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Saved Locally! Syncing in background.", Toast.LENGTH_SHORT).show();
 
             } catch (Exception e) {}
         });
         builder.setNegativeButton("CANCEL", null); builder.show();
     }
 
+    // ✨ ENTERPRISE OFFLINE FIX: Atomic Increment prevents data overwriting when offline!
     private void updateMemberTotal(String displayName, float newAmount) {
         String targetMemberId = memberIdMap.get(displayName);
         if (targetMemberId != null) {
             DatabaseReference memRef = db.child("communities").child(session.getCommunityId()).child("members").child(targetMemberId);
-            memRef.child("totalDonated").addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    float currentTotal = snapshot.getValue(Float.class) != null ? snapshot.getValue(Float.class) : 0f;
-                    memRef.child("totalDonated").setValue(currentTotal + newAmount);
-                }
-                @Override public void onCancelled(@NonNull DatabaseError error) {}
-            });
+            memRef.child("totalDonated").setValue(ServerValue.increment((double) newAmount));
         }
     }
 
