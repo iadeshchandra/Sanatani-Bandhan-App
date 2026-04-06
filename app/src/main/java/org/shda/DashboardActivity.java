@@ -22,14 +22,12 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
-
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -95,8 +93,6 @@ public class DashboardActivity extends AppCompatActivity {
 
         findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
-
-        // ✨ NEW: HELP & SUPPORT CLICK LISTENER
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
 
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
@@ -105,13 +101,10 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ NEW: WHATSAPP SUPPORT ENGINE
     private void contactSupport() {
         try {
-            // Update this with your actual phone number, keeping the country code (+880 for BD)
-            String supportNumber = "+8801608533529"; 
+            String supportNumber = "+8801700000000"; 
             String message = "Namaskar Adesh, I need some technical support with the Sanatani Bandhan app.";
-            
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://api.whatsapp.com/send?phone=" + supportNumber + "&text=" + Uri.encode(message)));
             startActivity(intent);
@@ -152,7 +145,7 @@ public class DashboardActivity extends AppCompatActivity {
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
-                .setSmallIcon(R.mipmap.ic_launcher_round)
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title)
                 .setContentText(message)
                 .setAutoCancel(true)
