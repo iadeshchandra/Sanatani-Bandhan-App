@@ -9,7 +9,9 @@
         <TextView android:id="@+id/tvDashboardTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="28sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="8dp"/>
         
         <TextView android:id="@+id/tvDateEnglish" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#424242" android:gravity="center"/>
-        <TextView android:id="@+id/tvDateBengali" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#424242" android:gravity="center" android:layout_marginBottom="16dp"/>
+        <TextView android:id="@+id/tvDateBengali" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#424242" android:gravity="center" android:layout_marginBottom="4dp"/>
+        
+        <TextView android:id="@+id/tvTithiAlert" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="15sp" android:textColor="#D32F2F" android:textStyle="bold" android:gravity="center" android:layout_marginBottom="16dp"/>
 
         <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="2dp" app:cardBackgroundColor="#FFF3E0" android:layout_marginBottom="16dp">
             <TextView android:id="@+id/shlokaText" android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="16dp" android:textSize="14sp" android:textColor="#5D4037" android:gravity="center" android:textStyle="italic"/>
