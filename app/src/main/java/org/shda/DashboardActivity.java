@@ -93,10 +93,8 @@ public class DashboardActivity extends AppCompatActivity {
 
         findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
-        
-        // ✨ NEW: SANATANI PANJIKA CLICK LISTENER
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
-        
+        findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
 
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
@@ -107,7 +105,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void contactSupport() {
         try {
-            String supportNumber = "+8801700000000"; // Replace with your real number!
+            String supportNumber = "+8801700000000"; 
             String message = "Namaskar Adesh, I need some technical support with the Sanatani Bandhan app.";
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://api.whatsapp.com/send?phone=" + supportNumber + "&text=" + Uri.encode(message)));
@@ -302,6 +300,7 @@ public class DashboardActivity extends AppCompatActivity {
             });
         }
 
+        // ✨ UPGRADED AUDIT ENGINE
         Button btnAud = findViewById(R.id.btnDownloadAudit);
         if (btnAud != null) {
             btnAud.setOnClickListener(v -> {
@@ -317,7 +316,7 @@ public class DashboardActivity extends AppCompatActivity {
                           .orderByChild("timestamp").startAt(startTs).endAt(endTs)
                           .addListenerForSingleValueEvent(new ValueEventListener() {
                             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                                List<String> auditEntries = new ArrayList<>();
+                                List<PdfReportService.AuditEntry> auditList = new ArrayList<>();
                                 SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
                                 for (DataSnapshot data : snapshot.getChildren()) {
                                     String manager = data.child("managerName").getValue(String.class);
@@ -326,10 +325,11 @@ public class DashboardActivity extends AppCompatActivity {
                                     Long ts = data.child("timestamp").getValue(Long.class);
                                     if (manager != null) {
                                         String dateStr = ts != null ? sdf.format(new Date(ts)) : "Unknown Date";
-                                        auditEntries.add(dateStr + "\nUser: " + manager + " (" + action + ")\nDetails: " + desc);
+                                        String role = manager.toLowerCase().contains("admin") ? "ADMIN" : "MANAGER";
+                                        auditList.add(new PdfReportService.AuditEntry(dateStr, manager, action, desc, role));
                                     }
                                 }
-                                PdfReportService.generateAuditReport(DashboardActivity.this, session.getCommunityName(), auditEntries, reportRange);
+                                PdfReportService.generateBeautifulAuditReport(DashboardActivity.this, session.getCommunityName(), auditList, reportRange);
                             }
                             @Override public void onCancelled(@NonNull DatabaseError error) {}
                         });
