@@ -10,9 +10,8 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-        android:name=".SanataniApp"> 
-
+        android:name=".SanataniApp"
+        android:theme="@style/Theme.MaterialComponents.Light.NoActionBar"> 
         <activity
             android:name=".SplashActivity"
             android:exported="true">
@@ -24,7 +23,6 @@
 
         <activity android:name=".LoginActivity" android:exported="false" />
         <activity android:name=".DashboardActivity" android:exported="false" />
-        
         <activity android:name=".MemberActivity" android:exported="false" />
         <activity android:name=".AddMemberActivity" android:exported="false" />
         <activity android:name=".TransactionActivity" android:exported="false" />
