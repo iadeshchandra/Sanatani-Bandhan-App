@@ -140,7 +140,6 @@ public class TransactionActivity extends AppCompatActivity {
         builder.setTitle("Record New Chanda");
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-        // AutoComplete for Members / Guests
         final AutoCompleteTextView inputName = new AutoCompleteTextView(this);
         inputName.setHint("Donor Name / Member ID");
         List<String> suggestions = new ArrayList<>();
@@ -197,9 +196,14 @@ public class TransactionActivity extends AppCompatActivity {
         }
     }
 
+    // ✨ THE FIX: Added "lastUpdated" so your CsvExportService.java compiles successfully!
     public static class GroupedDonation {
-        public String displayName; public float totalDonated = 0f; public List<SingleDonation> history = new ArrayList<>();
+        public String displayName; public float totalDonated = 0f; public long lastUpdated = 0L; public List<SingleDonation> history = new ArrayList<>();
         public GroupedDonation(String name) { this.displayName = name; }
-        public void addDonation(SingleDonation d) { this.history.add(d); this.totalDonated += d.amount; }
+        public void addDonation(SingleDonation d) { 
+            this.history.add(d); 
+            this.totalDonated += d.amount; 
+            if(d.timestamp > this.lastUpdated) this.lastUpdated = d.timestamp;
+        }
     }
 }
