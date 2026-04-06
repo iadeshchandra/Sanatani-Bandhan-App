@@ -17,36 +17,36 @@
 
         <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" android:layout_marginBottom="24dp">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="12dp">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Financial Overview" android:textSize="18sp" android:textStyle="bold" android:textColor="#212121" android:gravity="center" android:layout_marginBottom="8dp"/>
-                
-                <Button android:id="@+id/btnFilterChartDate" android:layout_width="match_parent" android:layout_height="40dp" android:text="🗓️ Filter by Date Range (All-Time)" android:backgroundTint="#E0E0E0" android:textColor="#000000" android:textSize="12sp" android:layout_marginBottom="8dp"/>
-                
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/txt_financial_overview" android:textSize="18sp" android:textStyle="bold" android:textColor="#212121" android:gravity="center" android:layout_marginBottom="8dp"/>
+                <Button android:id="@+id/btnFilterChartDate" android:layout_width="match_parent" android:layout_height="40dp" android:text="@string/txt_filter_dates" android:backgroundTint="#E0E0E0" android:textColor="#000000" android:textSize="12sp" android:layout_marginBottom="8dp"/>
                 <com.github.mikephil.charting.charts.PieChart android:id="@+id/pieChart" android:layout_width="match_parent" android:layout_height="250dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="12dp">
-            <Button android:id="@+id/cardMembers" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="👥 Member Directory" android:backgroundTint="#1976D2" android:layout_marginEnd="6dp"/>
-            <Button android:id="@+id/cardDonations" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="💰 Smart Chanda" android:backgroundTint="#2E7D32" android:layout_marginStart="6dp"/>
+            <Button android:id="@+id/cardMembers" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="@string/btn_member_directory" android:backgroundTint="#1976D2" android:layout_marginEnd="6dp"/>
+            <Button android:id="@+id/cardDonations" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="@string/btn_smart_chanda" android:backgroundTint="#2E7D32" android:layout_marginStart="6dp"/>
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="12dp">
-            <Button android:id="@+id/cardExpenses" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="🪔 Utsav Expenses" android:backgroundTint="#D32F2F" android:layout_marginEnd="6dp"/>
-            <Button android:id="@+id/cardPolls" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="🗳️ Sanatani Polls" android:backgroundTint="#F57C00" android:layout_marginStart="6dp"/>
+            <Button android:id="@+id/cardExpenses" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="@string/btn_utsav_expenses" android:backgroundTint="#D32F2F" android:layout_marginEnd="6dp"/>
+            <Button android:id="@+id/cardPolls" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="@string/btn_sanatani_polls" android:backgroundTint="#F57C00" android:layout_marginStart="6dp"/>
         </LinearLayout>
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="24dp">
-            <Button android:id="@+id/cardEvents" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="📅 Mandir Events" android:backgroundTint="#7B1FA2" android:layout_marginEnd="6dp"/>
-            <Button android:id="@+id/cardComms" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="📢 Mass Sandesh" android:backgroundTint="#00838F" android:layout_marginStart="6dp"/>
+            <Button android:id="@+id/cardEvents" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="@string/btn_mandir_events" android:backgroundTint="#7B1FA2" android:layout_marginEnd="6dp"/>
+            <Button android:id="@+id/cardComms" android:layout_width="0dp" android:layout_weight="1" android:layout_height="70dp" android:text="@string/btn_mass_sandesh" android:backgroundTint="#00838F" android:layout_marginStart="6dp"/>
         </LinearLayout>
 
-        <Button android:id="@+id/btnGenerateReports" android:layout_width="match_parent" android:layout_height="55dp" android:text="📄 Generate Financial PDFs" android:backgroundTint="#455A64" android:layout_marginBottom="12dp"/>
-        <Button android:id="@+id/btnDownloadAudit" android:layout_width="match_parent" android:layout_height="55dp" android:text="🛡️ Download Security Audit" android:backgroundTint="#607D8B" android:layout_marginBottom="12dp"/>
-        <Button android:id="@+id/btnEditCommunity" android:layout_width="match_parent" android:layout_height="55dp" android:text="⚙️ Workspace Settings" android:backgroundTint="#78909C" android:layout_marginBottom="12dp"/>
+        <Button android:id="@+id/btnGenerateReports" android:layout_width="match_parent" android:layout_height="55dp" android:text="@string/btn_generate_pdfs" android:backgroundTint="#455A64" android:layout_marginBottom="12dp"/>
+        <Button android:id="@+id/btnDownloadAudit" android:layout_width="match_parent" android:layout_height="55dp" android:text="@string/btn_security_audit" android:backgroundTint="#607D8B" android:layout_marginBottom="12dp"/>
+        <Button android:id="@+id/btnEditCommunity" android:layout_width="match_parent" android:layout_height="55dp" android:text="@string/btn_workspace_settings" android:backgroundTint="#78909C" android:layout_marginBottom="12dp"/>
         
-        <Button android:id="@+id/btnLogout" android:layout_width="match_parent" android:layout_height="55dp" android:text="Logout" android:backgroundTint="#BDBDBD" android:textColor="#000000" android:layout_marginBottom="24dp"/>
+        <Button android:id="@+id/btnChangeLanguage" android:layout_width="match_parent" android:layout_height="55dp" android:text="@string/btn_change_language" android:backgroundTint="#8D6E63" android:layout_marginBottom="12dp"/>
+        
+        <Button android:id="@+id/btnLogout" android:layout_width="match_parent" android:layout_height="55dp" android:text="@string/btn_logout" android:backgroundTint="#BDBDBD" android:textColor="#000000" android:layout_marginBottom="24dp"/>
 
-        <TextView android:id="@+id/tvDashboardBranding" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Developed with ❤️ by Adesh Chandra" android:textSize="12sp" android:textColor="#1976D2" android:gravity="center" android:layout_marginBottom="16dp" android:textStyle="bold"/>
+        <TextView android:id="@+id/tvDashboardBranding" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/txt_developed_by" android:textSize="12sp" android:textColor="#1976D2" android:gravity="center" android:layout_marginBottom="16dp" android:textStyle="bold"/>
 
     </LinearLayout>
 </ScrollView>
