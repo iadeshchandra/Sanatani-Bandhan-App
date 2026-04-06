@@ -14,7 +14,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 public class PollActivity extends AppCompatActivity {
@@ -48,7 +47,6 @@ public class PollActivity extends AppCompatActivity {
 
     private void loadPolls() {
         DatabaseReference pollsRef = db.child("communities").child(session.getCommunityId()).child("polls");
-        // ✨ THE OFFLINE FIX: Forces Firebase to keep this list in local memory
         pollsRef.keepSynced(true);
         pollsRef.addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -116,7 +114,6 @@ public class PollActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        // ✨ THE FIX: Prevent Double Clicks offline
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String q = inputQ.getText().toString().trim();
             String a = inputA.getText().toString().trim();
@@ -134,7 +131,8 @@ public class PollActivity extends AppCompatActivity {
             long endTs = System.currentTimeMillis() + (days * 24 * 60 * 60 * 1000);
             String pollId = db.child("communities").child(session.getCommunityId()).child("polls").push().getKey();
 
-            Poll newPoll = new Poll(pollId, q, a, b, inputC.getText().toString().trim(), inputD.getText().toString().trim(), "", session.getUserName(), System.currentTimeMillis(), endTs, new HashMap<>());
+            // ✨ THE FIX: Exact match of the constructor the compiler asked for!
+            Poll newPoll = new Poll(pollId, q, a, b, inputC.getText().toString().trim(), inputD.getText().toString().trim(), System.currentTimeMillis(), endTs, session.getUserName());
             
             db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).setValue(newPoll);
             Toast.makeText(this, "Poll Created Locally!", Toast.LENGTH_SHORT).show();
@@ -143,7 +141,6 @@ public class PollActivity extends AppCompatActivity {
     }
 
     private void showVotingDialog(Poll poll) {
-        // Keeping your standard voting logic here...
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(poll.question);
         String[] options = {poll.optionA, poll.optionB, poll.optionC, poll.optionD};
