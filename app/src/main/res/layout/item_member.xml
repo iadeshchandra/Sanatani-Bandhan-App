@@ -8,9 +8,12 @@
         
         <TextView android:id="@+id/tvMemberName" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="4dp"/>
         
-        <TextView android:id="@+id/tvMemberId" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#616161" android:layout_marginBottom="4dp"/>
+        <TextView android:id="@+id/tvMemberId" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#616161" android:layout_marginBottom="8dp"/>
         
-        <TextView android:id="@+id/tvMemberDonation" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold" android:textColor="#2E7D32"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
+            <TextView android:id="@+id/tvMemberDonation" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold" android:textColor="#2E7D32"/>
+            <TextView android:id="@+id/tvLastDonation" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#757575" android:gravity="end" android:textStyle="italic"/>
+        </LinearLayout>
         
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
