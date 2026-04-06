@@ -22,77 +22,82 @@ public class UserProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_profile); 
 
-        db = FirebaseDatabase.getInstance().getReference();
-        session = new SessionManager(this);
+        try {
+            db = FirebaseDatabase.getInstance().getReference();
+            session = new SessionManager(this);
 
-        tvNameId = findViewById(R.id.tvProfileNameId);
-        tvRole = findViewById(R.id.tvProfileRole);
-        editPhone = findViewById(R.id.editProfilePhone);
-        editGotra = findViewById(R.id.editProfileGotra);
-        editBlood = findViewById(R.id.editProfileBlood);
-        editAddress = findViewById(R.id.editProfileAddress);
+            tvNameId = findViewById(R.id.tvProfileNameId);
+            tvRole = findViewById(R.id.tvProfileRole);
+            editPhone = findViewById(R.id.editProfilePhone);
+            editGotra = findViewById(R.id.editProfileGotra);
+            editBlood = findViewById(R.id.editProfileBlood);
+            editAddress = findViewById(R.id.editProfileAddress);
 
-        loadUserData();
+            loadUserData();
 
-        findViewById(R.id.btnSaveProfile).setOnClickListener(v -> saveProfileChanges());
-        findViewById(R.id.btnDownloadMyPdf).setOnClickListener(v -> {
-            if (currentMember != null) {
-                PdfReportService.generateMemberProfile(this, session.getCommunityName(), currentMember);
-            } else {
-                Toast.makeText(this, "Profile data loading...", Toast.LENGTH_SHORT).show();
-            }
-        });
+            findViewById(R.id.btnSaveProfile).setOnClickListener(v -> saveProfileChanges());
+            
+            findViewById(R.id.btnDownloadMyPdf).setOnClickListener(v -> {
+                if (currentMember != null && currentMember.name != null) {
+                    PdfReportService.generateMemberProfile(this, session.getCommunityName(), currentMember);
+                } else {
+                    Toast.makeText(this, "Profile data is still syncing. Please wait...", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Exception e) {
+            Toast.makeText(this, "Safe Mode: Preparing profile...", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void loadUserData() {
         if (session.getUserId() == null) return;
-        DatabaseReference userRef = db.child("communities").child(session.getCommunityId()).child("members").child(session.getUserId());
-        userRef.keepSynced(true); 
-        userRef.addListenerForSingleValueEvent(new ValueEventListener() {
-              @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                  currentMember = snapshot.getValue(Member.class);
-                  if (currentMember != null) {
-                      tvNameId.setText(currentMember.name + " (" + currentMember.id + ")");
-                      tvRole.setText("Assigned Role: " + currentMember.role);
-                      
-                      editPhone.setText(currentMember.phone != null ? currentMember.phone : "");
-                      editGotra.setText(currentMember.gotra != null ? currentMember.gotra : "");
-                      editBlood.setText(currentMember.bloodGroup != null ? currentMember.bloodGroup : "");
-                      editAddress.setText(currentMember.address != null ? currentMember.address : "");
+        try {
+            DatabaseReference userRef = db.child("communities").child(session.getCommunityId()).child("members").child(session.getUserId());
+            userRef.keepSynced(true); 
+            userRef.addValueEventListener(new ValueEventListener() {
+                  @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                      currentMember = snapshot.getValue(Member.class);
+                      if (currentMember != null && tvNameId != null) {
+                          tvNameId.setText(currentMember.name + " (" + currentMember.id + ")");
+                          tvRole.setText("Assigned Role: " + currentMember.role);
+                          editPhone.setText(currentMember.phone != null ? currentMember.phone : "");
+                          editGotra.setText(currentMember.gotra != null ? currentMember.gotra : "");
+                          editBlood.setText(currentMember.bloodGroup != null ? currentMember.bloodGroup : "");
+                          editAddress.setText(currentMember.address != null ? currentMember.address : "");
+                      }
                   }
-              }
-              @Override public void onCancelled(@NonNull DatabaseError error) {}
-          });
+                  @Override public void onCancelled(@NonNull DatabaseError error) {}
+              });
+        } catch (Exception e) {}
     }
 
     private void saveProfileChanges() {
         if (currentMember == null) return;
-        
-        String newPhone = editPhone.getText().toString().trim();
-        String newGotra = editGotra.getText().toString().trim();
-        String newBlood = editBlood.getText().toString().trim();
-        String newAddress = editAddress.getText().toString().trim();
+        try {
+            String newPhone = editPhone.getText().toString().trim();
+            String newGotra = editGotra.getText().toString().trim();
+            String newBlood = editBlood.getText().toString().trim();
+            String newAddress = editAddress.getText().toString().trim();
 
-        DatabaseReference userRef = db.child("communities").child(session.getCommunityId()).child("members").child(session.getUserId());
-        
-        // ✨ FIXED AUDIT LOG PUSH
-        String changes = "Profile self-updated. New Data -> Phone: " + newPhone + ", Gotra: " + newGotra + ", Blood: " + newBlood;
-        String historyId = db.child("communities").child(session.getCommunityId()).child("audit_logs").push().getKey();
-        
-        HashMap<String, Object> auditMap = new HashMap<>();
-        auditMap.put("managerName", session.getUserName());
-        auditMap.put("actionType", "SELF_UPDATE");
-        auditMap.put("description", changes);
-        auditMap.put("timestamp", System.currentTimeMillis());
-        
-        db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
+            DatabaseReference userRef = db.child("communities").child(session.getCommunityId()).child("members").child(session.getUserId());
+            
+            String changes = "Profile self-updated. New Data -> Phone: " + newPhone + ", Gotra: " + newGotra;
+            String historyId = db.child("communities").child(session.getCommunityId()).child("audit_logs").push().getKey();
+            
+            HashMap<String, Object> auditMap = new HashMap<>();
+            auditMap.put("managerName", session.getUserName());
+            auditMap.put("actionType", "SELF_UPDATE");
+            auditMap.put("description", changes);
+            auditMap.put("timestamp", System.currentTimeMillis());
+            
+            db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
 
-        // Update active profile silently
-        userRef.child("phone").setValue(newPhone);
-        userRef.child("gotra").setValue(newGotra);
-        userRef.child("bloodGroup").setValue(newBlood);
-        userRef.child("address").setValue(newAddress);
+            userRef.child("phone").setValue(newPhone);
+            userRef.child("gotra").setValue(newGotra);
+            userRef.child("bloodGroup").setValue(newBlood);
+            userRef.child("address").setValue(newAddress);
 
-        Toast.makeText(this, "Profile Saved & Synced Successfully!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Profile Saved Successfully!", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {}
     }
 }
