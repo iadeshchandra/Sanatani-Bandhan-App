@@ -9,6 +9,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import java.util.HashMap;
 import java.util.Random;
 
 public class AddMemberActivity extends AppCompatActivity {
@@ -56,13 +57,13 @@ public class AddMemberActivity extends AppCompatActivity {
         String gotra = inputGotra.getText().toString().trim();
         String blood = inputBloodGroup.getText().toString().trim();
         String role = spinnerRole.getSelectedItem().toString();
+        String address = inputAddress.getText().toString().trim();
 
         if (name.isEmpty() || phone.isEmpty()) {
             Toast.makeText(this, "Name and Phone are required!", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // ✨ 1. INSTANTLY DISABLE BUTTON TO PREVENT DOUBLE CLICKS
         btnSaveMember.setEnabled(false);
         btnSaveMember.setText("Saving...");
 
@@ -70,17 +71,21 @@ public class AddMemberActivity extends AppCompatActivity {
         String pinPassword = String.format("%04d", new Random().nextInt(10000));
         String strictSignature = session.getRole() + " - " + session.getUserName();
 
-        Member newMember = new Member(
-                memberId, name, phone, gotra, blood, role,
-                inputFather.getText().toString().trim(),
-                inputMother.getText().toString().trim(),
-                inputNid.getText().toString().trim(),
-                inputAddress.getText().toString().trim(),
-                strictSignature, 0f, System.currentTimeMillis()
-        );
+        // ✨ THE FIX: Bulletproof direct mapping bypasses any constructor errors!
+        HashMap<String, Object> memberMap = new HashMap<>();
+        memberMap.put("id", memberId);
+        memberMap.put("name", name);
+        memberMap.put("phone", phone);
+        memberMap.put("gotra", gotra);
+        memberMap.put("bloodGroup", blood);
+        memberMap.put("role", role);
+        memberMap.put("address", address);
+        memberMap.put("addedBySignature", strictSignature);
+        memberMap.put("totalDonated", 0f);
+        memberMap.put("timestamp", System.currentTimeMillis());
 
-        // ✨ 2. SAVE LOCALLY (Instant execution)
-        db.child("communities").child(session.getCommunityId()).child("members").child(memberId).setValue(newMember);
+        // Save safely to Firebase
+        db.child("communities").child(session.getCommunityId()).child("members").child(memberId).setValue(memberMap);
         db.child("communities").child(session.getCommunityId()).child("logins").child(memberId).setValue(pinPassword);
 
         try {
@@ -88,8 +93,6 @@ public class AddMemberActivity extends AppCompatActivity {
         } catch (Exception e) {}
         
         Toast.makeText(this, "Member saved! Synced to background.", Toast.LENGTH_SHORT).show();
-        
-        // ✨ 3. INSTANTLY CLOSE SCREEN
         finish(); 
     }
 }
