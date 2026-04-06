@@ -5,8 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
-
-    <application
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/> <application
+        android:name=".SanataniApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
@@ -24,14 +24,11 @@
         <activity android:name=".LoginActivity" android:exported="false" />
         <activity android:name=".RegisterCommunityActivity" android:exported="false" />
         <activity android:name=".DashboardActivity" android:exported="false" />
-        
         <activity android:name=".MemberActivity" android:exported="false" />
         <activity android:name=".AddMemberActivity" android:exported="false" />
         <activity android:name=".MemberDetailActivity" android:exported="false" />
-        
         <activity android:name=".TransactionActivity" android:exported="false" />
         <activity android:name=".ExpenseActivity" android:exported="false" />
-        
         <activity android:name=".EventActivity" android:exported="false" />
         <activity android:name=".CommsActivity" android:exported="false" />
         <activity android:name=".PollActivity" android:exported="false" />
@@ -45,6 +42,21 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
+
+        <service
+            android:name=".FCMNotificationService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/black" />
 
     </application>
 </manifest>
