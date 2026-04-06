@@ -1,23 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="16dp" android:background="#FAF9F6">
+    android:orientation="vertical" android:background="#FAF9F6" android:padding="16dp">
 
     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Mass Sandesh (Broadcast)" android:textSize="26sp" android:textStyle="bold"
-        android:textColor="#00838F" android:layout_marginBottom="16dp"/>
+        android:text="Mass Sandesh (Broadcast)" android:textSize="24sp" android:textStyle="bold"
+        android:textColor="#212121" android:layout_marginBottom="8dp"/>
 
     <TextView android:id="@+id/tvMemberCount" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:text="Loading Member Contacts..." android:textSize="14sp" android:textColor="#424242" android:layout_marginBottom="16dp"/>
+        android:text="Calculating valid members..." android:textSize="14sp" android:textColor="#424242" android:layout_marginBottom="16dp"/>
 
-    <EditText android:id="@+id/inputBroadcastMessage" android:layout_width="match_parent" android:layout_height="150dp"
-        android:hint="Type your Mandir announcement here...\n\nExample: Namaskar, there is a committee meeting tomorrow at 8 PM regarding Durga Puja." 
-        android:gravity="top|start" android:inputType="textMultiLine" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp"/>
+    <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="4dp" app:cardBackgroundColor="#E3F2FD" android:layout_marginBottom="16dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+            
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Select Message Type:" android:textSize="16sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="12dp"/>
+            
+            <RadioGroup android:id="@+id/radioGroupType" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="16dp">
+                <RadioButton android:id="@+id/radioMeeting" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mandir / Committee Meeting" android:textSize="14sp"/>
+                <RadioButton android:id="@+id/radioUtsav" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Utsav / Festival Greeting" android:textSize="14sp"/>
+                <RadioButton android:id="@+id/radioGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="General Announcement" android:textSize="14sp" android:checked="true"/>
+            </RadioGroup>
 
-    <Button android:id="@+id/btnSendWhatsApp" android:layout_width="match_parent" android:layout_height="60dp"
-        android:text="Broadcast via WhatsApp" android:backgroundTint="#25D366" android:textColor="#FFFFFF" android:layout_marginBottom="12dp"/>
-        
-    <Button android:id="@+id/btnSendSMS" android:layout_width="match_parent" android:layout_height="60dp"
-        android:text="Broadcast via Standard SMS" android:backgroundTint="#1976D2" android:textColor="#FFFFFF"/>
+            <EditText android:id="@+id/inputMessage" android:layout_width="match_parent" android:layout_height="120dp" android:hint="Type your main message here..." android:background="#FFFFFF" android:padding="12dp" android:gravity="top" android:layout_marginBottom="16dp"/>
+            
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <Button android:id="@+id/btnWhatsApp" android:layout_width="match_parent" android:layout_height="60dp" android:text="BROADCAST VIA WHATSAPP" android:backgroundTint="#2E7D32" android:layout_marginBottom="12dp"/>
+    
+    <Button android:id="@+id/btnSms" android:layout_width="match_parent" android:layout_height="60dp" android:text="BROADCAST VIA STANDARD SMS" android:backgroundTint="#1976D2"/>
 
 </LinearLayout>
