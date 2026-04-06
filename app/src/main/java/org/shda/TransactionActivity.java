@@ -1,51 +1,37 @@
 package org.shda;
 
-import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 public class TransactionActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout transactionsContainer;
-    private TextView tvTotalDonations;
     private EditText inputSearch;
-    private Spinner spinnerSort;
-
-    private float totalChandaValue = 0f;
-    private boolean isAdminOrManager;
-
-    private List<String> memberSearchList = new ArrayList<>();
-    private HashMap<String, String> memberIdMap = new HashMap<>(); 
-
-    private HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
-    private List<GroupedDonation> displayList = new ArrayList<>();
-    private String currentSort = "Recent First";
+    private TextView tvTotalDonations;
+    
+    private List<SingleDonation> fullDonationList = new ArrayList<>();
+    private List<Member> autocompleteMembers = new ArrayList<>();
+    private float totalCollected = 0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,201 +40,166 @@ public class TransactionActivity extends AppCompatActivity {
 
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
-        transactionsContainer = findViewById(R.id.transactionsContainer);
-        tvTotalDonations = findViewById(R.id.tvTotalDonations);
-        inputSearch = findViewById(R.id.inputSearch);
-        spinnerSort = findViewById(R.id.spinnerSort);
 
         if (session.getCommunityId() == null) { finish(); return; }
-        isAdminOrManager = "ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole());
 
-        setupRBAC();
-        setupSearchAndSort();
-        fetchMembersForAutoComplete();
-        loadTransactions();
-    }
+        transactionsContainer = findViewById(R.id.transactionsContainer);
+        inputSearch = findViewById(R.id.inputSearch);
+        tvTotalDonations = findViewById(R.id.tvTotalDonations);
 
-    private void setupRBAC() {
-        View btnAddTransaction = findViewById(R.id.btnAddTransaction);
-        if (btnAddTransaction != null) {
-            if (!isAdminOrManager) btnAddTransaction.setVisibility(View.GONE);
-            else btnAddTransaction.setOnClickListener(v -> showDonationDialog());
+        View btnAdd = findViewById(R.id.btnAddTransaction);
+        if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
+            btnAdd.setVisibility(View.VISIBLE);
+            btnAdd.setOnClickListener(v -> showAddDonationDialog());
+        } else {
+            btnAdd.setVisibility(View.GONE);
         }
-        findViewById(R.id.btnGenerateReport).setOnClickListener(v -> triggerMasterReportGeneration());
+
+        loadMembersForAutocomplete();
+        loadDonations();
+        setupSearch();
     }
 
-    private void setupSearchAndSort() {
-        String[] sortOptions = {"Recent First", "Oldest First", "Highest Amount", "Name (A-Z)"};
-        spinnerSort.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, sortOptions));
-
-        spinnerSort.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                currentSort = sortOptions[position]; applyFilterAndSort();
+    private void loadMembersForAutocomplete() {
+        db.child("communities").child(session.getCommunityId()).child("members").keepSynced(true);
+        db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                autocompleteMembers.clear();
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    Member m = data.getValue(Member.class);
+                    if (m != null) autocompleteMembers.add(m);
+                }
             }
-            @Override public void onNothingSelected(AdapterView<?> parent) {}
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
 
+    private void loadDonations() {
+        DatabaseReference donationsRef = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation");
+        donationsRef.keepSynced(true);
+        donationsRef.addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                fullDonationList.clear(); totalCollected = 0f;
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    SingleDonation sd = data.getValue(SingleDonation.class);
+                    if (sd != null) { fullDonationList.add(sd); totalCollected += sd.amount; }
+                }
+                tvTotalDonations.setText("Total Collected: ৳" + totalCollected);
+                processAndRenderList(fullDonationList);
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void setupSearch() {
+        if (inputSearch == null) return;
         inputSearch.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { applyFilterAndSort(); }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                String query = s.toString().toLowerCase().trim();
+                List<SingleDonation> filtered = new ArrayList<>();
+                for (SingleDonation sd : fullDonationList) {
+                    if ((sd.name != null && sd.name.toLowerCase().contains(query)) || 
+                        (sd.note != null && sd.note.toLowerCase().contains(query))) {
+                        filtered.add(sd);
+                    }
+                }
+                processAndRenderList(filtered);
+            }
             @Override public void afterTextChanged(Editable s) {}
         });
     }
 
-    private void fetchMembersForAutoComplete() {
-        db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                memberSearchList.clear(); memberIdMap.clear();
-                for (DataSnapshot data : snapshot.getChildren()) {
-                    Member m = data.getValue(Member.class);
-                    if (m != null) {
-                        String displayText = m.name + " (" + m.id + ")";
-                        memberSearchList.add(displayText);
-                        memberIdMap.put(displayText, m.id); 
-                    }
-                }
-            }
-            @Override public void onCancelled(@NonNull DatabaseError error) {}
-        });
-    }
-
-    private void loadTransactions() {
-        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
-          .addValueEventListener(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                groupedMap.clear(); totalChandaValue = 0f;
-
-                for (DataSnapshot data : snapshot.getChildren()) {
-                    try {
-                        SingleDonation sd = data.getValue(SingleDonation.class);
-                        if (sd != null && sd.name != null) {
-                            totalChandaValue += sd.amount;
-                            String groupKey = sd.name.toLowerCase().trim();
-
-                            if (!groupedMap.containsKey(groupKey)) {
-                                GroupedDonation gd = new GroupedDonation();
-                                gd.displayName = sd.name; groupedMap.put(groupKey, gd);
-                            }
-
-                            GroupedDonation gd = groupedMap.get(groupKey);
-                            gd.totalDonated += sd.amount;
-                            if (sd.timestamp > gd.lastUpdated) gd.lastUpdated = sd.timestamp;
-                            gd.history.add(sd);
-                        }
-                    } catch (Exception e) {}
-                }
-                tvTotalDonations.setText("Total Collected: ৳" + totalChandaValue);
-                applyFilterAndSort();
-            }
-            @Override public void onCancelled(@NonNull DatabaseError error) {}
-        });
-    }
-
-    private void applyFilterAndSort() {
-        displayList.clear();
-        String query = inputSearch.getText().toString().toLowerCase().trim();
-
-        for (GroupedDonation gd : groupedMap.values()) {
-            if (gd.displayName.toLowerCase().contains(query)) displayList.add(gd);
+    private void processAndRenderList(List<SingleDonation> rawList) {
+        HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
+        for (SingleDonation sd : rawList) {
+            String key = sd.name.trim().toLowerCase();
+            if (!groupedMap.containsKey(key)) groupedMap.put(key, new GroupedDonation(sd.name));
+            groupedMap.get(key).addDonation(sd);
         }
-
-        Collections.sort(displayList, (a, b) -> {
-            if (currentSort.equals("Recent First")) return Long.compare(b.lastUpdated, a.lastUpdated);
-            if (currentSort.equals("Oldest First")) return Long.compare(a.lastUpdated, b.lastUpdated);
-            if (currentSort.equals("Highest Amount")) return Float.compare(b.totalDonated, a.totalDonated);
-            return a.displayName.compareToIgnoreCase(b.displayName);
-        });
-        renderCards();
-    }
-
-    private void renderCards() {
+        
+        List<GroupedDonation> groupedList = new ArrayList<>(groupedMap.values());
+        Collections.sort(groupedList, (a, b) -> Float.compare(b.totalDonated, a.totalDonated));
+        
         transactionsContainer.removeAllViews();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-
-        for (GroupedDonation gd : displayList) {
-            View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, transactionsContainer, false);
-            ((TextView) view.findViewById(R.id.tvTransName)).setText("👤 " + gd.displayName);
-            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("Total Donated: ৳" + gd.totalDonated);
-            ((TextView) view.findViewById(R.id.tvTransDate)).setText("Last Chanda: " + sdf.format(new Date(gd.lastUpdated)));
-            ((TextView) view.findViewById(R.id.tvTransNote)).setText("Total Records: " + gd.history.size() + "\n👉 Tap to download Full Statement");
-
-            view.setOnClickListener(v -> PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd));
-            transactionsContainer.addView(view);
+        for (GroupedDonation gd : groupedList) {
+            try {
+                View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, transactionsContainer, false);
+                ((TextView) view.findViewById(R.id.tvTransName)).setText(gd.displayName);
+                ((TextView) view.findViewById(R.id.tvTransAmount)).setText("Lifetime: ৳" + gd.totalDonated);
+                ((TextView) view.findViewById(R.id.tvTransNote)).setText(gd.history.size() + " Contributions recorded");
+                
+                view.setOnClickListener(v -> PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd));
+                transactionsContainer.addView(view);
+            } catch (Exception e) {}
         }
     }
 
-    private void showDonationDialog() {
+    private void showAddDonationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Record New Chanda");
-
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-        final AutoCompleteTextView inputName = new AutoCompleteTextView(this); inputName.setHint("Donor Name / Member ID");
-        inputName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList)); inputName.setThreshold(1);
-        
-        final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        // AutoComplete for Members / Guests
+        final AutoCompleteTextView inputName = new AutoCompleteTextView(this);
+        inputName.setHint("Donor Name / Member ID");
+        List<String> suggestions = new ArrayList<>();
+        for (Member m : autocompleteMembers) { suggestions.add(m.name); suggestions.add(m.id); }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, suggestions);
+        inputName.setAdapter(adapter); inputName.setThreshold(1);
+
+        final EditText inputAmt = new EditText(this); inputAmt.setHint("Amount (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         final EditText inputNote = new EditText(this); inputNote.setHint("Purpose / Gotra / Note");
 
-        layout.addView(inputName); layout.addView(inputAmount); layout.addView(inputNote);
+        layout.addView(inputName); layout.addView(inputAmt); layout.addView(inputNote);
         builder.setView(layout);
+        builder.setPositiveButton("RECORD", null); builder.setNegativeButton("CANCEL", null);
 
-        builder.setPositiveButton("RECORD", (dialog, which) -> {
-            String nameInput = inputName.getText().toString().trim();
-            String amtStr = inputAmount.getText().toString().trim();
-            if (nameInput.isEmpty() || amtStr.isEmpty()) { Toast.makeText(this, "Name and Amount required", Toast.LENGTH_SHORT).show(); return; }
+        AlertDialog dialog = builder.create(); dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String nameRaw = inputName.getText().toString().trim();
+            String amtStr = inputAmt.getText().toString().trim();
+            String note = inputNote.getText().toString().trim();
 
-            try {
-                float amt = Float.parseFloat(amtStr);
-                String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
-                String strictSignature = "ADMIN".equals(session.getRole()) ? "Super Admin - " + session.getUserName() : "Manager - " + session.getUserName();
-                long ts = System.currentTimeMillis();
+            if (nameRaw.isEmpty() || amtStr.isEmpty()) { Toast.makeText(this, "Name and Amount required", Toast.LENGTH_SHORT).show(); return; }
 
-                SingleDonation sd = new SingleDonation(transId, nameInput, amt, inputNote.getText().toString().trim(), "", "", session.getUserName(), ts, strictSignature);
-                
-                // ✨ OFFLINE FIX: Save directly to queue without waiting
-                db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
-                
-                if (memberIdMap.containsKey(nameInput)) {
-                    String targetMemberId = memberIdMap.get(nameInput);
-                    String notifId = db.child("communities").child(session.getCommunityId()).child("notifications").child(targetMemberId).push().getKey();
-                    
-                    AppNotification notif = new AppNotification(notifId, "Chanda Received! 🙏", "We received your donation of ৳" + amt + ". May Ishvara bless you.", ts, "CHANDA");
-                    db.child("communities").child(session.getCommunityId()).child("notifications").child(targetMemberId).child(notifId).setValue(notif);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Saving...");
+            
+            float amt = Float.parseFloat(amtStr);
+            String finalName = nameRaw + " [Guest]";
+            String matchedId = null;
+
+            for (Member m : autocompleteMembers) {
+                if (m.name.equalsIgnoreCase(nameRaw) || m.id.equalsIgnoreCase(nameRaw)) {
+                    finalName = m.name + " [Member]";
+                    matchedId = m.id; break;
                 }
+            }
 
-                updateMemberTotal(nameInput, amt);
-                PdfReportService.generateDonorReceipt(this, session.getCommunityName(), nameInput, amt, inputNote.getText().toString(), new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(new Date()));
-                Toast.makeText(this, "Saved Locally! Syncing in background.", Toast.LENGTH_SHORT).show();
+            String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
+            SingleDonation sd = new SingleDonation(transId, finalName, amt, note, "", "", session.getUserName(), System.currentTimeMillis(), session.getRole());
+            db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
 
-            } catch (Exception e) {}
+            if (matchedId != null) {
+                db.child("communities").child(session.getCommunityId()).child("members").child(matchedId).child("totalDonated").setValue(ServerValue.increment(amt));
+            }
+
+            Toast.makeText(this, "Chanda Recorded Locally!", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
         });
-        builder.setNegativeButton("CANCEL", null); builder.show();
-    }
-
-    // ✨ ENTERPRISE OFFLINE FIX: Atomic Increment prevents data overwriting when offline!
-    private void updateMemberTotal(String displayName, float newAmount) {
-        String targetMemberId = memberIdMap.get(displayName);
-        if (targetMemberId != null) {
-            DatabaseReference memRef = db.child("communities").child(session.getCommunityId()).child("members").child(targetMemberId);
-            memRef.child("totalDonated").setValue(ServerValue.increment((double) newAmount));
-        }
-    }
-
-    private void triggerMasterReportGeneration() {
-       Toast.makeText(this, "Use Dashboard to generate Master PDF", Toast.LENGTH_SHORT).show();
     }
 
     public static class SingleDonation {
-        public String id, name, note, phone, address, collectedBy, loggedBy, systemSignature;
-        public float amount; public long timestamp;
+        public String id, name, note, method, phone, collectedBy, role; public float amount; public long timestamp;
         public SingleDonation() {}
-        public SingleDonation(String id, String name, float amount, String note, String phone, String address, String collectedBy, long timestamp, String systemSignature) {
-            this.id = id; this.name = name; this.amount = amount; this.note = note; this.phone = phone; this.address = address; this.collectedBy = collectedBy; this.timestamp = timestamp; this.systemSignature = systemSignature; this.loggedBy = "System";
+        public SingleDonation(String id, String name, float amt, String note, String method, String phone, String collectedBy, long ts, String role) {
+            this.id = id; this.name = name; this.amount = amt; this.note = note; this.method = method; this.phone = phone; this.collectedBy = collectedBy; this.timestamp = ts; this.role = role;
         }
     }
 
     public static class GroupedDonation {
-        public String displayName; public float totalDonated = 0f; public long lastUpdated = 0L;
-        public List<SingleDonation> history = new ArrayList<>();
+        public String displayName; public float totalDonated = 0f; public List<SingleDonation> history = new ArrayList<>();
+        public GroupedDonation(String name) { this.displayName = name; }
+        public void addDonation(SingleDonation d) { this.history.add(d); this.totalDonated += d.amount; }
     }
 }
