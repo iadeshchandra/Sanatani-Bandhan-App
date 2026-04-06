@@ -103,7 +103,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void contactSupport() {
         try {
-            String supportNumber = "+8801700000000"; 
+            String supportNumber = "+8801608533529"; 
             String message = "Namaskar Adesh, I need some technical support with the Sanatani Bandhan app.";
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://api.whatsapp.com/send?phone=" + supportNumber + "&text=" + Uri.encode(message)));
