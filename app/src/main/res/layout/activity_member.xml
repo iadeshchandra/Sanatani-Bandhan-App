@@ -18,8 +18,8 @@
             android:text="SHARE PDF" android:backgroundTint="#388E3C" android:layout_marginStart="6dp"/>
     </LinearLayout>
 
-    <EditText android:id="@+id/inputSearch" android:layout_width="match_parent" android:layout_height="55dp"
-        android:hint="Search by Name or SB-ID..." android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp"/>
+    <AutoCompleteTextView android:id="@+id/inputSearch" android:layout_width="match_parent" android:layout_height="55dp"
+        android:hint="Search by Name or SB-ID..." android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp" android:completionThreshold="1"/>
 
     <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
         <LinearLayout android:id="@+id/membersContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
