@@ -25,6 +25,8 @@ public class PollActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout pollsContainer;
+    
+    // ✨ THE FIX: Now using the global org.shda.Poll class automatically!
     private List<Poll> pollList = new ArrayList<>();
     private boolean isManagerOrAdmin;
 
@@ -224,7 +226,6 @@ public class PollActivity extends AppCompatActivity {
             long days = Long.parseLong(daysStr); long endTs = System.currentTimeMillis() + (days * 24 * 60 * 60 * 1000);
             String pollId = db.child("communities").child(session.getCommunityId()).child("polls").push().getKey();
             
-            // 100% Compile-Safe HashMap mapping
             HashMap<String, Object> pollMap = new HashMap<>();
             pollMap.put("id", pollId);
             pollMap.put("question", q);
@@ -252,12 +253,5 @@ public class PollActivity extends AppCompatActivity {
             Toast.makeText(this, "Vote Recorded!", Toast.LENGTH_SHORT).show();
         });
         builder.show();
-    }
-
-    public static class Poll {
-        public String id, question, optionA, optionB, optionC, optionD, createdBy;
-        public long timestamp, endTimestamp;
-        public HashMap<String, String> votes;
-        public Poll() {}
     }
 }
