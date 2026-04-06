@@ -16,15 +16,11 @@
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Update Your Information" android:textSize="16sp" android:textStyle="bold" android:textColor="#424242" android:layout_marginBottom="8dp"/>
 
         <EditText android:id="@+id/editProfilePhone" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Phone Number" android:inputType="phone" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        
         <EditText android:id="@+id/editProfileGotra" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Gotra" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        
         <EditText android:id="@+id/editProfileBlood" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Blood Group (e.g. O+)" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        
         <EditText android:id="@+id/editProfileAddress" android:layout_width="match_parent" android:layout_height="80dp" android:hint="Full Address" android:background="#FFFFFF" android:padding="12dp" android:gravity="top" android:layout_marginBottom="24dp"/>
 
         <Button android:id="@+id/btnSaveProfile" android:layout_width="match_parent" android:layout_height="60dp" android:text="💾 Save Profile" android:backgroundTint="#388E3C" android:layout_marginBottom="12dp"/>
-        
         <Button android:id="@+id/btnDownloadMyPdf" android:layout_width="match_parent" android:layout_height="60dp" android:text="📄 Download My Official Record" android:backgroundTint="#455A64"/>
 
     </LinearLayout>
