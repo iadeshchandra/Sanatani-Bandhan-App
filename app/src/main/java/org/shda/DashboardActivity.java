@@ -48,6 +48,7 @@ public class DashboardActivity extends AppCompatActivity {
     private long filterStartTs = 0L;
     private long filterEndTs = Long.MAX_VALUE;
 
+    // 🌐 LANGUAGE ENGINE OVERRIDE
     @Override
     protected void attachBaseContext(Context newBase) {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
@@ -85,7 +86,6 @@ public class DashboardActivity extends AppCompatActivity {
         setupNavigation();
         setupVisualAnalytics(); 
         
-        // ✨ START THE NOTIFICATION ENGINE
         listenForSmartNotifications();
 
         btnFilterChartDate.setOnClickListener(v -> showChartDateFilterDialog());
@@ -104,10 +104,8 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    // 🔔 THE ZERO-COST PUSH NOTIFICATION ENGINE
+    // 🔔 SMART PUSH NOTIFICATION ENGINE
     private void listenForSmartNotifications() {
-        // Assume session.getUserId() holds the member's ID (e.g., SB-1001)
-        // If they don't have an ID, we skip
         if (session.getUserId() == null) return;
 
         DatabaseReference notifRef = db.child("communities").child(session.getCommunityId()).child("notifications").child(session.getUserId());
@@ -116,11 +114,7 @@ public class DashboardActivity extends AppCompatActivity {
             @Override public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 AppNotification notif = snapshot.getValue(AppNotification.class);
                 if (notif != null && !notif.isRead) {
-                    
-                    // 1. Trigger Android Push Notification
                     triggerLocalPushNotification(notif.title, notif.message);
-                    
-                    // 2. Mark as read in the database so it doesn't trigger again next time
                     snapshot.getRef().child("isRead").setValue(true);
                 }
             }
@@ -135,13 +129,11 @@ public class DashboardActivity extends AppCompatActivity {
         String channelId = "Sanatani_Alerts";
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // Required for Android 8.0 and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(channelId, "Mandir Updates", NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(channel);
         }
 
-        // When they click the notification, open the Transaction Activity so they can download their PDF!
         Intent intent = new Intent(this, TransactionActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
@@ -160,12 +152,15 @@ public class DashboardActivity extends AppCompatActivity {
     @Override protected void onResume() { super.onResume(); shlokaHandler.post(shlokaRunnable); }
     @Override protected void onPause() { super.onPause(); shlokaHandler.removeCallbacks(shlokaRunnable); }
 
-    // ------------- ALL OTHER EXISTING METHODS BELOW -------------
-    // setupDates, applyPermissions, setupVisualAnalytics, showLanguageDialog, etc. remain unchanged.
-    
+    // ✨ UPDATED: PANCHANG (TITHI) ALERT ENGINE ADDED HERE
     private void setupDates() {
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
         ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
+        
+        TextView tvTithi = findViewById(R.id.tvTithiAlert);
+        if (tvTithi != null) {
+            tvTithi.setText(PanchangEngine.getTodayTithiAlert());
+        }
     }
 
     private void applyPermissions(String role) {
@@ -267,9 +262,75 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
 
         Button btnGen = findViewById(R.id.btnGenerateReports);
-        if (btnGen != null) btnGen.setOnClickListener(v -> Toast.makeText(this, "Master Reports Generating...", Toast.LENGTH_SHORT).show());
+        if (btnGen != null) {
+            btnGen.setOnClickListener(v -> {
+                Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
+                new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                    startCal.set(year, month, dayOfMonth, 0, 0, 0); 
+                    new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
+                        endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
+                        long startTs = startCal.getTimeInMillis(); long endTs = endCal.getTimeInMillis();
+                        String reportRange = "Period: " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(startCal.getTime()) + " to " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(endCal.getTime());
+
+                        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
+                          .orderByChild("timestamp").startAt(startTs).endAt(endTs)
+                          .addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                List<String> names = new ArrayList<>(); List<Float> amounts = new ArrayList<>();
+                                List<String> notes = new ArrayList<>(); List<String> dates = new ArrayList<>();
+                                float total = 0f; SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+                                for (DataSnapshot data : snapshot.getChildren()) {
+                                    String name = data.child("name").getValue(String.class); Float amt = data.child("amount").getValue(Float.class);
+                                    String note = data.child("note").getValue(String.class); Long ts = data.child("timestamp").getValue(Long.class);
+                                    if(name != null && amt != null) {
+                                        names.add(name); amounts.add(amt); notes.add(note != null ? note : "No note");
+                                        dates.add(ts != null ? sdf.format(new Date(ts)) : "Unknown Date"); total += amt;
+                                    }
+                                }
+                                PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, total, reportRange);
+                            }
+                            @Override public void onCancelled(@NonNull DatabaseError error) {}
+                        });
+                    }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+                }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+            });
+        }
+
         Button btnAud = findViewById(R.id.btnDownloadAudit);
-        if (btnAud != null) btnAud.setOnClickListener(v -> Toast.makeText(this, "Audit Downloaded", Toast.LENGTH_SHORT).show());
+        if (btnAud != null) {
+            btnAud.setOnClickListener(v -> {
+                Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
+                new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+                    startCal.set(year, month, dayOfMonth, 0, 0, 0); 
+                    new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
+                        endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
+                        long startTs = startCal.getTimeInMillis(); long endTs = endCal.getTimeInMillis();
+                        String reportRange = "Audit Period: " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(startCal.getTime()) + " to " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(endCal.getTime());
+
+                        db.child("communities").child(session.getCommunityId()).child("audit_logs")
+                          .orderByChild("timestamp").startAt(startTs).endAt(endTs)
+                          .addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                List<String> auditEntries = new ArrayList<>();
+                                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+                                for (DataSnapshot data : snapshot.getChildren()) {
+                                    String manager = data.child("managerName").getValue(String.class);
+                                    String action = data.child("actionType").getValue(String.class);
+                                    String desc = data.child("description").getValue(String.class);
+                                    Long ts = data.child("timestamp").getValue(Long.class);
+                                    if (manager != null) {
+                                        String dateStr = ts != null ? sdf.format(new Date(ts)) : "Unknown Date";
+                                        auditEntries.add(dateStr + "\nUser: " + manager + " (" + action + ")\nDetails: " + desc);
+                                    }
+                                }
+                                PdfReportService.generateAuditReport(DashboardActivity.this, session.getCommunityName(), auditEntries, reportRange);
+                            }
+                            @Override public void onCancelled(@NonNull DatabaseError error) {}
+                        });
+                    }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+                }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+            });
+        }
     }
 
     private void showEditCommunityDialog() {
