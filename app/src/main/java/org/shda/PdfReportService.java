@@ -11,7 +11,7 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.properties.TextAlignment; 
+import com.itextpdf.layout.property.TextAlignment; 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
