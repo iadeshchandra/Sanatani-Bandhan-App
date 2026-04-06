@@ -4,47 +4,40 @@
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:background="#FAF9F6">
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
 
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Member Insights" android:textSize="28sp" android:textStyle="bold" android:textColor="#212121"/>
-        <TextView android:id="@+id/tvProfileId" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#757575" android:layout_marginBottom="24dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Member Insights" android:textSize="28sp" android:textStyle="bold" android:textColor="#212121"/>
+        <TextView android:id="@+id/tvInsightId" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#616161" android:layout_marginBottom="16dp"/>
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFFFFF" android:layout_marginBottom="24dp">
-
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" android:layout_marginBottom="24dp">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
                 
-                <TextView android:id="@+id/tvProfileName" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="24sp" android:textStyle="bold" android:textColor="#000000"/>
-                <TextView android:id="@+id/tvProfileRole" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#FFFFFF" android:background="#1976D2" android:paddingHorizontal="8dp" android:paddingVertical="4dp" android:textSize="12sp" android:textStyle="bold" android:layout_marginTop="4dp" android:layout_marginBottom="12dp"/>
-
-                <TextView android:id="@+id/tvProfilePhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#424242" android:drawablePadding="8dp"/>
-                <TextView android:id="@+id/tvProfileGotra" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#424242" android:layout_marginTop="8dp"/>
-                <TextView android:id="@+id/tvProfileBlood" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginTop="8dp"/>
+                <TextView android:id="@+id/tvInsightName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="26sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="4dp"/>
                 
-                <TextView android:id="@+id/tvProfileFather" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="15sp" android:textColor="#616161" android:layout_marginTop="8dp" android:visibility="gone"/>
-                <TextView android:id="@+id/tvProfileMother" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="15sp" android:textColor="#616161" android:layout_marginTop="4dp" android:visibility="gone"/>
-                <TextView android:id="@+id/tvProfileNid" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="15sp" android:textColor="#616161" android:layout_marginTop="4dp" android:visibility="gone"/>
-                <TextView android:id="@+id/tvProfileAddress" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="15sp" android:textColor="#616161" android:layout_marginTop="4dp" android:visibility="gone"/>
+                <TextView android:id="@+id/tvInsightRole" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="#1976D2" android:textColor="#FFFFFF" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="4dp" android:paddingBottom="4dp" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="16dp"/>
 
-                <TextView android:id="@+id/tvProfileJoined" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#757575" android:layout_marginTop="12dp"/>
-                <TextView android:id="@+id/tvProfileSignature" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="italic" android:textColor="#9E9E9E" android:layout_marginTop="4dp" android:visibility="gone"/>
+                <TextView android:id="@+id/tvInsightPhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#424242" android:layout_marginBottom="8dp"/>
+                <TextView android:id="@+id/tvInsightGotra" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#424242" android:layout_marginBottom="8dp"/>
+                <TextView android:id="@+id/tvInsightBlood" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#424242" android:layout_marginBottom="16dp"/>
 
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" android:layout_marginVertical="16dp"/>
+                <TextView android:id="@+id/tvInsightJoined" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#424242"/>
+                <TextView android:id="@+id/tvInsightVerified" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="italic" android:textColor="#757575" android:layout_marginBottom="16dp"/>
 
-                <TextView android:id="@+id/tvProfileDonated" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#2E7D32"/>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" android:layout_marginBottom="16dp"/>
+
+                <TextView android:id="@+id/tvInsightDonated" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="20sp" android:textStyle="bold" android:textColor="#2E7D32"/>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <Button android:id="@+id/btnQuickDonation" android:layout_width="match_parent" android:layout_height="60dp" android:text="+ Add Chanda for this Member" android:backgroundTint="#2E7D32" android:layout_marginBottom="12dp" android:visibility="gone"/>
+        <Button android:id="@+id/btnInsightPdf" android:layout_width="match_parent" android:layout_height="55dp" android:text="Export Member Profile PDF" android:backgroundTint="#1976D2" android:layout_marginBottom="12dp"/>
+        <Button android:id="@+id/btnInsightAddDonation" android:layout_width="match_parent" android:layout_height="55dp" android:text="Record Quick Chanda (৳)" android:backgroundTint="#388E3C" android:layout_marginBottom="24dp"/>
 
-        <Button android:id="@+id/btnExportProfilePdf" android:layout_width="match_parent" android:layout_height="60dp" android:text="Export Member Profile PDF" android:backgroundTint="#1976D2" android:layout_marginBottom="24dp"/>
-
-        <LinearLayout android:id="@+id/layoutAdminControls" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SUPER ADMIN CONTROLS" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="12dp"/>
+        <LinearLayout android:id="@+id/containerAdminControls" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SUPER ADMIN CONTROLS" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
-                <Button android:id="@+id/btnPromote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Promote to Manager" android:backgroundTint="#F57C00" android:layout_marginEnd="8dp"/>
-                <Button android:id="@+id/btnDemote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Demote to Member" android:backgroundTint="#616161" android:layout_marginStart="8dp"/>
+                <Button android:id="@+id/btnPromote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="Promote to Manager" android:backgroundTint="#F57C00" android:layout_marginEnd="6dp"/>
+                <Button android:id="@+id/btnDemote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="Demote to Member" android:backgroundTint="#616161" android:layout_marginStart="6dp"/>
             </LinearLayout>
         </LinearLayout>
 
