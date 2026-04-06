@@ -103,7 +103,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void contactSupport() {
         try {
-            String supportNumber = "+8801608533529"; 
+            String supportNumber = "+8801700000000"; 
             String message = "Namaskar Adesh, I need some technical support with the Sanatani Bandhan app.";
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://api.whatsapp.com/send?phone=" + supportNumber + "&text=" + Uri.encode(message)));
@@ -335,6 +335,7 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
+    // ✨ ENTERPRISE OFFLINE FIX: Removed blocking success listeners
     private void showEditCommunityDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Edit Community Name");
@@ -344,11 +345,13 @@ public class DashboardActivity extends AppCompatActivity {
         builder.setPositiveButton("SAVE", (dialog, which) -> {
             String newName = input.getText().toString().trim();
             if (!newName.isEmpty() && session.getUserId() != null) {
-                db.child("users").child(session.getUserId()).child("communityName").setValue(newName)
-                    .addOnSuccessListener(aVoid -> {
-                        session.updateCommunityName(newName);
-                        ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
-                    });
+                // Save locally to queue instantly
+                db.child("users").child(session.getUserId()).child("communityName").setValue(newName);
+                
+                // Update UI instantly
+                session.updateCommunityName(newName);
+                ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
+                Toast.makeText(this, "Updated Locally! Will sync when online.", Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton("CANCEL", null); builder.show();
