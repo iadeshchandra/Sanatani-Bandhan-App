@@ -78,7 +78,7 @@ public class CommsActivity extends AppCompatActivity {
              + baseMsg + "\n\n"
              + "------------------------------\n"
              + "Sent via " + session.getCommunityName() + " Portal\n"
-             + "Powered by Sanatani SaaS";
+             + "Powered by Sanatani Bandhan SaaS";
     }
 
     private void sendViaWhatsApp() {
