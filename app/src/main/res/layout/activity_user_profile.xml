@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#FAF9F6">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Swadharma Profile" android:textSize="26sp" android:textStyle="bold" android:textColor="#283593" android:gravity="center" android:layout_marginBottom="8dp"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="#E8EAF6" android:padding="16dp" android:layout_marginBottom="24dp">
+            <TextView android:id="@+id/tvProfileNameId" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#1A237E" android:gravity="center"/>
+            <TextView android:id="@+id/tvProfileRole" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#3949AB" android:gravity="center"/>
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="(Name and ID are locked by Management)" android:textSize="11sp" android:textColor="#9E9E9E" android:gravity="center" android:layout_marginTop="4dp"/>
+        </LinearLayout>
+
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Update Your Information" android:textSize="16sp" android:textStyle="bold" android:textColor="#424242" android:layout_marginBottom="8dp"/>
+
+        <EditText android:id="@+id/editProfilePhone" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Phone Number" android:inputType="phone" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        
+        <EditText android:id="@+id/editProfileGotra" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Gotra" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        
+        <EditText android:id="@+id/editProfileBlood" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Blood Group (e.g. O+)" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        
+        <EditText android:id="@+id/editProfileAddress" android:layout_width="match_parent" android:layout_height="80dp" android:hint="Full Address" android:background="#FFFFFF" android:padding="12dp" android:gravity="top" android:layout_marginBottom="24dp"/>
+
+        <Button android:id="@+id/btnSaveProfile" android:layout_width="match_parent" android:layout_height="60dp" android:text="💾 Save Profile" android:backgroundTint="#388E3C" android:layout_marginBottom="12dp"/>
+        
+        <Button android:id="@+id/btnDownloadMyPdf" android:layout_width="match_parent" android:layout_height="60dp" android:text="📄 Download My Official Record" android:backgroundTint="#455A64"/>
+
+    </LinearLayout>
+</ScrollView>
