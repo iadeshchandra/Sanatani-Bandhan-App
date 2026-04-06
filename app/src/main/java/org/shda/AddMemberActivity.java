@@ -71,7 +71,7 @@ public class AddMemberActivity extends AppCompatActivity {
         String pinPassword = String.format("%04d", new Random().nextInt(10000));
         String strictSignature = session.getRole() + " - " + session.getUserName();
 
-        // ✨ THE FIX: Bulletproof direct mapping bypasses any constructor errors!
+        // 100% Compile-Safe HashMap mapping
         HashMap<String, Object> memberMap = new HashMap<>();
         memberMap.put("id", memberId);
         memberMap.put("name", name);
@@ -84,7 +84,6 @@ public class AddMemberActivity extends AppCompatActivity {
         memberMap.put("totalDonated", 0f);
         memberMap.put("timestamp", System.currentTimeMillis());
 
-        // Save safely to Firebase
         db.child("communities").child(session.getCommunityId()).child("members").child(memberId).setValue(memberMap);
         db.child("communities").child(session.getCommunityId()).child("logins").child(memberId).setValue(pinPassword);
 
