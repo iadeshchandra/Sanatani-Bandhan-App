@@ -12,6 +12,7 @@
         android:supportsRtl="true"
         android:name=".SanataniApp"
         android:theme="@style/Theme.MaterialComponents.Light.NoActionBar"> 
+
         <activity
             android:name=".SplashActivity"
             android:exported="true">
@@ -31,6 +32,9 @@
         <activity android:name=".CommsActivity" android:exported="false" />
         <activity android:name=".PollActivity" android:exported="false" />
         <activity android:name=".PanjikaActivity" android:exported="false" />
+        <activity android:name=".UserProfileActivity" android:exported="false" />
+        
+        <activity android:name=".MemberDetailActivity" android:exported="false" />
 
         <service
             android:name=".FCMNotificationService"
