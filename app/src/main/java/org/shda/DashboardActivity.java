@@ -93,6 +93,10 @@ public class DashboardActivity extends AppCompatActivity {
 
         findViewById(R.id.btnEditCommunity).setOnClickListener(v -> showEditCommunityDialog());
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
+        
+        // ✨ NEW: SANATANI PANJIKA CLICK LISTENER
+        findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
+        
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
 
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
@@ -103,7 +107,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void contactSupport() {
         try {
-            String supportNumber = "+8801700000000"; 
+            String supportNumber = "+8801700000000"; // Replace with your real number!
             String message = "Namaskar Adesh, I need some technical support with the Sanatani Bandhan app.";
             Intent intent = new Intent(Intent.ACTION_VIEW);
             intent.setData(Uri.parse("https://api.whatsapp.com/send?phone=" + supportNumber + "&text=" + Uri.encode(message)));
@@ -335,7 +339,6 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ ENTERPRISE OFFLINE FIX: Removed blocking success listeners
     private void showEditCommunityDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Edit Community Name");
@@ -345,10 +348,7 @@ public class DashboardActivity extends AppCompatActivity {
         builder.setPositiveButton("SAVE", (dialog, which) -> {
             String newName = input.getText().toString().trim();
             if (!newName.isEmpty() && session.getUserId() != null) {
-                // Save locally to queue instantly
                 db.child("users").child(session.getUserId()).child("communityName").setValue(newName);
-                
-                // Update UI instantly
                 session.updateCommunityName(newName);
                 ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
                 Toast.makeText(this, "Updated Locally! Will sync when online.", Toast.LENGTH_SHORT).show();
