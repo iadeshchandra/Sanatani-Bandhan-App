@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="#FAF9F6" android:padding="16dp">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="সনাতনী পঞ্জিকা ও ব্রত" android:textSize="26sp" android:textStyle="bold"
+        android:textColor="#E65100" android:layout_marginBottom="16dp"/>
+
+    <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFF3E0" android:layout_marginBottom="16dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp" android:gravity="center">
+            
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Today's Date" android:textSize="14sp" android:textColor="#757575"/>
+            <TextView android:id="@+id/tvEnglishDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#212121"/>
+            
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" android:layout_marginTop="8dp" android:layout_marginBottom="8dp"/>
+            
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="বাংলা তারিখ (Bangladeshi Standard)" android:textSize="14sp" android:textColor="#757575"/>
+            <TextView android:id="@+id/tvBengaliDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="20sp" android:textStyle="bold" android:textColor="#D32F2F"/>
+            
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" android:layout_marginTop="8dp" android:layout_marginBottom="8dp"/>
+            
+            <TextView android:id="@+id/tvTodayTithi" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold" android:textColor="#388E3C" android:gravity="center"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Upcoming Vratas (2026)" android:textSize="18sp" android:textStyle="bold"
+        android:textColor="#424242" android:layout_marginBottom="8dp"/>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+        <LinearLayout android:id="@+id/panjikaListContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+    </ScrollView>
+
+</LinearLayout>
