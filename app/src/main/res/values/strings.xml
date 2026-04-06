@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Sanatani Bandhan</string>
+    <string name="btn_member_directory">👥 Member Directory</string>
+    <string name="btn_smart_chanda">💰 Smart Chanda</string>
+    <string name="btn_utsav_expenses">🪔 Utsav Expenses</string>
+    <string name="btn_sanatani_polls">🗳️ Sanatani Polls</string>
+    <string name="btn_mandir_events">📅 Mandir Events</string>
+    <string name="btn_mass_sandesh">📢 Mass Sandesh</string>
+    <string name="btn_generate_pdfs">📄 Generate Financial PDFs</string>
+    <string name="btn_security_audit">🛡️ Download Security Audit</string>
+    <string name="btn_workspace_settings">⚙️ Workspace Settings</string>
+    <string name="btn_change_language">🌐 Change Language</string>
+    <string name="btn_logout">Logout</string>
+    <string name="txt_financial_overview">Financial Overview</string>
+    <string name="txt_filter_dates">🗓️ Filter by Date Range (All-Time)</string>
+    <string name="txt_developed_by">Developed with ❤️ by Adesh Chandra</string>
+</resources>
