@@ -49,8 +49,19 @@
             <Button android:id="@+id/cardComms" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="65dp" android:text="MASS SANDESH" android:textSize="13sp" android:textStyle="bold" android:backgroundTint="#00838F" android:layout_marginStart="6dp"/>
         </LinearLayout>
 
+        <Button android:id="@+id/btnMyProfile" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="👤 MY DEVOTEE PROFILE" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#283593" android:layout_marginBottom="12dp"/>
+        
         <Button android:id="@+id/btnGenerateReports" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="GENERATE PDFS" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#546E7A" android:layout_marginBottom="12dp"/>
-        <Button android:id="@+id/btnDownloadAudit" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="SECURITY AUDIT" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#607D8B" android:layout_marginBottom="24dp"/>
+        
+        <Button android:id="@+id/btnDownloadAudit" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="SECURITY AUDIT" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#607D8B" android:layout_marginBottom="12dp"/>
+
+        <Button android:id="@+id/btnWorkspaceSettings" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="WORKSPACE SETTINGS" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#78909C" android:layout_marginBottom="12dp"/>
+
+        <Button android:id="@+id/btnChangeLanguage" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="CHANGE LANGUAGE" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#795548" android:layout_marginBottom="12dp"/>
+
+        <Button android:id="@+id/btnHelpSupport" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="HELP SUPPORT" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#00695C" android:layout_marginBottom="12dp"/>
+
+        <Button android:id="@+id/btnLogout" android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="60dp" android:text="LOGOUT" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:backgroundTint="#E0E0E0" android:layout_marginBottom="24dp"/>
 
     </LinearLayout>
 </ScrollView>
