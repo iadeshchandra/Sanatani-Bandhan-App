@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 public class PollActivity extends AppCompatActivity {
+
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout pollsContainer;
@@ -88,7 +89,6 @@ public class PollActivity extends AppCompatActivity {
                 ((TextView) view.findViewById(R.id.tvPollCreator)).setText("Created by " + poll.createdBy);
                 ((TextView) view.findViewById(R.id.tvPollQuestion)).setText("📊 " + poll.question);
 
-                // ✨ FIX: Live Countdown Logic
                 TextView tvCountdown = view.findViewById(R.id.tvPollCountdown);
                 if (!isClosed) {
                     long diff = poll.endTimestamp - now;
@@ -100,7 +100,6 @@ public class PollActivity extends AppCompatActivity {
                     tvCountdown.setVisibility(View.GONE);
                 }
 
-                // ✨ FIX: Admin Comment display
                 TextView tvAdminNote = view.findViewById(R.id.tvPollAdminComment);
                 if (poll.adminComment != null && !poll.adminComment.trim().isEmpty()) {
                     tvAdminNote.setText("Note: " + poll.adminComment);
@@ -171,8 +170,6 @@ public class PollActivity extends AppCompatActivity {
         final EditText inputC = new EditText(this); inputC.setHint("Option C (Optional)");
         final EditText inputD = new EditText(this); inputD.setHint("Option D (Optional)");
         final EditText inputDays = new EditText(this); inputDays.setHint("Duration (Days)"); inputDays.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
-        
-        // ✨ FIX: Admin Comment box added to creation
         final EditText inputComment = new EditText(this); inputComment.setHint("Admin Comment (Optional)");
 
         layout.addView(inputQ); layout.addView(inputA); layout.addView(inputB); layout.addView(inputC); layout.addView(inputD); layout.addView(inputDays); layout.addView(inputComment);
@@ -189,7 +186,7 @@ public class PollActivity extends AppCompatActivity {
             
             HashMap<String, Object> pollMap = new HashMap<>();
             pollMap.put("id", pollId); pollMap.put("question", q); pollMap.put("optionA", a); pollMap.put("optionB", b); pollMap.put("optionC", inputC.getText().toString().trim()); pollMap.put("optionD", inputD.getText().toString().trim()); 
-            pollMap.put("adminComment", inputComment.getText().toString().trim()); // ✨ FIX
+            pollMap.put("adminComment", inputComment.getText().toString().trim()); 
             pollMap.put("createdBy", session.getUserName()); pollMap.put("timestamp", System.currentTimeMillis()); pollMap.put("endTimestamp", endTs);
 
             db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).setValue(pollMap);
@@ -242,12 +239,5 @@ public class PollActivity extends AppCompatActivity {
         auditMap.put("managerName", session.getUserName()); auditMap.put("actionType", actionType);
         auditMap.put("description", description); auditMap.put("timestamp", System.currentTimeMillis());
         db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
-    }
-
-    public static class Poll {
-        public String id, question, optionA, optionB, optionC, optionD, createdBy, adminComment; // ✨ FIX
-        public long timestamp, endTimestamp;
-        public HashMap<String, String> votes;
-        public Poll() {}
     }
 }
