@@ -46,11 +46,21 @@ public class ExpenseActivity extends AppCompatActivity {
         tvTotalExpenses = findViewById(R.id.tvTotalExpenses);
 
         View btnAdd = findViewById(R.id.btnAddExpense);
+        View btnExportMaster = findViewById(R.id.btnExportMaster);
+
         if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
             btnAdd.setVisibility(View.VISIBLE);
             btnAdd.setOnClickListener(v -> showAddExpenseDialog());
         } else {
             btnAdd.setVisibility(View.GONE);
+        }
+
+        // ✨ RESTORED: Master PDF Generator Hook
+        if (btnExportMaster != null) {
+            btnExportMaster.setOnClickListener(v -> {
+                if (!fullExpenseList.isEmpty()) PdfReportService.generateExpenseReport(this, session.getCommunityName(), fullExpenseList, totalSpent, "All Time Expenses");
+                else Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show();
+            });
         }
 
         loadManagersForAutocomplete();
@@ -110,7 +120,6 @@ public class ExpenseActivity extends AppCompatActivity {
                 
                 view.setOnClickListener(v -> PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge));
                 
-                // ✨ CRUD: Edit or Delete Expense
                 if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
                     view.setOnLongClickListener(v -> { showExpenseManagerDialog(ge); return true; });
                 }
