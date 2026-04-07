@@ -13,11 +13,9 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class AddMemberActivity extends AppCompatActivity {
-
     private DatabaseReference db;
     private SessionManager session;
-
-    private EditText inputName, inputPhone, inputGotra, inputBloodGroup, inputFather, inputMother, inputNid, inputAddress;
+    private EditText inputName, inputPhone, inputEmail, inputGotra, inputBloodGroup, inputFather, inputMother, inputNid, inputAddress;
     private Spinner spinnerRole;
     private Button btnSaveMember;
 
@@ -31,6 +29,7 @@ public class AddMemberActivity extends AppCompatActivity {
 
         inputName = findViewById(R.id.inputName);
         inputPhone = findViewById(R.id.inputPhone);
+        inputEmail = findViewById(R.id.inputEmail); // ✨ NEW
         inputGotra = findViewById(R.id.inputGotra);
         inputBloodGroup = findViewById(R.id.inputBloodGroup);
         inputFather = findViewById(R.id.inputFather);
@@ -44,9 +43,7 @@ public class AddMemberActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, roles);
         spinnerRole.setAdapter(adapter);
 
-        if (!"ADMIN".equals(session.getRole())) {
-            spinnerRole.setEnabled(false);
-        }
+        if (!"ADMIN".equals(session.getRole())) spinnerRole.setEnabled(false);
 
         btnSaveMember.setOnClickListener(v -> saveMemberOfflineFriendly());
     }
@@ -54,44 +51,30 @@ public class AddMemberActivity extends AppCompatActivity {
     private void saveMemberOfflineFriendly() {
         String name = inputName.getText().toString().trim();
         String phone = inputPhone.getText().toString().trim();
-        String gotra = inputGotra.getText().toString().trim();
-        String blood = inputBloodGroup.getText().toString().trim();
-        String role = spinnerRole.getSelectedItem().toString();
-        String address = inputAddress.getText().toString().trim();
+        if (name.isEmpty() || phone.isEmpty()) { Toast.makeText(this, "Name and Phone are required!", Toast.LENGTH_SHORT).show(); return; }
 
-        if (name.isEmpty() || phone.isEmpty()) {
-            Toast.makeText(this, "Name and Phone are required!", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        btnSaveMember.setEnabled(false);
-        btnSaveMember.setText("Saving...");
+        btnSaveMember.setEnabled(false); btnSaveMember.setText("Saving...");
 
         String memberId = "SB-" + (1000 + new Random().nextInt(9000)); 
         String pinPassword = String.format("%04d", new Random().nextInt(10000));
-        String strictSignature = session.getRole() + " - " + session.getUserName();
-
-        // 100% Compile-Safe HashMap mapping
+        
         HashMap<String, Object> memberMap = new HashMap<>();
         memberMap.put("id", memberId);
         memberMap.put("name", name);
         memberMap.put("phone", phone);
-        memberMap.put("gotra", gotra);
-        memberMap.put("bloodGroup", blood);
-        memberMap.put("role", role);
-        memberMap.put("address", address);
-        memberMap.put("addedBySignature", strictSignature);
+        memberMap.put("email", inputEmail.getText().toString().trim()); // ✨ NEW
+        memberMap.put("gotra", inputGotra.getText().toString().trim());
+        memberMap.put("bloodGroup", inputBloodGroup.getText().toString().trim());
+        memberMap.put("role", spinnerRole.getSelectedItem().toString());
+        memberMap.put("address", inputAddress.getText().toString().trim());
+        memberMap.put("addedBySignature", session.getRole() + " - " + session.getUserName());
         memberMap.put("totalDonated", 0f);
         memberMap.put("timestamp", System.currentTimeMillis());
 
         db.child("communities").child(session.getCommunityId()).child("members").child(memberId).setValue(memberMap);
         db.child("communities").child(session.getCommunityId()).child("logins").child(memberId).setValue(pinPassword);
 
-        try {
-            PdfReportService.generateLoginCredentialsPdf(this, session.getCommunityName(), name, memberId, pinPassword, role);
-        } catch (Exception e) {}
-        
-        Toast.makeText(this, "Member saved! Synced to background.", Toast.LENGTH_SHORT).show();
-        finish(); 
+        try { PdfReportService.generateLoginCredentialsPdf(this, session.getCommunityName(), name, memberId, pinPassword, session.getRole()); } catch (Exception e) {}
+        Toast.makeText(this, "Devotee saved! Synced to background.", Toast.LENGTH_SHORT).show(); finish(); 
     }
 }
