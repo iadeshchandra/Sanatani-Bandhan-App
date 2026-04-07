@@ -76,17 +76,16 @@ public class MemberDetailActivity extends AppCompatActivity {
             findViewById(R.id.btnPromote).setOnClickListener(v -> changeMemberRole("MANAGER"));
             findViewById(R.id.btnDemote).setOnClickListener(v -> changeMemberRole("MEMBER"));
             
-            // ✨ FIX: "VIEW USER PIN" Button exclusively for Admin
             Button btnViewPin = new Button(this);
             btnViewPin.setText("👁️ VIEW DEVOTEE PIN");
-            btnViewPin.setBackgroundColor(android.graphics.Color.parseColor("#1976D2")); // Blue
+            btnViewPin.setBackgroundColor(android.graphics.Color.parseColor("#1976D2")); 
             btnViewPin.setTextColor(android.graphics.Color.WHITE);
             btnViewPin.setOnClickListener(v -> showUserPin());
             containerAdminControls.addView(btnViewPin);
 
             Button btnDelete = new Button(this);
             btnDelete.setText("🗑️ DELETE DEVOTEE RECORD");
-            btnDelete.setBackgroundColor(android.graphics.Color.parseColor("#D32F2F")); // Red
+            btnDelete.setBackgroundColor(android.graphics.Color.parseColor("#D32F2F")); 
             btnDelete.setTextColor(android.graphics.Color.WHITE);
             btnDelete.setOnClickListener(v -> showDeleteConfirmation());
             containerAdminControls.addView(btnDelete);
@@ -167,19 +166,21 @@ public class MemberDetailActivity extends AppCompatActivity {
             float amt = Float.parseFloat(amtStr);
             long ts = System.currentTimeMillis();
             
-            // 1. Update Member Total & PDF Trigger Timestamp
             db.child("communities").child(session.getCommunityId()).child("members").child(activeMember.id).child("totalDonated").setValue(ServerValue.increment(amt));
             db.child("communities").child(session.getCommunityId()).child("members").child(activeMember.id).child("lastDonationTimestamp").setValue(ts);
             
-            // 2. Log to Transactions
             String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
             TransactionActivity.SingleDonation sd = new TransactionActivity.SingleDonation(transId, activeMember.name + " [Member]", amt, note, "", "", collector, ts, session.getRole());
             db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
             
-            Toast.makeText(this, "৳" + amt + " recorded! PDF ready for generation.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "৳" + amt + " recorded! PDF ready.", Toast.LENGTH_LONG).show();
             
-            // ✨ FIX: Triggers PDF generation automatically upon Chanda completion
-            try { PdfReportService.generateDonationReceipt(this, session.getCommunityName(), activeMember, sd); } catch (Exception e) {}
+            // ✨ CRASH FIX: Cleverly formats a GroupedDonation locally to instantly trigger the PDF Engine without needing new methods!
+            try {
+                TransactionActivity.GroupedDonation gd = new TransactionActivity.GroupedDonation(activeMember.name + " [Member]");
+                gd.addDonation(sd);
+                PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd);
+            } catch (Exception e) {}
         });
         builder.setNegativeButton("CANCEL", null); builder.show();
     }
