@@ -55,7 +55,6 @@ public class ExpenseActivity extends AppCompatActivity {
             btnAdd.setVisibility(View.GONE);
         }
 
-        // ✨ RESTORED: Master PDF Generator Hook
         if (btnExportMaster != null) {
             btnExportMaster.setOnClickListener(v -> {
                 if (!fullExpenseList.isEmpty()) PdfReportService.generateExpenseReport(this, session.getCommunityName(), fullExpenseList, totalSpent, "All Time Expenses");
@@ -201,5 +200,21 @@ public class ExpenseActivity extends AppCompatActivity {
         auditMap.put("managerName", session.getUserName()); auditMap.put("actionType", actionType);
         auditMap.put("description", description); auditMap.put("timestamp", System.currentTimeMillis());
         db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
+    }
+
+    // ✨ The Inner Classes that the compiler was missing!
+    public static class Expense {
+        public String id, eventName, itemName, involvedPerson, loggedBy;
+        public float amount; public long timestamp;
+        public Expense() {}
+        public Expense(String id, String ev, String it, float a, String inv, long ts, String logBy) {
+            this.id=id; this.eventName=ev; this.itemName=it; this.amount=a; this.involvedPerson=inv; this.timestamp=ts; this.loggedBy=logBy;
+        }
+    }
+
+    public static class GroupedExpense {
+        public String eventDisplayName; public float totalSpent = 0f; public List<Expense> history = new ArrayList<>();
+        public GroupedExpense(String name) { this.eventDisplayName = name; }
+        public void addExpense(Expense e) { this.history.add(e); this.totalSpent += e.amount; }
     }
 }
