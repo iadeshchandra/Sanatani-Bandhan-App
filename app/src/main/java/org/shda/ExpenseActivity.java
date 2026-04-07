@@ -1,53 +1,36 @@
 package org.shda;
 
-import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 
 public class ExpenseActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout expensesContainer;
-    private TextView tvTotalExpense;
-    private EditText inputSearch;
-    private Spinner spinnerSort;
-
-    private float totalExpenseValue = 0f;
-    private boolean isAdminOrManager;
-
-    // Auto-complete lists
-    private List<String> memberSearchList = new ArrayList<>();
-    private List<String> eventSearchList = new ArrayList<>();
-
-    // CRM Grouping Data Models
-    private HashMap<String, GroupedExpense> groupedMap = new HashMap<>();
-    private List<GroupedExpense> displayList = new ArrayList<>();
-    private String currentSort = "Recent First";
+    private TextView tvTotalExpenses;
+    
+    private List<Expense> fullExpenseList = new ArrayList<>();
+    private List<String> autocompleteManagers = new ArrayList<>();
+    private float totalSpent = 0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,232 +39,158 @@ public class ExpenseActivity extends AppCompatActivity {
 
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
-        expensesContainer = findViewById(R.id.expensesContainer);
-        tvTotalExpense = findViewById(R.id.tvTotalExpense);
-        inputSearch = findViewById(R.id.inputSearch);
-        spinnerSort = findViewById(R.id.spinnerSort);
 
         if (session.getCommunityId() == null) { finish(); return; }
 
-        isAdminOrManager = "ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole());
+        expensesContainer = findViewById(R.id.expensesContainer);
+        tvTotalExpenses = findViewById(R.id.tvTotalExpenses);
 
-        setupRBAC();
-        setupSearchAndSort();
-        fetchAutoCompleteData();
+        View btnAdd = findViewById(R.id.btnAddExpense);
+        if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
+            btnAdd.setVisibility(View.VISIBLE);
+            btnAdd.setOnClickListener(v -> showAddExpenseDialog());
+        } else {
+            btnAdd.setVisibility(View.GONE);
+        }
+
+        loadManagersForAutocomplete();
         loadExpenses();
     }
 
-    private void setupRBAC() {
-        View btnAddExpense = findViewById(R.id.btnAddExpense);
-        if (btnAddExpense != null) {
-            if (!isAdminOrManager) {
-                btnAddExpense.setVisibility(View.GONE);
-            } else {
-                btnAddExpense.setOnClickListener(v -> showExpenseDialog(null));
-            }
-        }
-        
-        findViewById(R.id.btnGenerateReport).setOnClickListener(v -> triggerMasterReportGeneration());
-    }
-
-    private void setupSearchAndSort() {
-        String[] sortOptions = {"Recent First", "Oldest First", "Highest Cost", "Name (A-Z)"};
-        ArrayAdapter<String> sortAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, sortOptions);
-        spinnerSort.setAdapter(sortAdapter);
-
-        spinnerSort.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                currentSort = sortOptions[position]; applyFilterAndSort();
-            }
-            @Override public void onNothingSelected(AdapterView<?> parent) {}
-        });
-
-        inputSearch.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { applyFilterAndSort(); }
-            @Override public void afterTextChanged(Editable s) {}
-        });
-    }
-
-    private void fetchAutoCompleteData() {
+    private void loadManagersForAutocomplete() {
+        db.child("communities").child(session.getCommunityId()).child("members").keepSynced(true);
         db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                memberSearchList.clear();
+                autocompleteManagers.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Member m = data.getValue(Member.class);
-                    if (m != null) memberSearchList.add(m.name + " (" + m.id + ")");
+                    if (m != null && ("MANAGER".equals(m.role) || "ADMIN".equals(m.role))) autocompleteManagers.add(m.name);
                 }
-            }
-            @Override public void onCancelled(@NonNull DatabaseError error) {}
-        });
-
-        db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                eventSearchList.clear();
-                for (DataSnapshot data : snapshot.getChildren()) {
-                    String evtName = data.child("eventName").getValue(String.class);
-                    if (evtName != null && !eventSearchList.contains(evtName)) eventSearchList.add(evtName);
-                }
+                if (!autocompleteManagers.contains(session.getUserName())) autocompleteManagers.add(session.getUserName());
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
     private void loadExpenses() {
-        db.child("communities").child(session.getCommunityId()).child("logs").child("Expense")
-          .addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                groupedMap.clear(); totalExpenseValue = 0f;
-
+        DatabaseReference expRef = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense");
+        expRef.keepSynced(true);
+        expRef.addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                fullExpenseList.clear(); totalSpent = 0f;
                 for (DataSnapshot data : snapshot.getChildren()) {
-                    try {
-                        Expense exp = data.getValue(Expense.class);
-                        if (exp != null && exp.eventName != null) {
-                            totalExpenseValue += exp.amount;
-                            
-                            String groupKey = exp.eventName.toLowerCase().trim();
-
-                            if (!groupedMap.containsKey(groupKey)) {
-                                GroupedExpense ge = new GroupedExpense();
-                                ge.eventDisplayName = exp.eventName;
-                                groupedMap.put(groupKey, ge);
-                            }
-
-                            GroupedExpense ge = groupedMap.get(groupKey);
-                            ge.totalSpent += exp.amount;
-                            if (exp.timestamp > ge.lastUpdated) ge.lastUpdated = exp.timestamp;
-                            ge.history.add(exp);
-                        }
-                    } catch (Exception e) {}
+                    Expense e = data.getValue(Expense.class);
+                    if (e != null) { fullExpenseList.add(e); totalSpent += e.amount; }
                 }
-                tvTotalExpense.setText("Total Mandir Expenses: ৳" + totalExpenseValue);
-                applyFilterAndSort();
+                tvTotalExpenses.setText("Total Utsav Expenses: ৳" + totalSpent);
+                processAndRenderList(fullExpenseList);
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    private void applyFilterAndSort() {
-        displayList.clear();
-        String query = inputSearch.getText().toString().toLowerCase().trim();
-
-        for (GroupedExpense ge : groupedMap.values()) {
-            if (ge.eventDisplayName.toLowerCase().contains(query)) { displayList.add(ge); }
+    private void processAndRenderList(List<Expense> rawList) {
+        HashMap<String, GroupedExpense> groupedMap = new HashMap<>();
+        for (Expense e : rawList) {
+            String key = e.eventName.trim().toLowerCase();
+            if (!groupedMap.containsKey(key)) groupedMap.put(key, new GroupedExpense(e.eventName));
+            groupedMap.get(key).addExpense(e);
         }
-
-        Collections.sort(displayList, (a, b) -> {
-            if (currentSort.equals("Recent First")) return Long.compare(b.lastUpdated, a.lastUpdated);
-            if (currentSort.equals("Oldest First")) return Long.compare(a.lastUpdated, b.lastUpdated);
-            if (currentSort.equals("Highest Cost")) return Float.compare(b.totalSpent, a.totalSpent);
-            return a.eventDisplayName.compareToIgnoreCase(b.eventDisplayName);
-        });
-
-        renderCards();
-    }
-
-    private void renderCards() {
-        // ✨ FIXED: Corrected all references from 'transactionsContainer' to 'expensesContainer'
+        
+        List<GroupedExpense> groupedList = new ArrayList<>(groupedMap.values());
+        Collections.sort(groupedList, (a, b) -> Float.compare(b.totalSpent, a.totalSpent));
+        
         expensesContainer.removeAllViews();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-
-        for (GroupedExpense ge : displayList) {
-            View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, expensesContainer, false);
-            
-            ((TextView) view.findViewById(R.id.tvTransName)).setText("🪔 " + ge.eventDisplayName);
-            ((TextView) view.findViewById(R.id.tvTransName)).setTextColor(android.graphics.Color.parseColor("#E65100"));
-            
-            ((TextView) view.findViewById(R.id.tvTransAmount)).setText("Total Spent: ৳" + ge.totalSpent);
-            ((TextView) view.findViewById(R.id.tvTransAmount)).setTextColor(android.graphics.Color.parseColor("#D32F2F"));
-            
-            ((TextView) view.findViewById(R.id.tvTransDate)).setText("Last Update: " + sdf.format(new Date(ge.lastUpdated)));
-            ((TextView) view.findViewById(R.id.tvTransNote)).setText("Total Items/Sevas: " + ge.history.size() + "\n👉 Tap to download Full Utsav Ledger");
-
-            view.setOnClickListener(v -> {
-                PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge);
-                Toast.makeText(this, "Generating Utsav Ledger...", Toast.LENGTH_SHORT).show();
-            });
-
-            expensesContainer.addView(view);
+        for (GroupedExpense ge : groupedList) {
+            try {
+                View view = LayoutInflater.from(this).inflate(R.layout.item_expense, expensesContainer, false);
+                ((TextView) view.findViewById(R.id.tvExpenseEvent)).setText(ge.eventDisplayName);
+                ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + ge.totalSpent);
+                ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText(ge.history.size() + " items logged");
+                
+                view.setOnClickListener(v -> PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge));
+                
+                // ✨ CRUD: Edit or Delete Expense
+                if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
+                    view.setOnLongClickListener(v -> { showExpenseManagerDialog(ge); return true; });
+                }
+                expensesContainer.addView(view);
+            } catch (Exception e) {}
         }
     }
 
-    private void showExpenseDialog(Expense existingExp) {
+    private void showAddExpenseDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(existingExp == null ? "Record Utsav Expense" : "Edit Expense");
-
+        builder.setTitle("Log Utsav Expense");
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-        final AutoCompleteTextView inputEvent = new AutoCompleteTextView(this); inputEvent.setHint("Utsav/Puja Name (e.g. Durga Puja)"); 
-        inputEvent.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, eventSearchList)); inputEvent.setThreshold(1);
+        final EditText inputEvent = new EditText(this); inputEvent.setHint("Event/Puja Name (e.g. Rash Purnima)");
+        final EditText inputItem = new EditText(this); inputItem.setHint("Item Purchased / Seva");
+        final EditText inputAmt = new EditText(this); inputAmt.setHint("Cost (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         
-        final EditText inputItem = new EditText(this); inputItem.setHint("Item Details (e.g. Flowers, Murti)");
-        
-        final EditText inputAmount = new EditText(this); inputAmount.setHint("Amount (৳)"); inputAmount.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        
-        final AutoCompleteTextView inputPerson = new AutoCompleteTextView(this); inputPerson.setHint("Handled By (Member Name)"); 
-        inputPerson.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, memberSearchList)); inputPerson.setThreshold(1);
+        final AutoCompleteTextView inputHandler = new AutoCompleteTextView(this);
+        inputHandler.setHint("Handled By");
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers);
+        inputHandler.setAdapter(adapter); inputHandler.setThreshold(1); inputHandler.setText(session.getUserName());
 
-        if (existingExp != null) {
-            inputEvent.setText(existingExp.eventName); inputItem.setText(existingExp.itemName); 
-            inputAmount.setText(String.valueOf(existingExp.amount)); inputPerson.setText(existingExp.involvedPerson);
-        }
-
-        layout.addView(inputEvent); layout.addView(inputItem); layout.addView(inputAmount); layout.addView(inputPerson);
+        layout.addView(inputEvent); layout.addView(inputItem); layout.addView(inputAmt); layout.addView(inputHandler);
         builder.setView(layout);
+        builder.setPositiveButton("RECORD", null); builder.setNegativeButton("CANCEL", null);
 
-        builder.setPositiveButton("SAVE", (dialog, which) -> {
+        AlertDialog dialog = builder.create(); dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String event = inputEvent.getText().toString().trim();
             String item = inputItem.getText().toString().trim();
-            String amtStr = inputAmount.getText().toString().trim();
-            String person = inputPerson.getText().toString().trim();
+            String amtStr = inputAmt.getText().toString().trim();
+            String handler = inputHandler.getText().toString().trim();
 
-            if (event.isEmpty() || item.isEmpty() || amtStr.isEmpty()) { Toast.makeText(this, "Event, Item, and Amount required", Toast.LENGTH_SHORT).show(); return; }
+            if (event.isEmpty() || item.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { Toast.makeText(this, "All fields required", Toast.LENGTH_SHORT).show(); return; }
 
-            try {
-                float amt = Float.parseFloat(amtStr);
-                String expId = existingExp == null ? db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey() : existingExp.id;
-                
-                String strictSignature = "ADMIN".equals(session.getRole()) ? "Super Admin - " + session.getUserName() : "Manager - " + session.getUserName() + " (" + session.getUserId() + ")";
-
-                Expense newExp = new Expense(expId, event, item, amt, person.isEmpty() ? session.getUserName() : person, 
-                                             existingExp == null ? System.currentTimeMillis() : existingExp.timestamp, 
-                                             strictSignature);
-
-                db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(expId).setValue(newExp);
-                Toast.makeText(this, "Expense Logged", Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {}
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Saving...");
+            
+            float amt = Float.parseFloat(amtStr);
+            String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey();
+            Expense e = new Expense(transId, event, item, amt, handler, System.currentTimeMillis(), session.getUserName());
+            
+            db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(transId).setValue(e);
+            Toast.makeText(this, "Expense Logged!", Toast.LENGTH_SHORT).show(); dialog.dismiss();
         });
-        builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
+    }
+
+    private void showExpenseManagerDialog(GroupedExpense ge) {
+        if (ge.history.isEmpty()) return;
+        Expense latest = ge.history.get(ge.history.size() - 1);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Manage Expense").setMessage("Event: " + latest.eventName + "\nItem: " + latest.itemName + "\nCost: ৳" + latest.amount);
+
+        builder.setPositiveButton("EDIT ITEM", (d, w) -> {
+            AlertDialog.Builder editBuilder = new AlertDialog.Builder(this);
+            final EditText inputItem = new EditText(this); inputItem.setText(latest.itemName);
+            editBuilder.setView(inputItem).setPositiveButton("SAVE", (d2, w2) -> {
+                String newItem = inputItem.getText().toString();
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(latest.id).child("itemName").setValue(newItem);
+                logAudit("EXPENSE_EDITED", "Updated item for " + latest.eventName + " to: " + newItem);
+                Toast.makeText(this, "Updated", Toast.LENGTH_SHORT).show();
+            }).show();
+        });
+
+        builder.setNegativeButton("DELETE", (d, w) -> {
+            new AlertDialog.Builder(this).setTitle("Confirm Deletion").setMessage("Delete ৳" + latest.amount + " expense?")
+                .setPositiveButton("YES", (d2, w2) -> {
+                    db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(latest.id).removeValue();
+                    logAudit("EXPENSE_DELETED", "Deleted ৳" + latest.amount + " expense for " + latest.eventName);
+                    Toast.makeText(this, "Deleted & Totals Recalculated", Toast.LENGTH_SHORT).show();
+                }).setNegativeButton("CANCEL", null).show();
+        });
         builder.show();
     }
 
-    private void triggerMasterReportGeneration() {
-        Calendar startCal = Calendar.getInstance(); Calendar endCal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
-            startCal.set(year, month, dayOfMonth, 0, 0, 0); 
-            new DatePickerDialog(this, (view2, year2, month2, dayOfMonth2) -> {
-                endCal.set(year2, month2, dayOfMonth2, 23, 59, 59); 
-                long startTs = startCal.getTimeInMillis(); long endTs = endCal.getTimeInMillis();
-                String reportRange = "Period: " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(startCal.getTime()) + " to " + new SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(endCal.getTime());
-
-                List<Expense> filteredLogs = new ArrayList<>();
-                float total = 0f;
-                for(GroupedExpense ge : groupedMap.values()) {
-                    for(Expense e : ge.history) {
-                        if(e.timestamp >= startTs && e.timestamp <= endTs) { filteredLogs.add(e); total += e.amount; }
-                    }
-                }
-                PdfReportService.generateExpenseReport(this, session.getCommunityName(), filteredLogs, total, reportRange);
-
-            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
-        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
-    }
-
-    public static class GroupedExpense {
-        public String eventDisplayName;
-        public float totalSpent = 0f;
-        public long lastUpdated = 0L;
-        public List<Expense> history = new ArrayList<>();
+    private void logAudit(String actionType, String description) {
+        String historyId = db.child("communities").child(session.getCommunityId()).child("audit_logs").push().getKey();
+        HashMap<String, Object> auditMap = new HashMap<>();
+        auditMap.put("managerName", session.getUserName()); auditMap.put("actionType", actionType);
+        auditMap.put("description", description); auditMap.put("timestamp", System.currentTimeMillis());
+        db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
     }
 }
