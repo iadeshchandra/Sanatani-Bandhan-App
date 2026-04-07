@@ -24,12 +24,8 @@ public class MemberActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout membersContainer;
-    
-    // ✨ WHAT ADDED & WHY: We changed standard EditText to AutoCompleteTextView to give users a smart dropdown when searching for members.
     private AutoCompleteTextView inputSearch;
     private List<Member> fullMemberList = new ArrayList<>();
-    
-    // ✨ WHAT ADDED & WHY: A HashMap that temporarily holds the most recent donation date for each user so we can display it on their card without crashing the database.
     private HashMap<String, String> lastDonationTracker = new HashMap<>();
 
     @Override
@@ -56,7 +52,7 @@ public class MemberActivity extends AppCompatActivity {
 
     private void setupOfflineEngineAndLoadData() {
         DatabaseReference membersRef = db.child("communities").child(session.getCommunityId()).child("members");
-        membersRef.keepSynced(true); // ✨ WHY: Forces offline caching.
+        membersRef.keepSynced(true);
         membersRef.addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 fullMemberList.clear();
@@ -65,12 +61,10 @@ public class MemberActivity extends AppCompatActivity {
                     Member m = data.getValue(Member.class);
                     if (m != null) {
                         fullMemberList.add(m);
-                        suggestions.add(m.name);
-                        suggestions.add(m.id);
+                        // ✨ FIX: User Name with ID format for Auto-Complete!
+                        suggestions.add(m.name + " (" + m.id + ")");
                     }
                 }
-                
-                // ✨ WHAT ADDED & WHY: Wires up the Auto-Complete dictionary using the fetched names and IDs.
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(MemberActivity.this, android.R.layout.simple_dropdown_item_1line, suggestions);
                 inputSearch.setAdapter(adapter);
                 renderList(fullMemberList);
@@ -78,7 +72,6 @@ public class MemberActivity extends AppCompatActivity {
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // ✨ WHAT ADDED & WHY: Silently loads the Donation Log in the background. It finds the highest timestamp for each name and saves it to the Tracker map.
         DatabaseReference donationsRef = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation");
         donationsRef.keepSynced(true);
         donationsRef.addValueEventListener(new ValueEventListener() {
@@ -131,7 +124,6 @@ public class MemberActivity extends AppCompatActivity {
             ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id + " | 📞 " + member.phone);
             ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Donated: ৳" + member.totalDonated);
             
-            // ✨ WHAT ADDED & WHY: Applies the Last Donation date we calculated earlier directly to the UI card.
             TextView tvLast = view.findViewById(R.id.tvLastDonation);
             if (lastDonationTracker.containsKey(member.name + " [Member]")) {
                 tvLast.setText(lastDonationTracker.get(member.name + " [Member]"));
@@ -139,7 +131,6 @@ public class MemberActivity extends AppCompatActivity {
                 tvLast.setText("No donations yet");
             }
 
-            // ✨ WHAT ADDED & WHY: Clicking a member now opens the dedicated full-screen Insights page instead of a basic popup.
             view.setOnClickListener(v -> {
                 Intent intent = new Intent(MemberActivity.this, MemberDetailActivity.class);
                 intent.putExtra("MEMBER_ID", member.id);
