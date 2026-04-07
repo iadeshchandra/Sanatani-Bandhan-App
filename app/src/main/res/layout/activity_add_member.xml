@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#FAF9F6">
+    android:background="#FFFBF2"> <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="🕉️ Add New Devotee" android:textSize="26sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="24dp"/>
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Add New Devotee" android:textSize="26sp" android:textStyle="bold" android:textColor="#212121" android:gravity="center" android:layout_marginBottom="24dp"/>
-
-        <EditText android:id="@+id/inputName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Full Name *" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputPhone" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Phone Number *" android:inputType="phone" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Full Name *" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputPhone" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Phone Number *" android:inputType="phone" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
         
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Assign Role:" android:textColor="#424242" android:layout_marginBottom="4dp"/>
-        <Spinner android:id="@+id/spinnerRole" android:layout_width="match_parent" android:layout_height="55dp" android:background="#FFFFFF" android:layout_marginBottom="12dp"/>
-
-        <EditText android:id="@+id/inputGotra" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Gotra (Optional)" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputBloodGroup" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Blood Group (Optional)" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputEmail" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Email Address (Optional)" android:inputType="textEmailAddress" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
         
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Optional KYC Details" android:textStyle="bold" android:textColor="#424242" android:layout_marginTop="8dp" android:layout_marginBottom="8dp"/>
-        
-        <EditText android:id="@+id/inputFather" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Father's Name" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputMother" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Mother's Name" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputNid" android:layout_width="match_parent" android:layout_height="55dp" android:hint="NID Number" android:inputType="number" android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputAddress" android:layout_width="match_parent" android:layout_height="80dp" android:hint="Full Address" android:background="#FFFFFF" android:padding="12dp" android:gravity="top" android:layout_marginBottom="24dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Assign Role:" android:textStyle="bold" android:textColor="#424242" android:layout_marginBottom="4dp"/>
+        <Spinner android:id="@+id/spinnerRole" android:layout_width="match_parent" android:layout_height="55dp" android:background="#FFFFFF" android:elevation="1dp" android:layout_marginBottom="12dp"/>
 
-        <Button android:id="@+id/btnSaveMember" android:layout_width="match_parent" android:layout_height="60dp" android:text="SAVE MEMBER" android:backgroundTint="#388E3C" android:layout_marginBottom="24dp"/>
+        <EditText android:id="@+id/inputGotra" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Gotra (Optional)" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputBloodGroup" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Blood Group (Optional)" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Optional KYC Details" android:textStyle="bold" android:textColor="#E65100" android:layout_marginTop="8dp" android:layout_marginBottom="8dp"/>
+        
+        <EditText android:id="@+id/inputFather" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Father's Name" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputMother" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Mother's Name" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputNid" android:layout_width="match_parent" android:layout_height="55dp" android:hint="NID Number" android:inputType="number" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputAddress" android:layout_width="match_parent" android:layout_height="80dp" android:hint="Full Address" android:background="#FFFFFF" android:elevation="1dp" android:padding="12dp" android:gravity="top" android:layout_marginBottom="24dp"/>
+
+        <Button android:id="@+id/btnSaveMember" android:layout_width="match_parent" android:layout_height="60dp" android:text="SAVE DEVOTEE RECORD" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#2E7D32" android:layout_marginBottom="24dp"/>
 
     </LinearLayout>
 </ScrollView>
