@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 public class PollActivity extends AppCompatActivity {
-
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout pollsContainer;
@@ -47,11 +46,9 @@ public class PollActivity extends AppCompatActivity {
         }
         
         View btnExportPolls = findViewById(R.id.btnExportPolls);
-        if (btnExportPolls != null) {
-            btnExportPolls.setOnClickListener(v -> {
-                if (!pollList.isEmpty()) PdfReportService.generateMultiplePollsReport(this, session.getCommunityName(), pollList, "All Polls", "ADMIN".equals(session.getRole()));
-            });
-        }
+        if (btnExportPolls != null) btnExportPolls.setOnClickListener(v -> {
+            if (!pollList.isEmpty()) PdfReportService.generateMultiplePollsReport(this, session.getCommunityName(), pollList, "All Polls", "ADMIN".equals(session.getRole()));
+        });
 
         loadPolls();
     }
@@ -91,21 +88,33 @@ public class PollActivity extends AppCompatActivity {
                 ((TextView) view.findViewById(R.id.tvPollCreator)).setText("Created by " + poll.createdBy);
                 ((TextView) view.findViewById(R.id.tvPollQuestion)).setText("📊 " + poll.question);
 
+                // ✨ FIX: Live Countdown Logic
+                TextView tvCountdown = view.findViewById(R.id.tvPollCountdown);
+                if (!isClosed) {
+                    long diff = poll.endTimestamp - now;
+                    long days = diff / (1000 * 60 * 60 * 24);
+                    long hours = (diff / (1000 * 60 * 60)) % 24;
+                    tvCountdown.setText("⏳ Closes in: " + days + "d " + hours + "h");
+                    tvCountdown.setVisibility(View.VISIBLE);
+                } else {
+                    tvCountdown.setVisibility(View.GONE);
+                }
+
+                // ✨ FIX: Admin Comment display
+                TextView tvAdminNote = view.findViewById(R.id.tvPollAdminComment);
+                if (poll.adminComment != null && !poll.adminComment.trim().isEmpty()) {
+                    tvAdminNote.setText("Note: " + poll.adminComment);
+                    tvAdminNote.setVisibility(View.VISIBLE);
+                }
+
                 int totalVotes = poll.votes != null ? poll.votes.size() : 0;
                 int countA = 0, countB = 0, countC = 0, countD = 0;
-                boolean hasVoted = false;
-                String myVote = "";
+                boolean hasVoted = false; String myVote = "";
 
                 if (poll.votes != null) {
                     for (Map.Entry<String, String> entry : poll.votes.entrySet()) {
-                        if (entry.getValue().equals("A")) countA++;
-                        else if (entry.getValue().equals("B")) countB++;
-                        else if (entry.getValue().equals("C")) countC++;
-                        else if (entry.getValue().equals("D")) countD++;
-
-                        if (entry.getKey().equals(session.getUserId())) {
-                            hasVoted = true; myVote = entry.getValue();
-                        }
+                        if (entry.getValue().equals("A")) countA++; else if (entry.getValue().equals("B")) countB++; else if (entry.getValue().equals("C")) countC++; else if (entry.getValue().equals("D")) countD++;
+                        if (entry.getKey().equals(session.getUserId())) { hasVoted = true; myVote = entry.getValue(); }
                     }
                 }
 
@@ -114,13 +123,10 @@ public class PollActivity extends AppCompatActivity {
 
                 if (isClosed || hasVoted) {
                     btnVote.setVisibility(View.GONE); 
-                    addResultBar(optionsContainer, poll.optionA, countA, totalVotes, myVote.equals("A"));
-                    addResultBar(optionsContainer, poll.optionB, countB, totalVotes, myVote.equals("B"));
+                    addResultBar(optionsContainer, poll.optionA, countA, totalVotes, myVote.equals("A")); addResultBar(optionsContainer, poll.optionB, countB, totalVotes, myVote.equals("B"));
                     if (poll.optionC != null && !poll.optionC.isEmpty()) addResultBar(optionsContainer, poll.optionC, countC, totalVotes, myVote.equals("C"));
                     if (poll.optionD != null && !poll.optionD.isEmpty()) addResultBar(optionsContainer, poll.optionD, countD, totalVotes, myVote.equals("D"));
-
-                    TextView tvTotal = new TextView(this); tvTotal.setText("Total Votes Cast: " + totalVotes); tvTotal.setTextSize(12f); tvTotal.setTextColor(Color.GRAY); tvTotal.setPadding(0, 16, 0, 0);
-                    optionsContainer.addView(tvTotal);
+                    TextView tvTotal = new TextView(this); tvTotal.setText("Total Votes Cast: " + totalVotes); tvTotal.setTextSize(12f); tvTotal.setTextColor(Color.GRAY); tvTotal.setPadding(0, 16, 0, 0); optionsContainer.addView(tvTotal);
                 } else {
                     btnVote.setVisibility(View.VISIBLE); btnVote.setOnClickListener(v -> showVotingDialog(poll));
                     addSimpleTextOption(optionsContainer, "• " + poll.optionA); addSimpleTextOption(optionsContainer, "• " + poll.optionB);
@@ -132,10 +138,7 @@ public class PollActivity extends AppCompatActivity {
                 if (!isManagerOrAdmin) btnDownload.setVisibility(View.GONE);
                 else btnDownload.setOnClickListener(v -> PdfReportService.generatePollReport(this, session.getCommunityName(), poll, "ADMIN".equals(session.getRole())));
 
-                if (isManagerOrAdmin) {
-                    view.setOnLongClickListener(v -> { showPollManagerDialog(poll); return true; });
-                }
-
+                if (isManagerOrAdmin) view.setOnLongClickListener(v -> { showPollManagerDialog(poll); return true; });
                 pollsContainer.addView(view);
             } catch (Exception e) { e.printStackTrace(); }
         }
@@ -143,19 +146,14 @@ public class PollActivity extends AppCompatActivity {
 
     private void addResultBar(LinearLayout container, String optionText, int votes, int totalVotes, boolean isMyVote) {
         int percentage = totalVotes == 0 ? 0 : Math.round(((float) votes / totalVotes) * 100);
-        
         LinearLayout row = new LinearLayout(this); row.setOrientation(LinearLayout.VERTICAL); row.setPadding(0, 12, 0, 12);
         LinearLayout textRow = new LinearLayout(this); textRow.setOrientation(LinearLayout.HORIZONTAL);
-        
         TextView tvOpt = new TextView(this); tvOpt.setText(optionText + (isMyVote ? " ✅" : "")); tvOpt.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)); tvOpt.setTextColor(Color.parseColor("#212121")); tvOpt.setTypeface(null, isMyVote ? Typeface.BOLD : Typeface.NORMAL);
         TextView tvPct = new TextView(this); tvPct.setText(percentage + "% (" + votes + ")"); tvPct.setTextColor(Color.parseColor("#757575")); tvPct.setTextSize(12f);
-        
         textRow.addView(tvOpt); textRow.addView(tvPct);
-
         LinearLayout barRow = new LinearLayout(this); barRow.setOrientation(LinearLayout.HORIZONTAL); barRow.setPadding(0, 8, 0, 0); barRow.setWeightSum(100f);
-        View fill = new View(this); fill.setBackgroundColor(Color.parseColor(isMyVote ? "#1976D2" : "#9E9E9E")); fill.setLayoutParams(new LinearLayout.LayoutParams(0, 16, percentage > 0 ? percentage : 0.01f));
+        View fill = new View(this); fill.setBackgroundColor(Color.parseColor(isMyVote ? "#E65100" : "#9E9E9E")); fill.setLayoutParams(new LinearLayout.LayoutParams(0, 16, percentage > 0 ? percentage : 0.01f));
         View empty = new View(this); empty.setBackgroundColor(Color.parseColor("#E0E0E0")); empty.setLayoutParams(new LinearLayout.LayoutParams(0, 16, 100 - percentage > 0 ? 100 - percentage : 0.01f));
-
         barRow.addView(fill); barRow.addView(empty); row.addView(textRow); row.addView(barRow); container.addView(row);
     }
 
@@ -173,8 +171,11 @@ public class PollActivity extends AppCompatActivity {
         final EditText inputC = new EditText(this); inputC.setHint("Option C (Optional)");
         final EditText inputD = new EditText(this); inputD.setHint("Option D (Optional)");
         final EditText inputDays = new EditText(this); inputDays.setHint("Duration (Days)"); inputDays.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        
+        // ✨ FIX: Admin Comment box added to creation
+        final EditText inputComment = new EditText(this); inputComment.setHint("Admin Comment (Optional)");
 
-        layout.addView(inputQ); layout.addView(inputA); layout.addView(inputB); layout.addView(inputC); layout.addView(inputD); layout.addView(inputDays);
+        layout.addView(inputQ); layout.addView(inputA); layout.addView(inputB); layout.addView(inputC); layout.addView(inputD); layout.addView(inputDays); layout.addView(inputComment);
         builder.setView(layout); builder.setPositiveButton("CREATE", null); builder.setNegativeButton("CANCEL", null);
 
         AlertDialog dialog = builder.create(); dialog.show();
@@ -187,7 +188,9 @@ public class PollActivity extends AppCompatActivity {
             String pollId = db.child("communities").child(session.getCommunityId()).child("polls").push().getKey();
             
             HashMap<String, Object> pollMap = new HashMap<>();
-            pollMap.put("id", pollId); pollMap.put("question", q); pollMap.put("optionA", a); pollMap.put("optionB", b); pollMap.put("optionC", inputC.getText().toString().trim()); pollMap.put("optionD", inputD.getText().toString().trim()); pollMap.put("createdBy", session.getUserName()); pollMap.put("timestamp", System.currentTimeMillis()); pollMap.put("endTimestamp", endTs);
+            pollMap.put("id", pollId); pollMap.put("question", q); pollMap.put("optionA", a); pollMap.put("optionB", b); pollMap.put("optionC", inputC.getText().toString().trim()); pollMap.put("optionD", inputD.getText().toString().trim()); 
+            pollMap.put("adminComment", inputComment.getText().toString().trim()); // ✨ FIX
+            pollMap.put("createdBy", session.getUserName()); pollMap.put("timestamp", System.currentTimeMillis()); pollMap.put("endTimestamp", endTs);
 
             db.child("communities").child(session.getCommunityId()).child("polls").child(pollId).setValue(pollMap);
             Toast.makeText(this, "Poll Created!", Toast.LENGTH_SHORT).show(); dialog.dismiss();
@@ -239,5 +242,12 @@ public class PollActivity extends AppCompatActivity {
         auditMap.put("managerName", session.getUserName()); auditMap.put("actionType", actionType);
         auditMap.put("description", description); auditMap.put("timestamp", System.currentTimeMillis());
         db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
+    }
+
+    public static class Poll {
+        public String id, question, optionA, optionB, optionC, optionD, createdBy, adminComment; // ✨ FIX
+        public long timestamp, endTimestamp;
+        public HashMap<String, String> votes;
+        public Poll() {}
     }
 }
