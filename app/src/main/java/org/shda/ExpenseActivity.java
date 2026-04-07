@@ -28,6 +28,7 @@ public class ExpenseActivity extends AppCompatActivity {
     private LinearLayout expensesContainer;
     private TextView tvTotalExpenses;
     
+    // ✨ Uses the global Expense class now!
     private List<Expense> fullExpenseList = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
     private float totalSpent = 0f;
@@ -158,9 +159,18 @@ public class ExpenseActivity extends AppCompatActivity {
             
             float amt = Float.parseFloat(amtStr);
             String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey();
-            Expense e = new Expense(transId, event, item, amt, handler, System.currentTimeMillis(), session.getUserName());
             
-            db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(transId).setValue(e);
+            // ✨ BUG FIX: Bulletproof HashMap saves prevent all constructor errors!
+            HashMap<String, Object> expMap = new HashMap<>();
+            expMap.put("id", transId);
+            expMap.put("eventName", event);
+            expMap.put("itemName", item);
+            expMap.put("amount", amt);
+            expMap.put("involvedPerson", handler);
+            expMap.put("timestamp", System.currentTimeMillis());
+            expMap.put("loggedBy", session.getUserName());
+            
+            db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(transId).setValue(expMap);
             Toast.makeText(this, "Expense Logged!", Toast.LENGTH_SHORT).show(); dialog.dismiss();
         });
     }
@@ -202,16 +212,7 @@ public class ExpenseActivity extends AppCompatActivity {
         db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
     }
 
-    // ✨ The Inner Classes that the compiler was missing!
-    public static class Expense {
-        public String id, eventName, itemName, involvedPerson, loggedBy;
-        public float amount; public long timestamp;
-        public Expense() {}
-        public Expense(String id, String ev, String it, float a, String inv, long ts, String logBy) {
-            this.id=id; this.eventName=ev; this.itemName=it; this.amount=a; this.involvedPerson=inv; this.timestamp=ts; this.loggedBy=logBy;
-        }
-    }
-
+    // ✨ Inner Grouped Class retained, but inner Expense removed!
     public static class GroupedExpense {
         public String eventDisplayName; public float totalSpent = 0f; public List<Expense> history = new ArrayList<>();
         public GroupedExpense(String name) { this.eventDisplayName = name; }
