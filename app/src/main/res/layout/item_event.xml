@@ -7,13 +7,19 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
         
         <TextView android:id="@+id/tvEventTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="18sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="4dp"/>
-        
         <TextView android:id="@+id/tvEventDate" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#424242" android:layout_marginBottom="2dp"/>
         
-        <TextView android:id="@+id/tvEventLocation" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#424242" android:layout_marginBottom="8dp"/>
+        <TextView android:id="@+id/tvEventCountdown" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textStyle="bold" android:layout_marginBottom="2dp"/>
         
+        <TextView android:id="@+id/tvEventLocation" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#424242" android:layout_marginBottom="8dp"/>
         <TextView android:id="@+id/tvEventDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="14sp" android:textColor="#616161" android:layout_marginBottom="12dp"/>
         
-        <Button android:id="@+id/btnDownloadItinerary" android:layout_width="match_parent" android:layout_height="45dp" android:text="📄 Download Itinerary PDF" android:backgroundTint="#455A64" android:textSize="12sp"/>
+        <Button android:id="@+id/btnDownloadItinerary" android:layout_width="match_parent" android:layout_height="45dp" android:text="📄 Download Itinerary PDF" android:backgroundTint="#7B1FA2" android:textSize="12sp" android:layout_marginBottom="8dp"/>
+        
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
+            <Button android:id="@+id/btnShareEvent" android:layout_width="0dp" android:layout_weight="1" android:layout_height="45dp" android:text="📤 Share Event" android:backgroundTint="#1976D2" android:textSize="12sp" android:layout_marginEnd="4dp"/>
+            <Button android:id="@+id/btnResendNotification" android:layout_width="0dp" android:layout_weight="1" android:layout_height="45dp" android:text="🔔 Resend Alert" android:backgroundTint="#D32F2F" android:textSize="12sp" android:layout_marginStart="4dp" android:visibility="gone"/>
+        </LinearLayout>
+
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
