@@ -36,7 +36,9 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
 
         btnLogin.setOnClickListener(v -> performLogin());
-        findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> startActivity(new Intent(this, RegisterActivity.class)));
+        
+        // ✨ FIX: Routing updated to your correct RegisterCommunityActivity file!
+        findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> startActivity(new Intent(this, RegisterCommunityActivity.class)));
     }
 
     private void performLogin() {
@@ -78,7 +80,6 @@ public class LoginActivity extends AppCompatActivity {
                     // 3. Fetch Member Details
                     Member m = snapshot.child(targetCommunityId).child("members").child(userId).getValue(Member.class);
                     if (m != null) {
-                        // ✨ FIX: Saves directly to SharedPreferences, bypassing any missing class methods!
                         SharedPreferences.Editor editor = getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit();
                         editor.putBoolean("IS_LOGGED_IN", true);
                         editor.putString("USER_ID", m.id);
