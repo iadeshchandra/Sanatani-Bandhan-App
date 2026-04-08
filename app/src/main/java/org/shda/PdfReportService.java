@@ -13,9 +13,9 @@ import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
 
-// ✨ CRASH FIX: The missing imports that caused the 30+ compiler errors!
-import com.itextpdf.layout.properties.TextAlignment;
-import com.itextpdf.layout.properties.UnitValue;
+// ✨ CRASH FIX: Changed 'properties' to 'property' (Singular) to match iText7!
+import com.itextpdf.layout.property.TextAlignment;
+import com.itextpdf.layout.property.UnitValue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -215,7 +215,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // ✨ CRASH FIX: Uses the global org.shda.Poll class!
     public static void generatePollReport(Context context, String communityName, Poll poll, boolean includeVoterNames) {
         try {
             Document document = createBaseDocument(context, "Panchayat_Poll_Insight");
@@ -256,7 +255,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // ✨ CRASH FIX: Uses the global org.shda.Poll class!
     public static void generateMultiplePollsReport(Context context, String communityName, List<Poll> polls, String title, boolean includeVoterNames) {
         try {
             Document document = createBaseDocument(context, "Master_Polls_Report");
