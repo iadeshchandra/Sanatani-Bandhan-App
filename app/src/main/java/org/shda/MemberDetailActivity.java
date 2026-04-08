@@ -76,10 +76,16 @@ public class MemberDetailActivity extends AppCompatActivity {
             findViewById(R.id.btnPromote).setOnClickListener(v -> changeMemberRole("MANAGER"));
             findViewById(R.id.btnDemote).setOnClickListener(v -> changeMemberRole("MEMBER"));
             
+            // ✨ FIX: Properly sized and margined Admin Buttons
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 160); // Approx 60dp
+            params.setMargins(10, 10, 10, 10);
+            
             Button btnViewPin = new Button(this);
             btnViewPin.setText("👁️ VIEW DEVOTEE PIN");
             btnViewPin.setBackgroundColor(android.graphics.Color.parseColor("#1976D2")); 
             btnViewPin.setTextColor(android.graphics.Color.WHITE);
+            btnViewPin.setTypeface(null, android.graphics.Typeface.BOLD);
+            btnViewPin.setLayoutParams(params);
             btnViewPin.setOnClickListener(v -> showUserPin());
             containerAdminControls.addView(btnViewPin);
 
@@ -87,6 +93,8 @@ public class MemberDetailActivity extends AppCompatActivity {
             btnDelete.setText("🗑️ DELETE DEVOTEE RECORD");
             btnDelete.setBackgroundColor(android.graphics.Color.parseColor("#D32F2F")); 
             btnDelete.setTextColor(android.graphics.Color.WHITE);
+            btnDelete.setTypeface(null, android.graphics.Typeface.BOLD);
+            btnDelete.setLayoutParams(params);
             btnDelete.setOnClickListener(v -> showDeleteConfirmation());
             containerAdminControls.addView(btnDelete);
         }
@@ -128,11 +136,23 @@ public class MemberDetailActivity extends AppCompatActivity {
         });
     }
 
+    // ✨ FIX: Smart PIN auto-generation fallback logic
     private void showUserPin() {
         db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 String pin = snapshot.getValue(String.class);
-                new AlertDialog.Builder(MemberDetailActivity.this).setTitle("Devotee PIN").setMessage("Current PIN for " + activeMember.name + " is:\n\n" + (pin != null ? pin : "Not Found")).setPositiveButton("CLOSE", null).show();
+                
+                if (pin == null || pin.isEmpty()) {
+                    pin = String.format("%04d", new java.util.Random().nextInt(10000));
+                    db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId).setValue(pin);
+                    Toast.makeText(MemberDetailActivity.this, "New PIN Auto-Generated", Toast.LENGTH_SHORT).show();
+                }
+                
+                new AlertDialog.Builder(MemberDetailActivity.this)
+                    .setTitle("Devotee Secure PIN")
+                    .setMessage("The login PIN for " + activeMember.name + " is:\n\n" + pin)
+                    .setPositiveButton("CLOSE", null)
+                    .show();
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -175,7 +195,6 @@ public class MemberDetailActivity extends AppCompatActivity {
             
             Toast.makeText(this, "৳" + amt + " recorded! PDF ready.", Toast.LENGTH_LONG).show();
             
-            // ✨ CRASH FIX: Cleverly formats a GroupedDonation locally to instantly trigger the PDF Engine without needing new methods!
             try {
                 TransactionActivity.GroupedDonation gd = new TransactionActivity.GroupedDonation(activeMember.name + " [Member]");
                 gd.addDonation(sd);
