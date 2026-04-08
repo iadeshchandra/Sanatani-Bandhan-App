@@ -36,7 +36,6 @@ public class EventActivity extends AppCompatActivity {
     private List<Event> currentlyDisplayedList = new ArrayList<>();
     private boolean isManagerOrAdmin;
     
-    // ✨ NEW: Date Filters
     private Long filterStartTs = null;
     private Long filterEndTs = null;
 
@@ -69,7 +68,13 @@ public class EventActivity extends AppCompatActivity {
         if (btnExportMaster != null) {
             btnExportMaster.setOnClickListener(v -> {
                 if (currentlyDisplayedList.isEmpty()) { Toast.makeText(this, "No events to export", Toast.LENGTH_SHORT).show(); return; }
-                Toast.makeText(this, "Master Event PDF Engine will activate in Phase 4!", Toast.LENGTH_LONG).show();
+                // ✨ FIX: Triggers the Master PDF, respecting the Date Filters!
+                String title = filterStartTs != null ? "Filtered Event Calendar" : "Master Event Calendar";
+                try {
+                    PdfReportService.generateMasterEventReport(this, session.getCommunityName(), currentlyDisplayedList, title);
+                } catch (Exception e) {
+                    Toast.makeText(this, "Error generating PDF", Toast.LENGTH_SHORT).show();
+                }
             });
         }
 
@@ -93,7 +98,6 @@ public class EventActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ NEW: Smart Filter Engine
     private void applyFilters() {
         currentlyDisplayedList.clear();
         String query = inputSearch != null ? inputSearch.getText().toString().toLowerCase().trim() : "";
