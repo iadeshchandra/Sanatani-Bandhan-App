@@ -5,24 +5,23 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class CommsActivity extends AppCompatActivity {
 
     private DatabaseReference db;
     private SessionManager session;
-    private List<String> phoneNumbers = new ArrayList<>();
-    private TextView tvMemberCount;
     private EditText inputMessage;
-    private RadioGroup radioGroupType;
+    private RadioGroup radioGroupCategory;
+    private List<String> memberPhoneNumbers = new ArrayList<>();
+    private Button btnSendWhatsApp, btnSendSms;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,18 +31,20 @@ public class CommsActivity extends AppCompatActivity {
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
-        tvMemberCount = findViewById(R.id.tvMemberCount);
-        inputMessage = findViewById(R.id.inputMessage);
-        radioGroupType = findViewById(R.id.radioGroupType);
-
-        if (!"ADMIN".equals(session.getRole()) && !"MANAGER".equals(session.getRole())) {
-            Toast.makeText(this, "Access Denied", Toast.LENGTH_SHORT).show(); finish(); return;
+        if (session.getCommunityId() == null || "MEMBER".equals(session.getRole())) {
+            Toast.makeText(this, "Access Denied: Managers/Admins Only", Toast.LENGTH_SHORT).show();
+            finish(); return;
         }
+
+        inputMessage = findViewById(R.id.inputMessage);
+        radioGroupCategory = findViewById(R.id.radioGroupCategory);
+        btnSendWhatsApp = findViewById(R.id.btnSendWhatsApp);
+        btnSendSms = findViewById(R.id.btnSendSms);
 
         loadPhoneNumbers();
 
-        findViewById(R.id.btnWhatsApp).setOnClickListener(v -> sendViaWhatsApp());
-        findViewById(R.id.btnSms).setOnClickListener(v -> sendViaSms());
+        btnSendWhatsApp.setOnClickListener(v -> prepareAndSendBroadcast(true));
+        btnSendSms.setOnClickListener(v -> prepareAndSendBroadcast(false));
     }
 
     private void loadPhoneNumbers() {
@@ -51,62 +52,69 @@ public class CommsActivity extends AppCompatActivity {
         membersRef.keepSynced(true);
         membersRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                phoneNumbers.clear();
+                memberPhoneNumbers.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     String phone = data.child("phone").getValue(String.class);
                     if (phone != null && phone.length() >= 10) {
-                        phoneNumbers.add(phone.trim());
+                        memberPhoneNumbers.add(phone.trim());
                     }
                 }
-                tvMemberCount.setText("Found " + phoneNumbers.size() + " Members with valid phone numbers ready for broadcast.");
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
-    private String buildFinalMessage() {
-        String baseMsg = inputMessage.getText().toString().trim();
-        if (baseMsg.isEmpty()) return "";
+    private void prepareAndSendBroadcast(boolean isWhatsApp) {
+        String baseMessage = inputMessage.getText().toString().trim();
+        if (baseMessage.isEmpty()) {
+            Toast.makeText(this, "Message cannot be empty", Toast.LENGTH_SHORT).show(); return;
+        }
+        if (memberPhoneNumbers.isEmpty()) {
+            Toast.makeText(this, "No valid phone numbers found in directory.", Toast.LENGTH_SHORT).show(); return;
+        }
 
-        String header = "📣 GENERAL ANNOUNCEMENT";
-        int selectedId = radioGroupType.getCheckedRadioButtonId();
-        if (selectedId == R.id.radioMeeting) header = "🏛️ MANDIR / COMMITTEE MEETING";
-        else if (selectedId == R.id.radioUtsav) header = "🪔 UTSAV GREETINGS & SEVA";
+        // Anti-double-click Debouncing
+        btnSendWhatsApp.setEnabled(false); btnSendSms.setEnabled(false);
+        btnSendWhatsApp.setText("ROUTING..."); btnSendSms.setText("ROUTING...");
 
-        return "🙏 Namaskar / Jay Sanatan Dharma 🙏\n\n"
-             + header + "\n\n"
-             + baseMsg + "\n\n"
-             + "------------------------------\n"
-             + "Sent via " + session.getCommunityName() + " Portal\n"
-             + "Powered by Sanatani Bandhan SaaS";
-    }
+        String category = "Update";
+        int checkedId = radioGroupCategory.getCheckedRadioButtonId();
+        if (checkedId == R.id.rbMeeting) category = "Mandir Meeting Alert";
+        else if (checkedId == R.id.rbUtsav) category = "Utsav Greeting";
+        else if (checkedId == R.id.rbGeneral) category = "General Announcement";
 
-    private void sendViaWhatsApp() {
-        String finalMsg = buildFinalMessage();
-        if (finalMsg.isEmpty() || phoneNumbers.isEmpty()) { Toast.makeText(this, "Message or contacts empty", Toast.LENGTH_SHORT).show(); return; }
+        String finalMessage = "🙏 Namaskar,\n[" + category + "]\n\n" + baseMessage + "\n\n- " + session.getCommunityName() + "\n(Powered by Sanatani Bandhan CRM)";
+        String joinedNumbers = android.text.TextUtils.join(",", memberPhoneNumbers);
+
+        logAudit("MASS_SANDESH", "Sent " + category + " broadcast to " + memberPhoneNumbers.size() + " members via " + (isWhatsApp ? "WhatsApp" : "SMS"));
 
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            String allPhones = String.join(",", phoneNumbers);
-            // Using standard WhatsApp intent (WhatsApp usually requires clicking send for mass lists without API)
-            intent.setData(Uri.parse("https://api.whatsapp.com/send?text=" + Uri.encode(finalMsg)));
-            startActivity(intent);
+            if (isWhatsApp) {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse("https://wa.me/?text=" + Uri.encode(finalMessage)));
+                startActivity(intent);
+            } else {
+                Intent intent = new Intent(Intent.ACTION_SENDTO);
+                intent.setData(Uri.parse("smsto:" + joinedNumbers));
+                intent.putExtra("sms_body", finalMessage);
+                startActivity(intent);
+            }
         } catch (Exception e) {
-            Toast.makeText(this, "WhatsApp not installed properly", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Error launching app. Check if installed.", Toast.LENGTH_LONG).show();
         }
+
+        // Re-enable buttons after 3 seconds
+        new android.os.Handler().postDelayed(() -> {
+            btnSendWhatsApp.setEnabled(true); btnSendSms.setEnabled(true);
+            btnSendWhatsApp.setText("🚀 BROADCAST VIA WHATSAPP"); btnSendSms.setText("💬 BROADCAST VIA STANDARD SMS");
+        }, 3000);
     }
 
-    private void sendViaSms() {
-        String finalMsg = buildFinalMessage();
-        if (finalMsg.isEmpty() || phoneNumbers.isEmpty()) { Toast.makeText(this, "Message or contacts empty", Toast.LENGTH_SHORT).show(); return; }
-
-        try {
-            Intent intent = new Intent(Intent.ACTION_SENDTO);
-            intent.setData(Uri.parse("smsto:" + String.join(";", phoneNumbers)));
-            intent.putExtra("sms_body", finalMsg);
-            startActivity(intent);
-        } catch (Exception e) {
-            Toast.makeText(this, "SMS App failed to open", Toast.LENGTH_SHORT).show();
-        }
+    private void logAudit(String actionType, String description) {
+        String historyId = db.child("communities").child(session.getCommunityId()).child("audit_logs").push().getKey();
+        HashMap<String, Object> auditMap = new HashMap<>();
+        auditMap.put("managerName", session.getUserName()); auditMap.put("actionType", actionType);
+        auditMap.put("description", description); auditMap.put("timestamp", System.currentTimeMillis());
+        db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
     }
 }
