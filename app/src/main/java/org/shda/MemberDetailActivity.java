@@ -1,5 +1,6 @@
 package org.shda;
 
+import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +63,16 @@ public class MemberDetailActivity extends AppCompatActivity {
             if (activeMember != null) PdfReportService.generateMemberProfile(this, session.getCommunityName(), activeMember);
         });
 
+        // ✨ NEW: Donation Date Filter Logic
+        findViewById(R.id.btnDonationHistoryPdf).setOnClickListener(v -> {
+            if (activeMember == null) return;
+            new AlertDialog.Builder(this).setTitle("Generate Donation Ledger")
+                .setItems(new String[]{"Specific Date Range", "All Time"}, (d, w) -> {
+                    if (w == 0) pickDateRange((startTs, endTs) -> generateDonationPdfForMember(startTs, endTs));
+                    else generateDonationPdfForMember(0, Long.MAX_VALUE);
+                }).show();
+        });
+
         Button btnAddDonation = findViewById(R.id.btnInsightAddDonation);
         if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
             btnAddDonation.setOnClickListener(v -> showQuickDonationDialog());
@@ -76,8 +88,7 @@ public class MemberDetailActivity extends AppCompatActivity {
             findViewById(R.id.btnPromote).setOnClickListener(v -> changeMemberRole("MANAGER"));
             findViewById(R.id.btnDemote).setOnClickListener(v -> changeMemberRole("MEMBER"));
             
-            // ✨ FIX: Properly sized and margined Admin Buttons
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 160); // Approx 60dp
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 160); 
             params.setMargins(10, 10, 10, 10);
             
             Button btnViewPin = new Button(this);
@@ -136,26 +147,55 @@ public class MemberDetailActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ FIX: Smart PIN auto-generation fallback logic
     private void showUserPin() {
         db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 String pin = snapshot.getValue(String.class);
-                
                 if (pin == null || pin.isEmpty()) {
                     pin = String.format("%04d", new java.util.Random().nextInt(10000));
                     db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId).setValue(pin);
                     Toast.makeText(MemberDetailActivity.this, "New PIN Auto-Generated", Toast.LENGTH_SHORT).show();
                 }
-                
-                new AlertDialog.Builder(MemberDetailActivity.this)
-                    .setTitle("Devotee Secure PIN")
-                    .setMessage("The login PIN for " + activeMember.name + " is:\n\n" + pin)
-                    .setPositiveButton("CLOSE", null)
-                    .show();
+                new AlertDialog.Builder(MemberDetailActivity.this).setTitle("Devotee Secure PIN").setMessage("The login PIN for " + activeMember.name + " is:\n\n" + pin).setPositiveButton("CLOSE", null).show();
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
+
+    // ✨ NEW: Date Picker and Filtering Logic
+    private void pickDateRange(DateRangeCallback callback) {
+        final Calendar startCal = Calendar.getInstance();
+        new DatePickerDialog(this, (view1, y1, m1, d1) -> {
+            startCal.set(y1, m1, d1, 0, 0, 0);
+            final Calendar endCal = Calendar.getInstance();
+            new DatePickerDialog(this, (view2, y2, m2, d2) -> {
+                endCal.set(y2, m2, d2, 23, 59, 59);
+                if (startCal.getTimeInMillis() > endCal.getTimeInMillis()) Toast.makeText(this, "Start date must be before end date", Toast.LENGTH_SHORT).show();
+                else callback.onSelected(startCal.getTimeInMillis(), endCal.getTimeInMillis());
+            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+            Toast.makeText(this, "Now select End Date", Toast.LENGTH_SHORT).show();
+        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    }
+    private interface DateRangeCallback { void onSelected(long start, long end); }
+
+    private void generateDonationPdfForMember(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation")
+          .addListenerForSingleValueEvent(new ValueEventListener() {
+              @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                  TransactionActivity.GroupedDonation gd = new TransactionActivity.GroupedDonation(activeMember.name + " [Member]");
+                  for (DataSnapshot data : snapshot.getChildren()) {
+                      TransactionActivity.SingleDonation sd = data.getValue(TransactionActivity.SingleDonation.class);
+                      if (sd != null && sd.name.contains(activeMember.name)) {
+                          if (sd.timestamp >= startTs && sd.timestamp <= endTs) gd.addDonation(sd);
+                      }
+                  }
+                  if (gd.history.isEmpty()) Toast.makeText(MemberDetailActivity.this, "No donations found in this date range.", Toast.LENGTH_SHORT).show();
+                  else {
+                      try { PdfReportService.generateDonorStatement(MemberDetailActivity.this, session.getCommunityName(), gd); } catch (Exception e) {}
+                  }
+              }
+              @Override public void onCancelled(@NonNull DatabaseError error) {}
+          });
     }
 
     private void showQuickDonationDialog() {
