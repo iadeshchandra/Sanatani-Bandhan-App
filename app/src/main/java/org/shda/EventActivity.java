@@ -4,6 +4,8 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -28,8 +30,15 @@ public class EventActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout eventsContainer;
-    private List<Event> eventList = new ArrayList<>();
+    private EditText inputSearch;
+    
+    private List<Event> fullEventList = new ArrayList<>();
+    private List<Event> currentlyDisplayedList = new ArrayList<>();
     private boolean isManagerOrAdmin;
+    
+    // ✨ NEW: Date Filters
+    private Long filterStartTs = null;
+    private Long filterEndTs = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,16 +48,32 @@ public class EventActivity extends AppCompatActivity {
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
         eventsContainer = findViewById(R.id.eventsContainer);
+        inputSearch = findViewById(R.id.inputSearch);
         isManagerOrAdmin = "ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole());
 
         if (session.getCommunityId() == null) { finish(); return; }
 
         View btnAddEvent = findViewById(R.id.btnAddEvent);
+        View btnExportMaster = findViewById(R.id.btnExportMaster);
+        View btnFilterDates = findViewById(R.id.btnFilterDates);
+
         if (btnAddEvent != null) {
             if (!isManagerOrAdmin) btnAddEvent.setVisibility(View.GONE);
             else btnAddEvent.setOnClickListener(v -> showAddEventDialog());
         }
 
+        if (btnFilterDates != null) {
+            btnFilterDates.setOnClickListener(v -> showGlobalDateFilterDialog());
+        }
+
+        if (btnExportMaster != null) {
+            btnExportMaster.setOnClickListener(v -> {
+                if (currentlyDisplayedList.isEmpty()) { Toast.makeText(this, "No events to export", Toast.LENGTH_SHORT).show(); return; }
+                Toast.makeText(this, "Master Event PDF Engine will activate in Phase 4!", Toast.LENGTH_LONG).show();
+            });
+        }
+
+        setupSearch();
         loadEvents();
     }
 
@@ -57,23 +82,81 @@ public class EventActivity extends AppCompatActivity {
         eventsRef.keepSynced(true);
         eventsRef.addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                eventList.clear();
+                fullEventList.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Event e = data.getValue(Event.class);
-                    if (e != null) eventList.add(e);
+                    if (e != null) fullEventList.add(e);
                 }
-                Collections.sort(eventList, (a, b) -> Long.compare(a.timestamp, b.timestamp));
-                renderEvents();
+                applyFilters();
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
+    // ✨ NEW: Smart Filter Engine
+    private void applyFilters() {
+        currentlyDisplayedList.clear();
+        String query = inputSearch != null ? inputSearch.getText().toString().toLowerCase().trim() : "";
+
+        for (Event e : fullEventList) {
+            boolean matchesSearch = query.isEmpty() || (e.title != null && e.title.toLowerCase().contains(query)) || (e.location != null && e.location.toLowerCase().contains(query));
+            boolean matchesDate = true;
+            
+            if (filterStartTs != null && filterEndTs != null) {
+                matchesDate = (e.timestamp >= filterStartTs && e.timestamp <= filterEndTs);
+            }
+            
+            if (matchesSearch && matchesDate) currentlyDisplayedList.add(e);
+        }
+        Collections.sort(currentlyDisplayedList, (a, b) -> Long.compare(a.timestamp, b.timestamp));
+        renderEvents();
+    }
+
+    private void setupSearch() {
+        if (inputSearch == null) return;
+        inputSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { applyFilters(); }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void showGlobalDateFilterDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Filter Events by Date");
+        builder.setItems(new String[]{"Select Specific Date Range", "Clear Filters (Show All Time)"}, (dialog, which) -> {
+            if (which == 0) {
+                pickDateRange((startTs, endTs) -> {
+                    filterStartTs = startTs; filterEndTs = endTs; applyFilters();
+                    Toast.makeText(this, "Dates Filtered Successfully", Toast.LENGTH_SHORT).show();
+                });
+            } else {
+                filterStartTs = null; filterEndTs = null; applyFilters();
+            }
+        });
+        builder.show();
+    }
+
+    private void pickDateRange(DateRangeCallback callback) {
+        final Calendar startCal = Calendar.getInstance();
+        new DatePickerDialog(this, (view1, y1, m1, d1) -> {
+            startCal.set(y1, m1, d1, 0, 0, 0);
+            final Calendar endCal = Calendar.getInstance();
+            new DatePickerDialog(this, (view2, y2, m2, d2) -> {
+                endCal.set(y2, m2, d2, 23, 59, 59);
+                if (startCal.getTimeInMillis() > endCal.getTimeInMillis()) Toast.makeText(this, "Start date must be before end date", Toast.LENGTH_SHORT).show();
+                else callback.onSelected(startCal.getTimeInMillis(), endCal.getTimeInMillis());
+            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+            Toast.makeText(this, "Now select End Date", Toast.LENGTH_SHORT).show();
+        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    }
+    private interface DateRangeCallback { void onSelected(long start, long end); }
+
     private void renderEvents() {
         eventsContainer.removeAllViews();
         long now = System.currentTimeMillis();
 
-        for (Event event : eventList) {
+        for (Event event : currentlyDisplayedList) {
             try {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_event, eventsContainer, false);
                 
@@ -114,7 +197,7 @@ public class EventActivity extends AppCompatActivity {
                 Button btnResend = view.findViewById(R.id.btnResendNotification);
                 if (isManagerOrAdmin && diff > 0) {
                     btnResend.setVisibility(View.VISIBLE);
-                    btnResend.setText("🔔 Resend Alert (" + event.notificationCount + ")");
+                    btnResend.setText("🔔 RESEND (" + event.notificationCount + ")");
                     btnResend.setOnClickListener(v -> {
                         notifyAllMembers(event.title, event.dateStr, event.timeStr);
                         int newCount = event.notificationCount + 1;
@@ -145,7 +228,7 @@ public class EventActivity extends AppCompatActivity {
         final EditText inputTitle = new EditText(this); inputTitle.setHint("Event / Puja Name");
         final EditText inputLocation = new EditText(this); inputLocation.setHint("Location (e.g., Haritola Mandir)");
         final EditText inputDesc = new EditText(this); inputDesc.setHint("About the Event");
-        final EditText inputAdminComment = new EditText(this); inputAdminComment.setHint("Manager Comment (Optional)");
+        final EditText inputAdminComment = new EditText(this); inputAdminComment.setHint("Admin Note (Optional)");
         
         final Button btnSelectDateTime = new Button(this);
         btnSelectDateTime.setText("Select Date & Time");
@@ -192,7 +275,7 @@ public class EventActivity extends AppCompatActivity {
             db.child("communities").child(session.getCommunityId()).child("events").child(eventId).setValue(newEvent);
 
             notifyAllMembers(title, selectedDateStr[0], selectedTimeStr[0]);
-            Toast.makeText(this, "Event Scheduled! Syncing...", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Event Scheduled!", Toast.LENGTH_LONG).show();
             dialog.dismiss();
         });
     }
@@ -250,14 +333,12 @@ public class EventActivity extends AppCompatActivity {
         db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
     }
 
-    // ✨ The Inner Class that the compiler was missing!
     public static class Event {
         public String id, title, dateStr, timeStr, location, description, adminComment, createdBy;
-        public long timestamp;
-        public int notificationCount = 1;
+        public long timestamp; public int notificationCount = 1;
         public Event() {}
         public Event(String id, String t, String dStr, String timeStr, String loc, String desc, String comment, String creator, long ts, int notifCount) {
-            this.id = id; this.title = t; this.dateStr = dStr; this.timeStr = timeStr; this.location = loc; this.description = desc; this.adminComment = comment; this.createdBy = creator; this.timestamp = ts; this.notificationCount = notifCount;
+            this.id=id; this.title=t; this.dateStr=dStr; this.timeStr=timeStr; this.location=loc; this.description=desc; this.adminComment=comment; this.createdBy=creator; this.timestamp=ts; this.notificationCount=notifCount;
         }
     }
 }
