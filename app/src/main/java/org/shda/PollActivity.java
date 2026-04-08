@@ -93,9 +93,9 @@ public class PollActivity extends AppCompatActivity {
                 boolean isClosed = now > poll.endTimestamp;
                 
                 TextView tvStatus = view.findViewById(R.id.tvPollStatus);
-                tvStatus.setText(isClosed ? "🔴 CLOSED" : "🟢 ACTIVE");
-                tvStatus.setTextColor(Color.parseColor(isClosed ? "#D32F2F" : "#2E7D32"));
-                tvStatus.setBackgroundColor(Color.parseColor(isClosed ? "#FFEBEE" : "#E8F5E9"));
+                tvStatus.setText(isClosed ? "⚫ CONCLUDED" : "🟢 ACTIVE");
+                tvStatus.setTextColor(android.graphics.Color.parseColor(isClosed ? "#455A64" : "#2E7D32"));
+                tvStatus.setBackgroundColor(android.graphics.Color.parseColor(isClosed ? "#ECEFF1" : "#E8F5E9"));
                 
                 ((TextView) view.findViewById(R.id.tvPollCreator)).setText("Created by " + poll.createdBy);
                 ((TextView) view.findViewById(R.id.tvPollQuestion)).setText("📊 " + poll.question);
@@ -133,7 +133,7 @@ public class PollActivity extends AppCompatActivity {
                     addResultBar(optionsContainer, poll.optionA, countA, totalVotes, myVote.equals("A")); addResultBar(optionsContainer, poll.optionB, countB, totalVotes, myVote.equals("B"));
                     if (poll.optionC != null && !poll.optionC.isEmpty()) addResultBar(optionsContainer, poll.optionC, countC, totalVotes, myVote.equals("C"));
                     if (poll.optionD != null && !poll.optionD.isEmpty()) addResultBar(optionsContainer, poll.optionD, countD, totalVotes, myVote.equals("D"));
-                    TextView tvTotal = new TextView(this); tvTotal.setText("Total Votes Cast: " + totalVotes); tvTotal.setTextSize(12f); tvTotal.setTextColor(Color.GRAY); tvTotal.setPadding(0, 16, 0, 0); optionsContainer.addView(tvTotal);
+                    TextView tvTotal = new TextView(this); tvTotal.setText("Total Votes Cast: " + totalVotes); tvTotal.setTextSize(12f); tvTotal.setTextColor(android.graphics.Color.GRAY); tvTotal.setPadding(0, 16, 0, 0); optionsContainer.addView(tvTotal);
                 } else {
                     btnVote.setVisibility(View.VISIBLE); btnVote.setOnClickListener(v -> showVotingDialog(poll));
                     addSimpleTextOption(optionsContainer, "• " + poll.optionA); addSimpleTextOption(optionsContainer, "• " + poll.optionB);
@@ -141,16 +141,32 @@ public class PollActivity extends AppCompatActivity {
                     if (poll.optionD != null && !poll.optionD.isEmpty()) addSimpleTextOption(optionsContainer, "• " + poll.optionD);
                 }
 
+                if (isManagerOrAdmin) {
+                    Button btnAddNote = new Button(this);
+                    btnAddNote.setText("📝 ADD NOTE");
+                    btnAddNote.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+                    btnAddNote.setTextColor(android.graphics.Color.parseColor("#1976D2"));
+                    btnAddNote.setOnClickListener(v -> {
+                        AlertDialog.Builder editBuilder = new AlertDialog.Builder(this);
+                        final EditText inputQ = new EditText(this); inputQ.setHint("Type admin comment here..."); inputQ.setText(poll.adminComment);
+                        editBuilder.setTitle("Add Admin Note").setView(inputQ).setPositiveButton("SAVE", (d2, w2) -> {
+                            String newQ = inputQ.getText().toString();
+                            db.child("communities").child(session.getCommunityId()).child("polls").child(poll.id).child("adminComment").setValue(newQ);
+                            Toast.makeText(this, "Note Added", Toast.LENGTH_SHORT).show();
+                        }).show();
+                    });
+                    optionsContainer.addView(btnAddNote);
+                }
+
                 Button btnDownload = view.findViewById(R.id.btnDownloadPollPdf);
                 if (!isManagerOrAdmin) { btnDownload.setVisibility(View.GONE); }
                 else {
                     btnDownload.setOnClickListener(v -> {
-                        // ✨ FIX: Admin Option to include voter names!
                         if ("ADMIN".equals(session.getRole())) {
                             new AlertDialog.Builder(this).setTitle("PDF Security Option")
                                 .setMessage("Do you want to include the specific IDs of who voted for which option?")
-                                .setPositiveButton("YES (Include IDs)", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, true); } catch(Exception e){} })
-                                .setNegativeButton("NO (Anonymous)", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){} })
+                                .setPositiveButton("YES", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, true); } catch(Exception e){} })
+                                .setNegativeButton("NO", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){} })
                                 .show();
                         } else {
                             try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){}
