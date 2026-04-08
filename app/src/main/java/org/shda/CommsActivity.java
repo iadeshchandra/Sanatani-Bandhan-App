@@ -12,7 +12,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class CommsActivity extends AppCompatActivity {
 
@@ -20,7 +19,7 @@ public class CommsActivity extends AppCompatActivity {
     private SessionManager session;
     private EditText inputMessage;
     private RadioGroup radioGroupCategory;
-    private List<String> memberPhoneNumbers = new ArrayList<>();
+    private ArrayList<String> memberPhoneNumbers = new ArrayList<>();
     private Button btnSendWhatsApp, btnSendSms;
 
     @Override
@@ -73,17 +72,24 @@ public class CommsActivity extends AppCompatActivity {
             Toast.makeText(this, "No valid phone numbers found in directory.", Toast.LENGTH_SHORT).show(); return;
         }
 
-        // Anti-double-click Debouncing
         btnSendWhatsApp.setEnabled(false); btnSendSms.setEnabled(false);
         btnSendWhatsApp.setText("ROUTING..."); btnSendSms.setText("ROUTING...");
 
-        String category = "Update";
+        String category = "UPDATE";
+        String emoji = "📢";
         int checkedId = radioGroupCategory.getCheckedRadioButtonId();
-        if (checkedId == R.id.rbMeeting) category = "Mandir Meeting Alert";
-        else if (checkedId == R.id.rbUtsav) category = "Utsav Greeting";
-        else if (checkedId == R.id.rbGeneral) category = "General Announcement";
+        if (checkedId == R.id.rbMeeting) { category = "COMMUNITY MEETING NOTICE"; emoji = "📋"; }
+        else if (checkedId == R.id.rbUtsav) { category = "UTSAV GREETING"; emoji = "🪔"; }
+        else if (checkedId == R.id.rbGeneral) { category = "GENERAL ANNOUNCEMENT"; emoji = "📢"; }
 
-        String finalMessage = "🙏 Namaskar,\n[" + category + "]\n\n" + baseMessage + "\n\n- " + session.getCommunityName() + "\n(Powered by Sanatani Bandhan CRM)";
+        // ✨ FIX: Exact formatting from your screenshot!
+        String finalMessage = "🙏 *Namaskar / Jay Sanatan Dharma* 🙏\n\n" +
+                              emoji + " *" + category + "*\n\n" +
+                              baseMessage + "\n\n" +
+                              "-----------------------------------\n" +
+                              "Sent via *" + session.getCommunityName() + " Portal*\n" +
+                              "Powered by Sanatani SaaS";
+
         String joinedNumbers = android.text.TextUtils.join(",", memberPhoneNumbers);
 
         logAudit("MASS_SANDESH", "Sent " + category + " broadcast to " + memberPhoneNumbers.size() + " members via " + (isWhatsApp ? "WhatsApp" : "SMS"));
@@ -103,7 +109,6 @@ public class CommsActivity extends AppCompatActivity {
             Toast.makeText(this, "Error launching app. Check if installed.", Toast.LENGTH_LONG).show();
         }
 
-        // Re-enable buttons after 3 seconds
         new android.os.Handler().postDelayed(() -> {
             btnSendWhatsApp.setEnabled(true); btnSendSms.setEnabled(true);
             btnSendWhatsApp.setText("🚀 BROADCAST VIA WHATSAPP"); btnSendSms.setText("💬 BROADCAST VIA STANDARD SMS");
