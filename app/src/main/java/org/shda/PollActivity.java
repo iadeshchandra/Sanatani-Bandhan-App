@@ -127,15 +127,27 @@ public class PollActivity extends AppCompatActivity {
 
                 LinearLayout optionsContainer = view.findViewById(R.id.pollOptionsContainer);
                 Button btnVote = view.findViewById(R.id.btnVote);
+                Button btnDownload = view.findViewById(R.id.btnDownloadPollPdf);
 
+                // ✨ FIX: Brilliant logic to perfectly center the PDF button if voted!
                 if (isClosed || hasVoted) {
                     btnVote.setVisibility(View.GONE); 
+                    
+                    LinearLayout.LayoutParams centerParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 150); // ~50dp
+                    centerParams.setMargins(60, 0, 60, 0); // Adds nice margins so it doesn't touch the edges
+                    btnDownload.setLayoutParams(centerParams);
+
                     addResultBar(optionsContainer, poll.optionA, countA, totalVotes, myVote.equals("A")); addResultBar(optionsContainer, poll.optionB, countB, totalVotes, myVote.equals("B"));
                     if (poll.optionC != null && !poll.optionC.isEmpty()) addResultBar(optionsContainer, poll.optionC, countC, totalVotes, myVote.equals("C"));
                     if (poll.optionD != null && !poll.optionD.isEmpty()) addResultBar(optionsContainer, poll.optionD, countD, totalVotes, myVote.equals("D"));
                     TextView tvTotal = new TextView(this); tvTotal.setText("Total Votes Cast: " + totalVotes); tvTotal.setTextSize(12f); tvTotal.setTextColor(android.graphics.Color.GRAY); tvTotal.setPadding(0, 16, 0, 0); optionsContainer.addView(tvTotal);
                 } else {
                     btnVote.setVisibility(View.VISIBLE); btnVote.setOnClickListener(v -> showVotingDialog(poll));
+                    
+                    LinearLayout.LayoutParams splitParamsVote = new LinearLayout.LayoutParams(0, 150, 1f); splitParamsVote.setMargins(0, 0, 10, 0);
+                    LinearLayout.LayoutParams splitParamsPdf = new LinearLayout.LayoutParams(0, 150, 1f); splitParamsPdf.setMargins(10, 0, 0, 0);
+                    btnVote.setLayoutParams(splitParamsVote); btnDownload.setLayoutParams(splitParamsPdf);
+
                     addSimpleTextOption(optionsContainer, "• " + poll.optionA); addSimpleTextOption(optionsContainer, "• " + poll.optionB);
                     if (poll.optionC != null && !poll.optionC.isEmpty()) addSimpleTextOption(optionsContainer, "• " + poll.optionC);
                     if (poll.optionD != null && !poll.optionD.isEmpty()) addSimpleTextOption(optionsContainer, "• " + poll.optionD);
@@ -158,7 +170,6 @@ public class PollActivity extends AppCompatActivity {
                     optionsContainer.addView(btnAddNote);
                 }
 
-                Button btnDownload = view.findViewById(R.id.btnDownloadPollPdf);
                 if (!isManagerOrAdmin) { btnDownload.setVisibility(View.GONE); }
                 else {
                     btnDownload.setOnClickListener(v -> {
@@ -166,14 +177,11 @@ public class PollActivity extends AppCompatActivity {
                             new AlertDialog.Builder(this).setTitle("PDF Security Option")
                                 .setMessage("Do you want to include the specific IDs of who voted for which option?")
                                 .setPositiveButton("YES", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, true); } catch(Exception e){} })
-                                .setNegativeButton("NO", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){} })
-                                .show();
-                        } else {
-                            try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){}
-                        }
+                                .setNegativeButton("NO", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){} }).show();
+                        } else { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){} }
                     });
                 }
-
+                
                 if (isManagerOrAdmin) view.setOnLongClickListener(v -> { showPollManagerDialog(poll); return true; });
                 pollsContainer.addView(view);
             } catch (Exception e) { e.printStackTrace(); }
