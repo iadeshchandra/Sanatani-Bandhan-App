@@ -28,7 +28,6 @@ public class PdfReportService {
     private static final DeviceRgb GREEN = new DeviceRgb(46, 125, 50);
     private static final DeviceRgb BLUE = new DeviceRgb(25, 118, 210);
 
-    // ✨ FIX: The powerful Android Share Engine
     private static void sharePdf(Context context, File file) {
         try {
             android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
@@ -69,6 +68,50 @@ public class PdfReportService {
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(12).setItalic().setFontColor(SAFFRON).setMarginTop(20));
     }
 
+    // ✨ FIX: The powerful new Income vs Expense Comparison PDF engine!
+    public static void generateComparisonReport(Context context, String communityName, List<TransactionActivity.SingleDonation> donations, List<ExpenseActivity.Expense> expenses, long startTs, long endTs, float totalIncome, float totalExpense) {
+        try {
+            File file = createBaseFile(context, "Income_Vs_Expense_Report");
+            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
+            SimpleDateFormat titleSdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+            String dateRange = titleSdf.format(new Date(startTs)) + " to " + titleSdf.format(new Date(endTs));
+            addSanataniHeader(document, communityName, "Income vs Expense Comparison\n(" + dateRange + ")");
+
+            document.add(new Paragraph("DONATIONS (INCOME)").setBold().setFontSize(14).setFontColor(GREEN).setMarginTop(10));
+            Table incTable = new Table(new float[]{2, 4, 2}); incTable.setWidth(UnitValue.createPercentValue(100));
+            incTable.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            incTable.addHeaderCell(new Cell().add(new Paragraph("Donor / Source").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            incTable.addHeaderCell(new Cell().add(new Paragraph("Amount").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            for(TransactionActivity.SingleDonation d : donations) {
+                incTable.addCell(new Paragraph(titleSdf.format(new Date(d.timestamp))));
+                incTable.addCell(new Paragraph(d.name));
+                incTable.addCell(new Paragraph("BDT " + d.amount));
+            }
+            document.add(incTable);
+            document.add(new Paragraph("Total Income: BDT " + totalIncome).setBold().setTextAlignment(TextAlignment.RIGHT).setFontColor(GREEN).setMarginBottom(15));
+
+            document.add(new Paragraph("EXPENSES").setBold().setFontSize(14).setFontColor(ColorConstants.RED));
+            Table expTable = new Table(new float[]{2, 4, 2}); expTable.setWidth(UnitValue.createPercentValue(100));
+            expTable.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            expTable.addHeaderCell(new Cell().add(new Paragraph("Event / Item").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            expTable.addHeaderCell(new Cell().add(new Paragraph("Cost").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            for(ExpenseActivity.Expense e : expenses) {
+                expTable.addCell(new Paragraph(titleSdf.format(new Date(e.timestamp))));
+                expTable.addCell(new Paragraph(e.eventName + " - " + e.itemName));
+                expTable.addCell(new Paragraph("BDT " + e.amount));
+            }
+            document.add(expTable);
+            document.add(new Paragraph("Total Expense: BDT " + totalExpense).setBold().setTextAlignment(TextAlignment.RIGHT).setFontColor(ColorConstants.RED).setMarginBottom(15));
+
+            float net = totalIncome - totalExpense;
+            DeviceRgb netColor = net >= 0 ? GREEN : ColorConstants.RED;
+            document.add(new Paragraph("\nNET BALANCE FOR PERIOD: BDT " + net).setBold().setFontSize(16).setTextAlignment(TextAlignment.RIGHT).setFontColor(netColor).setMarginTop(10));
+
+            addSanataniFooter(document); document.close();
+            sharePdf(context, file);
+        } catch (Exception e) {}
+    }
+
     public static void generateMemberDirectory(Context context, String communityName, List<Member> members) {
         try {
             File file = createBaseFile(context, "Member_Directory");
@@ -84,7 +127,7 @@ public class PdfReportService {
                 table.addCell(new Paragraph(m.gotra!=null?m.gotra:"")); table.addCell(new Paragraph("BDT " + m.totalDonated).setFontColor(GREEN));
             }
             document.add(table); addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) { Toast.makeText(context, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show(); }
     }
 
@@ -109,7 +152,7 @@ public class PdfReportService {
             table.addCell(new Cell().add(new Paragraph("Last Donation Date").setBold())); table.addCell(new Paragraph(lastDonationStr).setItalic());
             document.add(table); document.add(new Paragraph("\nData Verified By: " + (m.addedBySignature!=null?m.addedBySignature:"System")).setItalic().setFontSize(10));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -124,7 +167,7 @@ public class PdfReportService {
             table.addCell(new Cell().add(new Paragraph("Secure Login PIN").setBold())); table.addCell(new Paragraph(pin).setFontColor(ColorConstants.RED).setBold().setFontSize(16));
             document.add(table); document.add(new Paragraph("\nCredentials Issued By: " + generatedBy).setItalic().setFontSize(10));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -144,7 +187,7 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Chanda in this Report: BDT " + totalCollected).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -168,7 +211,7 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Donated in this Statement: BDT " + gd.totalDonated).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
             addThankYouMessage(document); addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -191,7 +234,7 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Expenses in this Report: BDT " + totalSpent).setBold().setFontSize(14).setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -215,7 +258,7 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Event Expense: BDT " + ge.totalSpent).setBold().setFontSize(14).setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -249,7 +292,7 @@ public class PdfReportService {
                 document.add(vTable);
             }
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -273,7 +316,7 @@ public class PdfReportService {
                 document.add(new Paragraph("--------------------------------------------------").setFontColor(ColorConstants.LIGHT_GRAY));
             }
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -296,7 +339,7 @@ public class PdfReportService {
             }
             document.add(new Paragraph("\nItinerary Issued By: " + generatedBy).setItalic().setFontSize(10));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
@@ -320,7 +363,7 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Events listed: " + events.size()).setItalic().setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); // Trigger Share
+            sharePdf(context, file); 
         } catch (Exception e) {}
     }
 
