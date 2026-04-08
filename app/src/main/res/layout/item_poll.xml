@@ -3,8 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="wrap_content"
     app:cardCornerRadius="12dp" app:cardElevation="3dp" android:layout_marginBottom="16dp"
-    app:strokeWidth="1dp" app:strokeColor="#FFCC80"
-    app:cardBackgroundColor="#FFFBF2"> <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+    app:strokeWidth="1dp" app:strokeColor="#E0E0E0"
+    app:cardBackgroundColor="#FFFFFF">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
         
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginBottom="6dp">
             <TextView android:id="@+id/tvPollStatus" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="bold" android:paddingHorizontal="8dp" android:paddingVertical="4dp" android:background="#E8F5E9" android:textColor="#2E7D32"/>
@@ -19,9 +21,9 @@
         
         <TextView android:id="@+id/tvPollAdminComment" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#455A64" android:textStyle="italic" android:layout_marginBottom="12dp" android:visibility="gone"/>
 
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
-            <Button android:id="@+id/btnVote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="50dp" android:text="CAST VOTE" android:backgroundTint="#E65100" android:layout_marginEnd="4dp"/>
-            <Button android:id="@+id/btnDownloadPollPdf" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="50dp" android:text="PDF INSIGHT" android:backgroundTint="#455A64" android:layout_marginStart="4dp"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center" android:weightSum="2">
+            <Button android:id="@+id/btnVote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp" android:text="CAST VOTE" android:backgroundTint="#E65100" android:layout_marginEnd="4dp"/>
+            <Button android:id="@+id/btnDownloadPollPdf" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp" android:text="PDF INSIGHT" android:backgroundTint="#455A64" android:layout_marginStart="4dp"/>
         </LinearLayout>
         
     </LinearLayout>
