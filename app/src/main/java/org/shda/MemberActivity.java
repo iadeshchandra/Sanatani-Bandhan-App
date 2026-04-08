@@ -8,12 +8,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
@@ -64,7 +61,7 @@ public class MemberActivity extends AppCompatActivity {
                     Member m = data.getValue(Member.class);
                     if (m != null) {
                         fullMemberList.add(m);
-                        suggestions.add(m.name + " (" + m.id + ")"); // Smart Auto-Complete Format
+                        suggestions.add(m.name + " (" + m.id + ")");
                     }
                 }
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(MemberActivity.this, android.R.layout.simple_dropdown_item_1line, suggestions);
@@ -74,7 +71,6 @@ public class MemberActivity extends AppCompatActivity {
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // Silently scan logs for exact last donation time
         DatabaseReference donationsRef = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation");
         donationsRef.keepSynced(true);
         donationsRef.addValueEventListener(new ValueEventListener() {
@@ -86,7 +82,7 @@ public class MemberActivity extends AppCompatActivity {
                     Long ts = data.child("timestamp").getValue(Long.class);
                     Float amt = data.child("amount").getValue(Float.class);
                     if (name != null && ts != null && amt != null) {
-                        lastDonationTracker.put(name, "Last Donation: ৳" + amt + " on " + sdf.format(new Date(ts)));
+                        lastDonationTracker.put(name, "Last: ৳" + amt + " on " + sdf.format(new Date(ts)));
                     }
                 }
                 renderList(fullMemberList); 
@@ -121,12 +117,16 @@ public class MemberActivity extends AppCompatActivity {
         if (membersContainer == null) return;
         membersContainer.removeAllViews();
 
+        SimpleDateFormat sdfJoined = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+
         for (Member member : listToRender) {
             View view = LayoutInflater.from(this).inflate(R.layout.item_member, membersContainer, false);
             
             ((TextView) view.findViewById(R.id.tvMemberName)).setText(member.name);
-            ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id + " | 📞 " + member.phone);
-            ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Total Donated: ৳" + member.totalDonated);
+            ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Lifetime: ৳" + member.totalDonated);
+            ((TextView) view.findViewById(R.id.tvMemberIdPhone)).setText(member.id + "  |  📞 " + (member.phone != null ? member.phone : "N/A"));
+            
+            ((TextView) view.findViewById(R.id.tvMemberJoined)).setText("Joined: " + (member.timestamp > 0 ? sdfJoined.format(new Date(member.timestamp)) : "N/A"));
             
             TextView tvLast = view.findViewById(R.id.tvLastDonation);
             if (lastDonationTracker.containsKey(member.name + " [Member]")) {
@@ -135,14 +135,6 @@ public class MemberActivity extends AppCompatActivity {
                 tvLast.setText("No donations recorded yet.");
             }
 
-            // ✨ FIX: Admin "View PIN" button directly on the list card!
-            Button btnQuickPin = view.findViewById(R.id.btnQuickViewPin);
-            if ("ADMIN".equals(session.getRole())) {
-                btnQuickPin.setVisibility(View.VISIBLE);
-                btnQuickPin.setOnClickListener(v -> showUserPinDirectly(member));
-            }
-
-            // Clicking the rest of the card opens the full Member Insight page
             view.setOnClickListener(v -> {
                 Intent intent = new Intent(MemberActivity.this, MemberDetailActivity.class);
                 intent.putExtra("MEMBER_ID", member.id);
@@ -150,27 +142,5 @@ public class MemberActivity extends AppCompatActivity {
             });
             membersContainer.addView(view);
         }
-    }
-
-    private void showUserPinDirectly(Member member) {
-        db.child("communities").child(session.getCommunityId()).child("logins").child(member.id).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String pin = snapshot.getValue(String.class);
-                
-                // Fallback Generator
-                if (pin == null || pin.isEmpty()) {
-                    pin = String.format("%04d", new java.util.Random().nextInt(10000));
-                    db.child("communities").child(session.getCommunityId()).child("logins").child(member.id).setValue(pin);
-                    Toast.makeText(MemberActivity.this, "New PIN Auto-Generated", Toast.LENGTH_SHORT).show();
-                }
-                
-                new AlertDialog.Builder(MemberActivity.this)
-                    .setTitle("Devotee Secure PIN")
-                    .setMessage("The login PIN for " + member.name + " is:\n\n" + pin)
-                    .setPositiveButton("CLOSE", null)
-                    .show();
-            }
-            @Override public void onCancelled(@NonNull DatabaseError error) {}
-        });
     }
 }
