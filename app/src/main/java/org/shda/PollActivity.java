@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 public class PollActivity extends AppCompatActivity {
-
     private DatabaseReference db;
     private SessionManager session;
     private LinearLayout pollsContainer;
@@ -47,9 +46,21 @@ public class PollActivity extends AppCompatActivity {
         }
         
         View btnExportPolls = findViewById(R.id.btnExportPolls);
-        if (btnExportPolls != null) btnExportPolls.setOnClickListener(v -> {
-            if (!pollList.isEmpty()) PdfReportService.generateMultiplePollsReport(this, session.getCommunityName(), pollList, "All Polls", "ADMIN".equals(session.getRole()));
-        });
+        if (btnExportPolls != null) {
+            btnExportPolls.setOnClickListener(v -> {
+                if (pollList.isEmpty()) { Toast.makeText(this, "No polls to export", Toast.LENGTH_SHORT).show(); return; }
+                
+                if ("ADMIN".equals(session.getRole())) {
+                    new AlertDialog.Builder(this).setTitle("Master PDF Security Option")
+                        .setMessage("Do you want to include the specific IDs of who voted for which option in the report?")
+                        .setPositiveButton("YES (Include IDs)", (d, w) -> { try { PdfReportService.generateMultiplePollsReport(this, session.getCommunityName(), pollList, "All Polls", true); } catch(Exception e){} })
+                        .setNegativeButton("NO (Anonymous)", (d, w) -> { try { PdfReportService.generateMultiplePollsReport(this, session.getCommunityName(), pollList, "All Polls", false); } catch(Exception e){} })
+                        .show();
+                } else {
+                    try { PdfReportService.generateMultiplePollsReport(this, session.getCommunityName(), pollList, "All Polls", false); } catch(Exception e){}
+                }
+            });
+        }
 
         loadPolls();
     }
@@ -96,14 +107,11 @@ public class PollActivity extends AppCompatActivity {
                     long hours = (diff / (1000 * 60 * 60)) % 24;
                     tvCountdown.setText("⏳ Closes in: " + days + "d " + hours + "h");
                     tvCountdown.setVisibility(View.VISIBLE);
-                } else {
-                    tvCountdown.setVisibility(View.GONE);
-                }
+                } else { tvCountdown.setVisibility(View.GONE); }
 
                 TextView tvAdminNote = view.findViewById(R.id.tvPollAdminComment);
                 if (poll.adminComment != null && !poll.adminComment.trim().isEmpty()) {
-                    tvAdminNote.setText("Note: " + poll.adminComment);
-                    tvAdminNote.setVisibility(View.VISIBLE);
+                    tvAdminNote.setText("Note: " + poll.adminComment); tvAdminNote.setVisibility(View.VISIBLE);
                 }
 
                 int totalVotes = poll.votes != null ? poll.votes.size() : 0;
@@ -134,8 +142,21 @@ public class PollActivity extends AppCompatActivity {
                 }
 
                 Button btnDownload = view.findViewById(R.id.btnDownloadPollPdf);
-                if (!isManagerOrAdmin) btnDownload.setVisibility(View.GONE);
-                else btnDownload.setOnClickListener(v -> PdfReportService.generatePollReport(this, session.getCommunityName(), poll, "ADMIN".equals(session.getRole())));
+                if (!isManagerOrAdmin) { btnDownload.setVisibility(View.GONE); }
+                else {
+                    btnDownload.setOnClickListener(v -> {
+                        // ✨ FIX: Admin Option to include voter names!
+                        if ("ADMIN".equals(session.getRole())) {
+                            new AlertDialog.Builder(this).setTitle("PDF Security Option")
+                                .setMessage("Do you want to include the specific IDs of who voted for which option?")
+                                .setPositiveButton("YES (Include IDs)", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, true); } catch(Exception e){} })
+                                .setNegativeButton("NO (Anonymous)", (d, w) -> { try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){} })
+                                .show();
+                        } else {
+                            try { PdfReportService.generatePollReport(this, session.getCommunityName(), poll, false); } catch(Exception e){}
+                        }
+                    });
+                }
 
                 if (isManagerOrAdmin) view.setOnLongClickListener(v -> { showPollManagerDialog(poll); return true; });
                 pollsContainer.addView(view);
