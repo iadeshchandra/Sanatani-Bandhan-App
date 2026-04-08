@@ -2,6 +2,7 @@ package org.shda;
 
 import android.app.DatePickerDialog;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -30,6 +31,7 @@ public class DashboardActivity extends AppCompatActivity {
     private PieChart pieChart;
     private float totalIncome = 0f;
     private float totalExpense = 0f;
+    private String workspaceType = "Community"; 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +67,9 @@ public class DashboardActivity extends AppCompatActivity {
 
         findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
-        findViewById(R.id.btnHelpSupport).setOnClickListener(v -> Toast.makeText(this, "Redirecting to Sanatani Bandhan Support...", Toast.LENGTH_SHORT).show());
+        
+        // ✨ FIX: Advanced Pro Support Bot Active
+        findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
         
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit().clear().apply();
@@ -81,15 +85,48 @@ public class DashboardActivity extends AppCompatActivity {
             findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> PdfReportService.generateSecurityAudit(this, session.getCommunityId()));
         }
 
+        loadWorkspaceType();
         loadFinancialData();
+    }
+
+    private void loadWorkspaceType() {
+        db.child("communities").child(session.getCommunityId()).child("info").child("type").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String type = snapshot.getValue(String.class);
+                if (type != null && !type.isEmpty()) workspaceType = type;
+                Button btnWorkspace = findViewById(R.id.btnWorkspaceSettings);
+                if (btnWorkspace != null) btnWorkspace.setText("🏛️ " + workspaceType.toUpperCase() + " INFO & SETTINGS");
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    // ✨ FIX: Exact WhatsApp formatting based on your Mass Sandesh screenshot!
+    private void contactSupport() {
+        String finalMessage = "🙏 *Namaskar / Jay Sanatan Dharma* 🙏\n\n" +
+                              "🛠️ *SYSTEM SUPPORT REQUEST*\n\n" +
+                              "Workspace: *" + session.getCommunityName() + "* (" + session.getCommunityId() + ")\n" +
+                              "User: *" + session.getUserName() + "* (" + session.getUserId() + ")\n\n" +
+                              "Please describe your issue here:\n\n\n" +
+                              "-----------------------------------\n" +
+                              "Sent via *" + session.getCommunityName() + " Portal*\n" +
+                              "Powered by Sanatani SaaS";
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://wa.me/8801608533529?text=" + Uri.encode(finalMessage)));
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "WhatsApp not installed.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void showGlobalPdfGeneratorDialog() {
         new AlertDialog.Builder(this).setTitle("Generate Master Report")
-            .setItems(new String[]{"Smart Chanda Ledger (Select Dates)", "Utsav Expenses (Select Dates)"}, (dialog, which) -> {
+            .setItems(new String[]{"Donations Ledger (Select Dates)", "Expenses Ledger (Select Dates)", "Income vs Expense Comparison (Select Dates)"}, (dialog, which) -> {
                 pickDateRange((startTs, endTs) -> {
                     if (which == 0) generateGlobalChandaPdf(startTs, endTs);
-                    else generateGlobalExpensePdf(startTs, endTs);
+                    else if (which == 1) generateGlobalExpensePdf(startTs, endTs);
+                    else generateGlobalComparisonPdf(startTs, endTs); // ✨ FIX: Wires the 3rd comparison logic!
                 });
             }).show();
     }
@@ -124,8 +161,8 @@ public class DashboardActivity extends AppCompatActivity {
                         totalExport += sd.amount;
                     }
                 }
-                if (dates.isEmpty()) Toast.makeText(DashboardActivity.this, "No Chanda found in this range.", Toast.LENGTH_SHORT).show();
-                else PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, totalExport, "Custom Date Chanda Ledger");
+                if (dates.isEmpty()) Toast.makeText(DashboardActivity.this, "No Donations found in this range.", Toast.LENGTH_SHORT).show();
+                else PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, totalExport, "Custom Date Donation Ledger");
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -143,7 +180,42 @@ public class DashboardActivity extends AppCompatActivity {
                     }
                 }
                 if (exps.isEmpty()) Toast.makeText(DashboardActivity.this, "No Expenses found in this range.", Toast.LENGTH_SHORT).show();
-                else PdfReportService.generateExpenseReport(DashboardActivity.this, session.getCommunityName(), exps, totalExport, "Custom Date Utsav Expenses");
+                else PdfReportService.generateExpenseReport(DashboardActivity.this, session.getCommunityName(), exps, totalExport, "Custom Date Expenses Ledger");
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    // ✨ FIX: Scans both ledgers simultaneously for the Comparison PDF
+    private void generateGlobalComparisonPdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("logs").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<TransactionActivity.SingleDonation> donations = new ArrayList<>();
+                List<ExpenseActivity.Expense> expenses = new ArrayList<>();
+                float totalInc = 0f; float totalExp = 0f;
+
+                if (snapshot.hasChild("Donation")) {
+                    for (DataSnapshot d : snapshot.child("Donation").getChildren()) {
+                        TransactionActivity.SingleDonation sd = d.getValue(TransactionActivity.SingleDonation.class);
+                        if (sd != null && sd.timestamp >= startTs && sd.timestamp <= endTs) {
+                            donations.add(sd); totalInc += sd.amount;
+                        }
+                    }
+                }
+                if (snapshot.hasChild("Expense")) {
+                    for (DataSnapshot d : snapshot.child("Expense").getChildren()) {
+                        ExpenseActivity.Expense e = d.getValue(ExpenseActivity.Expense.class);
+                        if (e != null && e.timestamp >= startTs && e.timestamp <= endTs) {
+                            expenses.add(e); totalExp += e.amount;
+                        }
+                    }
+                }
+
+                if (donations.isEmpty() && expenses.isEmpty()) {
+                    Toast.makeText(DashboardActivity.this, "No data found for this date range.", Toast.LENGTH_SHORT).show();
+                } else {
+                    PdfReportService.generateComparisonReport(DashboardActivity.this, session.getCommunityName(), donations, expenses, startTs, endTs, totalInc, totalExp);
+                }
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -157,17 +229,17 @@ public class DashboardActivity extends AppCompatActivity {
                 String address = snapshot.child("address").getValue(String.class);
 
                 AlertDialog.Builder builder = new AlertDialog.Builder(DashboardActivity.this);
-                builder.setTitle("🏛️ Mandir Information");
+                builder.setTitle("🏛️ " + workspaceType + " Information");
                 
                 LinearLayout layout = new LinearLayout(DashboardActivity.this);
                 layout.setOrientation(LinearLayout.VERTICAL);
                 layout.setPadding(50, 20, 50, 0);
 
                 if ("ADMIN".equals(session.getRole())) {
-                    final EditText inputName = new EditText(DashboardActivity.this); inputName.setHint("Mandir Name"); inputName.setText(session.getCommunityName());
+                    final EditText inputName = new EditText(DashboardActivity.this); inputName.setHint(workspaceType + " Name"); inputName.setText(session.getCommunityName());
                     final EditText inputPhone = new EditText(DashboardActivity.this); inputPhone.setHint("Official Phone"); inputPhone.setText(phone);
                     final EditText inputEmail = new EditText(DashboardActivity.this); inputEmail.setHint("Official Email"); inputEmail.setText(email);
-                    final EditText inputAddress = new EditText(DashboardActivity.this); inputAddress.setHint("Mandir Address"); inputAddress.setText(address);
+                    final EditText inputAddress = new EditText(DashboardActivity.this); inputAddress.setHint("Official Address"); inputAddress.setText(address);
                     layout.addView(inputName); layout.addView(inputPhone); layout.addView(inputEmail); layout.addView(inputAddress);
                     builder.setView(layout);
                     builder.setPositiveButton("SAVE", (d, w) -> {
@@ -180,7 +252,7 @@ public class DashboardActivity extends AppCompatActivity {
                         db.child("communities").child(session.getCommunityId()).child("info").child("phone").setValue(inputPhone.getText().toString());
                         db.child("communities").child(session.getCommunityId()).child("info").child("email").setValue(inputEmail.getText().toString());
                         db.child("communities").child(session.getCommunityId()).child("info").child("address").setValue(inputAddress.getText().toString());
-                        Toast.makeText(DashboardActivity.this, "Mandir Info Updated!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(DashboardActivity.this, workspaceType + " Info Updated!", Toast.LENGTH_SHORT).show();
                     });
                     builder.setNegativeButton("CANCEL", null);
                 } else {
