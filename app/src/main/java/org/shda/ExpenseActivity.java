@@ -34,9 +34,9 @@ public class ExpenseActivity extends AppCompatActivity {
     private List<Expense> fullExpenseList = new ArrayList<>();
     private List<Expense> currentlyDisplayedList = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
+    private List<String> autocompleteEvents = new ArrayList<>();
     private float totalSpent = 0f;
 
-    // ✨ NEW: Date Filters
     private Long filterStartTs = null;
     private Long filterEndTs = null;
 
@@ -83,6 +83,7 @@ public class ExpenseActivity extends AppCompatActivity {
 
         setupSearch();
         loadManagersForAutocomplete();
+        loadEventsForAutocomplete();
         loadExpenses();
     }
 
@@ -96,6 +97,20 @@ public class ExpenseActivity extends AppCompatActivity {
                     if (m != null && ("MANAGER".equals(m.role) || "ADMIN".equals(m.role))) autocompleteManagers.add(m.name + " (" + m.id + ")");
                 }
                 if (!autocompleteManagers.contains(session.getUserName())) autocompleteManagers.add(session.getUserName() + " (" + session.getUserId() + ")");
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void loadEventsForAutocomplete() {
+        db.child("communities").child(session.getCommunityId()).child("events").keepSynced(true);
+        db.child("communities").child(session.getCommunityId()).child("events").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                autocompleteEvents.clear();
+                for (DataSnapshot data : snapshot.getChildren()) {
+                    String title = data.child("title").getValue(String.class);
+                    if (title != null) autocompleteEvents.add(title);
+                }
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -117,7 +132,6 @@ public class ExpenseActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ NEW: Smart Filter Engine
     private void applyFilters() {
         currentlyDisplayedList.clear();
         totalSpent = 0f;
@@ -200,13 +214,8 @@ public class ExpenseActivity extends AppCompatActivity {
                 ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + ge.totalSpent);
                 ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText(ge.history.size() + " items logged in this range");
                 
-                // ✨ CRASH FIX: Master try-catch block securely routes to PdfReportService
                 view.setOnClickListener(v -> {
-                    try {
-                        PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge);
-                    } catch (Exception ex) {
-                        Toast.makeText(this, "Error viewing details.", Toast.LENGTH_SHORT).show();
-                    }
+                    try { PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge); } catch (Exception ex) { Toast.makeText(this, "Error viewing details.", Toast.LENGTH_SHORT).show(); }
                 });
                 
                 if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
@@ -226,7 +235,11 @@ public class ExpenseActivity extends AppCompatActivity {
             builder.setTitle("Log Utsav Expense");
             LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-            final EditText inputEvent = new EditText(this); inputEvent.setHint("Event/Puja Name (e.g. Rash Purnima)");
+            final AutoCompleteTextView inputEvent = new AutoCompleteTextView(this);
+            inputEvent.setHint("Event/Puja Name (e.g. Rash Purnima)");
+            ArrayAdapter<String> eventAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteEvents);
+            inputEvent.setAdapter(eventAdapter); inputEvent.setThreshold(1);
+
             final EditText inputItem = new EditText(this); inputItem.setHint("Item Purchased / Seva");
             final EditText inputAmt = new EditText(this); inputAmt.setHint("Cost (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             
@@ -253,7 +266,6 @@ public class ExpenseActivity extends AppCompatActivity {
                 float amt = Float.parseFloat(amtStr);
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey();
                 
-                // HashMap prevents constructor crashes!
                 HashMap<String, Object> expMap = new HashMap<>();
                 expMap.put("id", transId);
                 expMap.put("eventName", event);
@@ -308,7 +320,6 @@ public class ExpenseActivity extends AppCompatActivity {
         db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
     }
 
-    // ✨ CRASH FIX GUARANTEE: These MUST be here to connect flawlessly to PdfReportService
     public static class Expense {
         public String id, eventName, itemName, involvedPerson, loggedBy;
         public float amount; public long timestamp;
