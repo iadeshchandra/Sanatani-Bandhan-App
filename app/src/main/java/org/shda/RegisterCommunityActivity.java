@@ -1,95 +1,109 @@
 package org.shda;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioGroup;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import java.util.HashMap;
 
 public class RegisterCommunityActivity extends AppCompatActivity {
 
+    private FirebaseAuth mAuth;
     private DatabaseReference db;
-    private EditText inputOrgName, inputAdminName, inputAdminEmail, inputAdminPhone, inputAdminPin;
+    private EditText inputCommName, inputAdminName, inputEmail, inputAdminPhone, inputPassword;
     private RadioGroup rgWorkspaceType;
-    private Button btnCreateWorkspace;
+    private Button btnRegister;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
-        // We use Realtime Database directly for the Custom PIN Auth!
+        mAuth = FirebaseAuth.getInstance();
         db = FirebaseDatabase.getInstance().getReference();
 
-        inputOrgName = findViewById(R.id.inputOrgName);
+        inputCommName = findViewById(R.id.inputCommName);
         inputAdminName = findViewById(R.id.inputAdminName);
-        inputAdminEmail = findViewById(R.id.inputAdminEmail);
+        inputEmail = findViewById(R.id.inputEmail);
         inputAdminPhone = findViewById(R.id.inputAdminPhone);
-        inputAdminPin = findViewById(R.id.inputAdminPin);
+        inputPassword = findViewById(R.id.inputPassword);
         rgWorkspaceType = findViewById(R.id.rgWorkspaceType);
-        btnCreateWorkspace = findViewById(R.id.btnCreateWorkspace);
+        btnRegister = findViewById(R.id.btnRegister);
 
-        btnCreateWorkspace.setOnClickListener(v -> registerWorkspace());
-        
-        findViewById(R.id.tvGoToLogin).setOnClickListener(v -> { 
-            startActivity(new Intent(this, LoginActivity.class)); 
-            finish(); 
-        });
+        btnRegister.setOnClickListener(v -> registerWorkspace());
+        findViewById(R.id.tvGoToLogin).setOnClickListener(v -> { startActivity(new Intent(this, LoginActivity.class)); finish(); });
     }
 
     private void registerWorkspace() {
-        String orgName = inputOrgName.getText().toString().trim();
+        String commName = inputCommName.getText().toString().trim();
         String adminName = inputAdminName.getText().toString().trim();
-        String email = inputAdminEmail.getText().toString().trim();
+        String email = inputEmail.getText().toString().trim();
         String phone = inputAdminPhone.getText().toString().trim();
-        String pin = inputAdminPin.getText().toString().trim();
+        String password = inputPassword.getText().toString().trim();
 
-        if (orgName.isEmpty() || adminName.isEmpty() || email.isEmpty() || pin.length() < 4) {
-            Toast.makeText(this, "Please fill all required fields and set a 4-digit PIN.", Toast.LENGTH_SHORT).show();
-            return;
+        if (commName.isEmpty() || adminName.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show(); return;
         }
 
-        btnCreateWorkspace.setEnabled(false);
-        btnCreateWorkspace.setText("GENERATING WORKSPACE...");
+        btnRegister.setEnabled(false); btnRegister.setText("CREATING WORKSPACE...");
 
-        // Auto-Generate Unique Workspace ID based on selection
-        String type = rgWorkspaceType.getCheckedRadioButtonId() == R.id.rbMandir ? "Mandir" : "Community";
-        String prefix = type.equals("Mandir") ? "MND-" : "ORG-";
-        String workspaceId = prefix + (1000 + new java.util.Random().nextInt(9000));
-        
-        // Auto-Generate Super Admin ID
-        String adminId = "ADMIN-" + (100 + new java.util.Random().nextInt(900));
+        mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                String uid = mAuth.getCurrentUser().getUid();
 
-        // 1. Create Organization Info
-        db.child("communities").child(workspaceId).child("name").setValue(orgName);
-        HashMap<String, Object> infoMap = new HashMap<>();
-        infoMap.put("type", type); 
-        infoMap.put("email", email); 
-        infoMap.put("phone", phone);
-        db.child("communities").child(workspaceId).child("info").setValue(infoMap);
+                // 1. Generate Workspace ID based on Mandir/Community
+                String type = rgWorkspaceType.getCheckedRadioButtonId() == R.id.rbMandir ? "Mandir" : "Community";
+                String prefix = type.equals("Mandir") ? "MND-" : "ORG-";
+                String commId = prefix + (1000 + new java.util.Random().nextInt(9000));
 
-        // 2. Create Super Admin Profile
-        HashMap<String, Object> adminMap = new HashMap<>();
-        adminMap.put("id", adminId); 
-        adminMap.put("name", adminName); 
-        adminMap.put("email", email);
-        adminMap.put("phone", phone); 
-        adminMap.put("role", "ADMIN"); 
-        adminMap.put("timestamp", System.currentTimeMillis());
-        db.child("communities").child(workspaceId).child("members").child(adminId).setValue(adminMap);
+                // 2. Initialize Community Info
+                db.child("communities").child(commId).child("name").setValue(commName);
+                HashMap<String, Object> infoMap = new HashMap<>();
+                infoMap.put("type", type); infoMap.put("email", email); infoMap.put("phone", phone);
+                db.child("communities").child(commId).child("info").setValue(infoMap);
 
-        // 3. Save Secure PIN logic
-        db.child("communities").child(workspaceId).child("logins").child(adminId).setValue(pin);
+                // 3. Create Global Admin Record for Firebase Auth Login
+                HashMap<String, Object> userMap = new HashMap<>();
+                userMap.put("communityId", commId);
+                userMap.put("communityName", commName);
+                userMap.put("role", "ADMIN");
+                userMap.put("name", adminName);
+                userMap.put("email", email);
+                db.child("users").child(uid).setValue(userMap);
 
-        Toast.makeText(this, "Workspace " + workspaceId + " created successfully!", Toast.LENGTH_LONG).show();
+                // 4. Create Admin Profile in Directory
+                HashMap<String, Object> adminMap = new HashMap<>();
+                adminMap.put("id", "ADMIN-001");
+                adminMap.put("name", adminName);
+                adminMap.put("email", email);
+                adminMap.put("phone", phone);
+                adminMap.put("role", "ADMIN");
+                adminMap.put("timestamp", System.currentTimeMillis());
+                db.child("communities").child(commId).child("members").child("ADMIN-001").setValue(adminMap);
 
-        // Redirect back to Login Page to test the new credentials
-        startActivity(new Intent(this, LoginActivity.class));
-        finish();
+                // 5. Save local session and enter App
+                SharedPreferences.Editor editor = getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit();
+                editor.putBoolean("IS_LOGGED_IN", true);
+                editor.putString("USER_ID", "ADMIN-001");
+                editor.putString("USER_NAME", adminName);
+                editor.putString("ROLE", "ADMIN");
+                editor.putString("COMMUNITY_ID", commId);
+                editor.putString("COMMUNITY_NAME", commName);
+                editor.apply();
+
+                Toast.makeText(this, "Registration Complete!", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, DashboardActivity.class)); finish();
+            } else {
+                Toast.makeText(this, "Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                btnRegister.setEnabled(true); btnRegister.setText("CREATE SECURE WORKSPACE");
+            }
+        });
     }
 }
