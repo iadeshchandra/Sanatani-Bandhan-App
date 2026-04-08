@@ -2,18 +2,17 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#FAF9F6">
+    android:background="#FFFBF2">
 
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Member Insights" android:textSize="28sp" android:textStyle="bold" android:textColor="#212121"/>
         <TextView android:id="@+id/tvInsightId" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#616161" android:layout_marginBottom="16dp"/>
 
-        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" android:layout_marginBottom="24dp">
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" android:layout_marginBottom="24dp" app:cardBackgroundColor="#FFFFFF">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
                 
                 <TextView android:id="@+id/tvInsightName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textSize="26sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="4dp"/>
-                
                 <TextView android:id="@+id/tvInsightRole" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="#1976D2" android:textColor="#FFFFFF" android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="4dp" android:paddingBottom="4dp" android:textSize="12sp" android:textStyle="bold" android:layout_marginBottom="16dp"/>
 
                 <TextView android:id="@+id/tvInsightPhone" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="16sp" android:textColor="#424242" android:layout_marginBottom="8dp"/>
@@ -24,22 +23,21 @@
                 <TextView android:id="@+id/tvInsightVerified" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="12sp" android:textStyle="italic" android:textColor="#757575" android:layout_marginBottom="16dp"/>
 
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" android:layout_marginBottom="16dp"/>
-
                 <TextView android:id="@+id/tvInsightDonated" android:layout_width="match_parent" android:layout_height="wrap_content" android:textSize="20sp" android:textStyle="bold" android:textColor="#2E7D32"/>
-
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <Button android:id="@+id/btnInsightPdf" android:layout_width="match_parent" android:layout_height="55dp" android:text="Export Member Profile PDF" android:backgroundTint="#1976D2" android:layout_marginBottom="12dp"/>
-        <Button android:id="@+id/btnInsightAddDonation" android:layout_width="match_parent" android:layout_height="55dp" android:text="Record Quick Chanda (৳)" android:backgroundTint="#388E3C" android:layout_marginBottom="24dp"/>
+        <Button android:id="@+id/btnInsightPdf" android:layout_width="match_parent" android:layout_height="60dp" android:layout_margin="4dp" android:text="📄 EXPORT PROFILE PDF" android:backgroundTint="#1976D2" android:textStyle="bold"/>
+        <Button android:id="@+id/btnInsightAddDonation" android:layout_width="match_parent" android:layout_height="60dp" android:layout_margin="4dp" android:text="💳 RECORD QUICK CHANDA" android:backgroundTint="#388E3C" android:textStyle="bold" android:layout_marginBottom="16dp"/>
 
         <LinearLayout android:id="@+id/containerAdminControls" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SUPER ADMIN CONTROLS" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="SUPER ADMIN CONTROLS" android:textSize="14sp" android:textStyle="bold" android:textColor="#D32F2F" android:layout_marginBottom="8dp" android:layout_marginStart="4dp"/>
+            
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
-                <Button android:id="@+id/btnPromote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="Promote to Manager" android:backgroundTint="#F57C00" android:layout_marginEnd="6dp"/>
-                <Button android:id="@+id/btnDemote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="Demote to Member" android:backgroundTint="#616161" android:layout_marginStart="6dp"/>
+                <Button android:id="@+id/btnPromote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:layout_margin="4dp" android:text="PROMOTE" android:backgroundTint="#F57C00" android:textStyle="bold"/>
+                <Button android:id="@+id/btnDemote" android:layout_width="0dp" android:layout_weight="1" android:layout_height="60dp" android:layout_margin="4dp" android:text="DEMOTE" android:backgroundTint="#616161" android:textStyle="bold"/>
             </LinearLayout>
-        </LinearLayout>
+            </LinearLayout>
 
     </LinearLayout>
 </ScrollView>
