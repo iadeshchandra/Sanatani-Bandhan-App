@@ -7,7 +7,7 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register Workspace" android:textSize="28sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="8dp"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Create a dedicated portal for your Mandir or Non-Profit Community." android:textSize="14sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="24dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Create a dedicated portal for your Mandir or Community." android:textSize="14sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="24dp"/>
 
         <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="3dp" android:layout_marginBottom="16dp" app:cardBackgroundColor="#FFFFFF">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
@@ -19,14 +19,14 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <EditText android:id="@+id/inputOrgName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Organization Name *" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputCommName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Organization Name *" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
         <EditText android:id="@+id/inputAdminName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Super Admin Full Name *" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputAdminEmail" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Official Email (Used for Login) *" android:inputType="textEmailAddress" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputAdminPhone" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Official Phone Number *" android:inputType="phone" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
         
-        <EditText android:id="@+id/inputAdminPin" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Create 4-Digit Admin PIN *" android:inputType="numberPassword" android:maxLength="4" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="24dp"/>
+        <EditText android:id="@+id/inputEmail" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Email *" android:inputType="textEmailAddress" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputAdminPhone" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Official Phone Number *" android:inputType="phone" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
+        <EditText android:id="@+id/inputPassword" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Password *" android:inputType="textPassword" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="24dp"/>
 
-        <Button android:id="@+id/btnCreateWorkspace" android:layout_width="match_parent" android:layout_height="60dp" android:text="CREATE SECURE WORKSPACE" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#2E7D32" android:layout_marginBottom="16dp"/>
+        <Button android:id="@+id/btnRegister" android:layout_width="match_parent" android:layout_height="60dp" android:text="CREATE SECURE WORKSPACE" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#2E7D32" android:layout_marginBottom="16dp"/>
         
         <TextView android:id="@+id/tvGoToLogin" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Already have a workspace? Log In Here." android:textSize="14sp" android:textStyle="bold" android:textColor="#1976D2" android:gravity="center" android:padding="12dp"/>
 
