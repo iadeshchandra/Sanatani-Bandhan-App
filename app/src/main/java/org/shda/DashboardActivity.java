@@ -72,10 +72,7 @@ public class DashboardActivity extends AppCompatActivity {
             startActivity(new Intent(this, LoginActivity.class)); finish();
         });
 
-        // ✨ FIX: Mandir Info is visible to ALL users now
         findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> showMandirInfoDialog());
-        
-        // ✨ FIX: The Master PDF Generator button is now fully wired
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> showGlobalPdfGeneratorDialog());
 
         if (!"ADMIN".equals(session.getRole())) {
@@ -87,7 +84,6 @@ public class DashboardActivity extends AppCompatActivity {
         loadFinancialData();
     }
 
-    // ✨ NEW: Global PDF Generator with Date Selection!
     private void showGlobalPdfGeneratorDialog() {
         new AlertDialog.Builder(this).setTitle("Generate Master Report")
             .setItems(new String[]{"Smart Chanda Ledger (Select Dates)", "Utsav Expenses (Select Dates)"}, (dialog, which) -> {
@@ -153,7 +149,6 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ NEW: Dynamic Mandir Info Dialog (Read-only for members, Editable for Admins)
     private void showMandirInfoDialog() {
         db.child("communities").child(session.getCommunityId()).child("info").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
