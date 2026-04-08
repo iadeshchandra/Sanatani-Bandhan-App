@@ -34,6 +34,8 @@ public class ExpenseActivity extends AppCompatActivity {
     private List<Expense> fullExpenseList = new ArrayList<>();
     private List<Expense> currentlyDisplayedList = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
+    
+    // ✨ FIX: Event Autocomplete List!
     private List<String> autocompleteEvents = new ArrayList<>();
     private float totalSpent = 0f;
 
@@ -72,7 +74,7 @@ public class ExpenseActivity extends AppCompatActivity {
         if (btnExportMaster != null) {
             btnExportMaster.setOnClickListener(v -> {
                 if (currentlyDisplayedList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
-                String title = filterStartTs != null ? "Filtered Utsav Expenses" : "All Time Utsav Expenses";
+                String title = filterStartTs != null ? "Filtered Expenses Ledger" : "All Time Expenses Ledger";
                 try {
                     PdfReportService.generateExpenseReport(this, session.getCommunityName(), currentlyDisplayedList, totalSpent, title);
                 } catch (Exception e) {
@@ -102,6 +104,7 @@ public class ExpenseActivity extends AppCompatActivity {
         });
     }
 
+    // ✨ FIX: Silently fetches all Mandir Events in the background for autocomplete!
     private void loadEventsForAutocomplete() {
         db.child("communities").child(session.getCommunityId()).child("events").keepSynced(true);
         db.child("communities").child(session.getCommunityId()).child("events").addListenerForSingleValueEvent(new ValueEventListener() {
@@ -232,15 +235,16 @@ public class ExpenseActivity extends AppCompatActivity {
     private void showAddExpenseDialog() {
         try {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Log Utsav Expense");
+            builder.setTitle("Log Community Expense");
             LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
+            // ✨ FIX: AutoComplete wired directly to your Events List!
             final AutoCompleteTextView inputEvent = new AutoCompleteTextView(this);
-            inputEvent.setHint("Event/Puja Name (e.g. Rash Purnima)");
+            inputEvent.setHint("Type Event/Utsav Name...");
             ArrayAdapter<String> eventAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteEvents);
             inputEvent.setAdapter(eventAdapter); inputEvent.setThreshold(1);
 
-            final EditText inputItem = new EditText(this); inputItem.setHint("Item Purchased / Seva");
+            final EditText inputItem = new EditText(this); inputItem.setHint("Item Purchased / Service");
             final EditText inputAmt = new EditText(this); inputAmt.setHint("Cost (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             
             final AutoCompleteTextView inputHandler = new AutoCompleteTextView(this);
@@ -267,13 +271,8 @@ public class ExpenseActivity extends AppCompatActivity {
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey();
                 
                 HashMap<String, Object> expMap = new HashMap<>();
-                expMap.put("id", transId);
-                expMap.put("eventName", event);
-                expMap.put("itemName", item);
-                expMap.put("amount", amt);
-                expMap.put("involvedPerson", handler);
-                expMap.put("timestamp", System.currentTimeMillis());
-                expMap.put("loggedBy", session.getUserName());
+                expMap.put("id", transId); expMap.put("eventName", event); expMap.put("itemName", item); expMap.put("amount", amt);
+                expMap.put("involvedPerson", handler); expMap.put("timestamp", System.currentTimeMillis()); expMap.put("loggedBy", session.getUserName());
                 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(transId).setValue(expMap);
                 Toast.makeText(this, "Expense Logged!", Toast.LENGTH_SHORT).show(); dialog.dismiss();
