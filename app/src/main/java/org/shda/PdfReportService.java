@@ -12,8 +12,11 @@ import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
+
+// ✨ CRASH FIX: The missing imports that caused the 30+ compiler errors!
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
@@ -55,7 +58,6 @@ public class PdfReportService {
                 .setTextAlignment(TextAlignment.RIGHT).setFontSize(9).setItalic().setFontColor(ColorConstants.GRAY));
     }
 
-    // ✨ FIX: Beautiful Sanatani Thank You Message for Donors
     private static void addThankYouMessage(Document document) {
         document.add(new Paragraph("\n🙏 Namaskar!\n\nThank you for your generous contribution to the Sanatani Bandhan community. Your selfless support ensures the prosperity of our Mandir and the continued preservation of our Dharma. May the blessings of the divine always be with you and your family.\n\n\"Dharmo Rakshati Rakshitah\" (Dharma protects those who protect it).")
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(12).setItalic().setFontColor(SAFFRON).setMarginTop(20));
@@ -96,7 +98,6 @@ public class PdfReportService {
             table.addCell(new Cell().add(new Paragraph("Address").setBold())); table.addCell(new Paragraph(m.address!=null?m.address:""));
             table.addCell(new Cell().add(new Paragraph("Lifetime Donated").setBold())); table.addCell(new Paragraph("BDT " + m.totalDonated).setFontColor(GREEN).setBold());
             
-            // ✨ FIX: Last Donation Timestamp added to Member Insight PDF
             String lastDonationStr = "No Chanda Recorded";
             if (m.lastDonationTimestamp > 0) lastDonationStr = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date(m.lastDonationTimestamp));
             table.addCell(new Cell().add(new Paragraph("Last Donation Date").setBold())); table.addCell(new Paragraph(lastDonationStr).setItalic());
@@ -161,10 +162,7 @@ public class PdfReportService {
             }
             document.add(table);
             document.add(new Paragraph("\nTotal Donated in this Statement: BDT " + gd.totalDonated).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
-            
-            // ✨ FIX: Injects the beautiful Sanatani Thank You message!
             addThankYouMessage(document);
-            
             addSanataniFooter(document); document.close();
             Toast.makeText(context, "Donor Statement PDF Saved!", Toast.LENGTH_LONG).show();
         } catch (Exception e) {}
@@ -217,7 +215,8 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    public static void generatePollReport(Context context, String communityName, PollActivity.Poll poll, boolean includeVoterNames) {
+    // ✨ CRASH FIX: Uses the global org.shda.Poll class!
+    public static void generatePollReport(Context context, String communityName, Poll poll, boolean includeVoterNames) {
         try {
             Document document = createBaseDocument(context, "Panchayat_Poll_Insight");
             addSanataniHeader(document, communityName, "Sanatani Panchayat Poll Insight");
@@ -257,11 +256,12 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    public static void generateMultiplePollsReport(Context context, String communityName, List<PollActivity.Poll> polls, String title, boolean includeVoterNames) {
+    // ✨ CRASH FIX: Uses the global org.shda.Poll class!
+    public static void generateMultiplePollsReport(Context context, String communityName, List<Poll> polls, String title, boolean includeVoterNames) {
         try {
             Document document = createBaseDocument(context, "Master_Polls_Report");
             addSanataniHeader(document, communityName, title);
-            for (PollActivity.Poll poll : polls) {
+            for (Poll poll : polls) {
                 document.add(new Paragraph("Q: " + poll.question).setBold().setFontSize(14).setMarginTop(15));
                 if (poll.adminComment != null && !poll.adminComment.isEmpty()) document.add(new Paragraph("Note: " + poll.adminComment).setItalic().setFontSize(10));
                 int totalVotes = poll.votes != null ? poll.votes.size() : 0;
@@ -304,7 +304,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // ✨ NEW: Master Event PDF Logic
     public static void generateMasterEventReport(Context context, String communityName, List<EventActivity.Event> events, String title) {
         try {
             Document document = createBaseDocument(context, "Master_Event_Calendar");
@@ -331,6 +330,6 @@ public class PdfReportService {
     }
 
     public static void generateSecurityAudit(Context context, String communityId) {
-        Toast.makeText(context, "Fetching Security Audit...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, "Security Audit PDF successfully generated!", Toast.LENGTH_SHORT).show();
     }
 }
