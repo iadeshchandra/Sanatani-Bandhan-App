@@ -1,10 +1,12 @@
 package org.shda;
 
+import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -17,7 +19,9 @@ import com.github.mikephil.charting.data.PieEntry;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class DashboardActivity extends AppCompatActivity {
@@ -35,7 +39,6 @@ public class DashboardActivity extends AppCompatActivity {
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
-        // ✨ CRASH FIX: Direct logic check instead of missing method
         if (session.getUserId() == null || session.getCommunityId() == null) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
@@ -61,23 +64,22 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
 
         findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
-        findViewById(R.id.btnGenerateReports).setOnClickListener(v -> Toast.makeText(this, "Use specific modules to generate PDFs.", Toast.LENGTH_SHORT).show());
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
-        findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
+        findViewById(R.id.btnHelpSupport).setOnClickListener(v -> Toast.makeText(this, "Redirecting to Sanatani Bandhan Support...", Toast.LENGTH_SHORT).show());
         
-        // ✨ CRASH FIX: Direct SharedPreferences clear instead of missing method
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit().clear().apply();
-            startActivity(new Intent(this, LoginActivity.class));
-            finish();
+            startActivity(new Intent(this, LoginActivity.class)); finish();
         });
 
-        Button btnWorkspace = findViewById(R.id.btnWorkspaceSettings);
-        if (btnWorkspace != null) btnWorkspace.setOnClickListener(v -> showEditCommunityDialog());
+        // ✨ FIX: Mandir Info is visible to ALL users now
+        findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> showMandirInfoDialog());
+        
+        // ✨ FIX: The Master PDF Generator button is now fully wired
+        findViewById(R.id.btnGenerateReports).setOnClickListener(v -> showGlobalPdfGeneratorDialog());
 
         if (!"ADMIN".equals(session.getRole())) {
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
-            if (btnWorkspace != null) btnWorkspace.setVisibility(View.GONE);
         } else {
             findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> PdfReportService.generateSecurityAudit(this, session.getCommunityId()));
         }
@@ -85,28 +87,130 @@ public class DashboardActivity extends AppCompatActivity {
         loadFinancialData();
     }
 
+    // ✨ NEW: Global PDF Generator with Date Selection!
+    private void showGlobalPdfGeneratorDialog() {
+        new AlertDialog.Builder(this).setTitle("Generate Master Report")
+            .setItems(new String[]{"Smart Chanda Ledger (Select Dates)", "Utsav Expenses (Select Dates)"}, (dialog, which) -> {
+                pickDateRange((startTs, endTs) -> {
+                    if (which == 0) generateGlobalChandaPdf(startTs, endTs);
+                    else generateGlobalExpensePdf(startTs, endTs);
+                });
+            }).show();
+    }
+
+    private void pickDateRange(DateRangeCallback callback) {
+        final Calendar startCal = Calendar.getInstance();
+        new DatePickerDialog(this, (view1, y1, m1, d1) -> {
+            startCal.set(y1, m1, d1, 0, 0, 0);
+            final Calendar endCal = Calendar.getInstance();
+            new DatePickerDialog(this, (view2, y2, m2, d2) -> {
+                endCal.set(y2, m2, d2, 23, 59, 59);
+                if (startCal.getTimeInMillis() > endCal.getTimeInMillis()) Toast.makeText(this, "Start date must be before end date", Toast.LENGTH_SHORT).show();
+                else callback.onSelected(startCal.getTimeInMillis(), endCal.getTimeInMillis());
+            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+            Toast.makeText(this, "Now select End Date", Toast.LENGTH_SHORT).show();
+        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    }
+    private interface DateRangeCallback { void onSelected(long start, long end); }
+
+    private void generateGlobalChandaPdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<String> dates = new ArrayList<>(); List<String> names = new ArrayList<>();
+                List<Float> amounts = new ArrayList<>(); List<String> notes = new ArrayList<>();
+                float totalExport = 0f;
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    TransactionActivity.SingleDonation sd = d.getValue(TransactionActivity.SingleDonation.class);
+                    if (sd != null && sd.timestamp >= startTs && sd.timestamp <= endTs) {
+                        dates.add(sdf.format(new Date(sd.timestamp)));
+                        names.add(sd.name); amounts.add(sd.amount); notes.add(sd.note != null ? sd.note : "");
+                        totalExport += sd.amount;
+                    }
+                }
+                if (dates.isEmpty()) Toast.makeText(DashboardActivity.this, "No Chanda found in this range.", Toast.LENGTH_SHORT).show();
+                else PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, totalExport, "Custom Date Chanda Ledger");
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void generateGlobalExpensePdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<ExpenseActivity.Expense> exps = new ArrayList<>();
+                float totalExport = 0f;
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    ExpenseActivity.Expense e = d.getValue(ExpenseActivity.Expense.class);
+                    if (e != null && e.timestamp >= startTs && e.timestamp <= endTs) {
+                        exps.add(e); totalExport += e.amount;
+                    }
+                }
+                if (exps.isEmpty()) Toast.makeText(DashboardActivity.this, "No Expenses found in this range.", Toast.LENGTH_SHORT).show();
+                else PdfReportService.generateExpenseReport(DashboardActivity.this, session.getCommunityName(), exps, totalExport, "Custom Date Utsav Expenses");
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    // ✨ NEW: Dynamic Mandir Info Dialog (Read-only for members, Editable for Admins)
+    private void showMandirInfoDialog() {
+        db.child("communities").child(session.getCommunityId()).child("info").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String phone = snapshot.child("phone").getValue(String.class);
+                String email = snapshot.child("email").getValue(String.class);
+                String address = snapshot.child("address").getValue(String.class);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(DashboardActivity.this);
+                builder.setTitle("🏛️ Mandir Information");
+                
+                LinearLayout layout = new LinearLayout(DashboardActivity.this);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                layout.setPadding(50, 20, 50, 0);
+
+                if ("ADMIN".equals(session.getRole())) {
+                    final EditText inputName = new EditText(DashboardActivity.this); inputName.setHint("Mandir Name"); inputName.setText(session.getCommunityName());
+                    final EditText inputPhone = new EditText(DashboardActivity.this); inputPhone.setHint("Official Phone"); inputPhone.setText(phone);
+                    final EditText inputEmail = new EditText(DashboardActivity.this); inputEmail.setHint("Official Email"); inputEmail.setText(email);
+                    final EditText inputAddress = new EditText(DashboardActivity.this); inputAddress.setHint("Mandir Address"); inputAddress.setText(address);
+                    layout.addView(inputName); layout.addView(inputPhone); layout.addView(inputEmail); layout.addView(inputAddress);
+                    builder.setView(layout);
+                    builder.setPositiveButton("SAVE", (d, w) -> {
+                        String newName = inputName.getText().toString().trim();
+                        if (!newName.isEmpty()) {
+                            db.child("communities").child(session.getCommunityId()).child("name").setValue(newName);
+                            getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit().putString("COMMUNITY_NAME", newName).apply();
+                            ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
+                        }
+                        db.child("communities").child(session.getCommunityId()).child("info").child("phone").setValue(inputPhone.getText().toString());
+                        db.child("communities").child(session.getCommunityId()).child("info").child("email").setValue(inputEmail.getText().toString());
+                        db.child("communities").child(session.getCommunityId()).child("info").child("address").setValue(inputAddress.getText().toString());
+                        Toast.makeText(DashboardActivity.this, "Mandir Info Updated!", Toast.LENGTH_SHORT).show();
+                    });
+                    builder.setNegativeButton("CANCEL", null);
+                } else {
+                    TextView tvName = new TextView(DashboardActivity.this); tvName.setText("Name: " + session.getCommunityName()); tvName.setTextSize(16f); tvName.setPadding(0,0,0,10);
+                    TextView tvPhone = new TextView(DashboardActivity.this); tvPhone.setText("Phone: " + (phone!=null?phone:"N/A")); tvPhone.setTextSize(16f); tvPhone.setPadding(0,0,0,10);
+                    TextView tvEmail = new TextView(DashboardActivity.this); tvEmail.setText("Email: " + (email!=null?email:"N/A")); tvEmail.setTextSize(16f); tvEmail.setPadding(0,0,0,10);
+                    TextView tvAddr = new TextView(DashboardActivity.this); tvAddr.setText("Address: " + (address!=null?address:"N/A")); tvAddr.setTextSize(16f);
+                    layout.addView(tvName); layout.addView(tvPhone); layout.addView(tvEmail); layout.addView(tvAddr);
+                    builder.setView(layout);
+                    builder.setPositiveButton("CLOSE", null);
+                }
+                builder.show();
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
     private void loadFinancialData() {
         DatabaseReference logsRef = db.child("communities").child(session.getCommunityId()).child("logs");
         logsRef.keepSynced(true);
         logsRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                totalIncome = 0f;
-                totalExpense = 0f;
-                
-                if (snapshot.hasChild("Donation")) {
-                    for (DataSnapshot d : snapshot.child("Donation").getChildren()) {
-                        Float amt = d.child("amount").getValue(Float.class);
-                        if (amt != null) totalIncome += amt;
-                    }
-                }
-                
-                if (snapshot.hasChild("Expense")) {
-                    for (DataSnapshot d : snapshot.child("Expense").getChildren()) {
-                        Float amt = d.child("amount").getValue(Float.class);
-                        if (amt != null) totalExpense += amt;
-                    }
-                }
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                totalIncome = 0f; totalExpense = 0f;
+                if (snapshot.hasChild("Donation")) { for (DataSnapshot d : snapshot.child("Donation").getChildren()) { Float amt = d.child("amount").getValue(Float.class); if (amt != null) totalIncome += amt; } }
+                if (snapshot.hasChild("Expense")) { for (DataSnapshot d : snapshot.child("Expense").getChildren()) { Float amt = d.child("amount").getValue(Float.class); if (amt != null) totalExpense += amt; } }
                 setupPieChart();
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
@@ -116,55 +220,19 @@ public class DashboardActivity extends AppCompatActivity {
     private void setupPieChart() {
         if (pieChart == null) return;
         ArrayList<PieEntry> entries = new ArrayList<>();
-        if (totalIncome == 0 && totalExpense == 0) {
-            entries.add(new PieEntry(1f, "No Data"));
-        } else {
-            entries.add(new PieEntry(totalIncome, "Income"));
-            entries.add(new PieEntry(totalExpense, "Expense"));
-        }
-
+        if (totalIncome == 0 && totalExpense == 0) { entries.add(new PieEntry(1f, "No Data")); } else { entries.add(new PieEntry(totalIncome, "Income")); entries.add(new PieEntry(totalExpense, "Expense")); }
         PieDataSet dataSet = new PieDataSet(entries, "");
         dataSet.setColors(android.graphics.Color.parseColor("#2E7D32"), android.graphics.Color.parseColor("#D32F2F"), android.graphics.Color.GRAY);
-        dataSet.setValueTextColor(android.graphics.Color.WHITE);
-        dataSet.setValueTextSize(14f);
-
-        PieData data = new PieData(dataSet);
-        pieChart.setData(data);
+        dataSet.setValueTextColor(android.graphics.Color.WHITE); dataSet.setValueTextSize(14f);
+        pieChart.setData(new PieData(dataSet));
         pieChart.getDescription().setEnabled(false);
         pieChart.setCenterText("Net Balance\n৳" + (totalIncome - totalExpense));
-        pieChart.setCenterTextSize(16f);
-        pieChart.setDrawEntryLabels(false);
-        pieChart.invalidate();
-    }
-
-    // ✨ CRASH FIX: Removed the `session.setCommunityName` method call to prevent errors. Saves straight to Firebase!
-    private void showEditCommunityDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Workspace Settings");
-        final EditText input = new EditText(this);
-        input.setText(session.getCommunityName());
-        builder.setView(input);
-        builder.setPositiveButton("SAVE", (dialog, which) -> {
-            String newName = input.getText().toString().trim();
-            if (!newName.isEmpty()) {
-                db.child("communities").child(session.getCommunityId()).child("name").setValue(newName);
-                getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit().putString("COMMUNITY_NAME", newName).apply();
-                ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
-                Toast.makeText(this, "Workspace Updated", Toast.LENGTH_SHORT).show();
-            }
-        });
-        builder.setNegativeButton("CANCEL", null);
-        builder.show();
+        pieChart.setCenterTextSize(16f); pieChart.setDrawEntryLabels(false); pieChart.invalidate();
     }
 
     private void showLanguageDialog() {
         String[] languages = {"English", "বাংলা (Bengali)", "हिन्दी (Hindi)"};
         new AlertDialog.Builder(this).setTitle("Select Language")
-            .setItems(languages, (dialog, which) -> Toast.makeText(this, "Language switched locally.", Toast.LENGTH_SHORT).show())
-            .show();
-    }
-
-    private void contactSupport() {
-        Toast.makeText(this, "Redirecting to Sanatani Bandhan Support...", Toast.LENGTH_SHORT).show();
+            .setItems(languages, (dialog, which) -> Toast.makeText(this, "Language switched locally.", Toast.LENGTH_SHORT).show()).show();
     }
 }
