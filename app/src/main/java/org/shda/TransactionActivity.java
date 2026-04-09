@@ -39,8 +39,6 @@ public class TransactionActivity extends AppCompatActivity {
     
     private List<String> autocompleteMembers = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
-    
-    // ✨ FIX: Background map to match Phone Numbers to Donors instantly!
     private HashMap<String, String> phoneMap = new HashMap<>();
     
     private float totalDonated = 0f;
@@ -103,7 +101,7 @@ public class TransactionActivity extends AppCompatActivity {
                     Member m = data.getValue(Member.class);
                     if (m != null) {
                         autocompleteMembers.add(m.name + " (" + m.id + ")");
-                        if (m.phone != null) phoneMap.put(m.id, m.phone);
+                        if (m.phone != null && !m.phone.isEmpty()) phoneMap.put(m.id, m.phone);
                         if ("MANAGER".equals(m.role) || "ADMIN".equals(m.role)) autocompleteManagers.add(m.name + " (" + m.id + ")");
                     }
                 }
@@ -184,7 +182,6 @@ public class TransactionActivity extends AppCompatActivity {
     }
     private interface DateRangeCallback { void onSelected(long start, long end); }
 
-    // ✨ FIX: Brilliantly groups donations, maps phone numbers dynamically, and finds the exact latest contribution!
     private void processAndRenderList(List<SingleDonation> rawList) {
         HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
         for (SingleDonation d : rawList) {
@@ -206,7 +203,8 @@ public class TransactionActivity extends AppCompatActivity {
 
         for (GroupedDonation gd : groupedList) {
             try {
-                View view = LayoutInflater.from(this).inflate(R.layout.item_donation, donationsContainer, false);
+                // ✨ FIX: Inflating the correct layout (item_transaction.xml)
+                View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, donationsContainer, false);
                 ((TextView) view.findViewById(R.id.tvDonorName)).setText(gd.displayName);
                 ((TextView) view.findViewById(R.id.tvDonorTotal)).setText("Total: ৳" + gd.totalDonated);
                 ((TextView) view.findViewById(R.id.tvDonorContributions)).setText(gd.history.size() + " Contributions in this range");
@@ -228,7 +226,7 @@ public class TransactionActivity extends AppCompatActivity {
                     try { PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd); } catch (Exception ex) { Toast.makeText(this, "Error generating statement.", Toast.LENGTH_SHORT).show(); }
                 });
                 donationsContainer.addView(view);
-            } catch (Exception e) {}
+            } catch (Exception e) { e.printStackTrace(); }
         }
     }
 
