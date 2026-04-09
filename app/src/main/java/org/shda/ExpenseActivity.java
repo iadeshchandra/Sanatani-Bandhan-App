@@ -34,8 +34,6 @@ public class ExpenseActivity extends AppCompatActivity {
     private List<Expense> fullExpenseList = new ArrayList<>();
     private List<Expense> currentlyDisplayedList = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
-    
-    // ✨ FIX: Event Autocomplete List!
     private List<String> autocompleteEvents = new ArrayList<>();
     private float totalSpent = 0f;
 
@@ -104,16 +102,27 @@ public class ExpenseActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ FIX: Silently fetches all Mandir Events in the background for autocomplete!
+    // ✨ FIX: Brilliant Dual Auto-Complete Engine! Loads BOTH Scheduled Events AND Past Utsavs automatically!
     private void loadEventsForAutocomplete() {
-        db.child("communities").child(session.getCommunityId()).child("events").keepSynced(true);
+        // 1. Fetch Scheduled Events
         db.child("communities").child(session.getCommunityId()).child("events").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 autocompleteEvents.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     String title = data.child("title").getValue(String.class);
-                    if (title != null) autocompleteEvents.add(title);
+                    if (title != null && !autocompleteEvents.contains(title)) { autocompleteEvents.add(title); }
                 }
+                
+                // 2. Fetch Past Logged Utsavs
+                db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        for (DataSnapshot data : snapshot.getChildren()) {
+                            String evName = data.child("eventName").getValue(String.class);
+                            if (evName != null && !autocompleteEvents.contains(evName)) { autocompleteEvents.add(evName); }
+                        }
+                    }
+                    @Override public void onCancelled(@NonNull DatabaseError error) {}
+                });
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -213,7 +222,7 @@ public class ExpenseActivity extends AppCompatActivity {
         for (GroupedExpense ge : groupedList) {
             try {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_expense, expensesContainer, false);
-                ((TextView) view.findViewById(R.id.tvExpenseEvent)).setText(ge.eventDisplayName);
+                ((TextView) view.findViewById(R.id.tvExpenseEvent)).setText("🪔 " + ge.eventDisplayName);
                 ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + ge.totalSpent);
                 ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText(ge.history.size() + " items logged in this range");
                 
@@ -238,7 +247,6 @@ public class ExpenseActivity extends AppCompatActivity {
             builder.setTitle("Log Community Expense");
             LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-            // ✨ FIX: AutoComplete wired directly to your Events List!
             final AutoCompleteTextView inputEvent = new AutoCompleteTextView(this);
             inputEvent.setHint("Type Event/Utsav Name...");
             ArrayAdapter<String> eventAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteEvents);
@@ -276,6 +284,9 @@ public class ExpenseActivity extends AppCompatActivity {
                 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(transId).setValue(expMap);
                 Toast.makeText(this, "Expense Logged!", Toast.LENGTH_SHORT).show(); dialog.dismiss();
+                
+                // Refresh Autocomplete instantly after logging!
+                if (!autocompleteEvents.contains(event)) autocompleteEvents.add(event);
             });
         } catch (Exception e) {
             Toast.makeText(this, "UI Error", Toast.LENGTH_SHORT).show();
