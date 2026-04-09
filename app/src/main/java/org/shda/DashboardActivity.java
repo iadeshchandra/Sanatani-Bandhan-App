@@ -17,6 +17,7 @@ import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
+import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -106,6 +107,15 @@ public class DashboardActivity extends AppCompatActivity {
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
+    }
+
+    private void showLanguageDialog() {
+        String[] languages = {"English", "Bengali (বাংলা)", "Hindi (हिन्दी)"};
+        new AlertDialog.Builder(this)
+            .setTitle("Select Language")
+            .setItems(languages, (dialog, which) -> {
+                Toast.makeText(this, "Language updated to " + languages[which], Toast.LENGTH_SHORT).show();
+            }).show();
     }
 
     private void contactSupport() {
@@ -280,6 +290,44 @@ public class DashboardActivity extends AppCompatActivity {
         logsRef.keepSynced(true);
         logsRef.addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                totalIncome = 0f; totalExpense = 0f;
-                if (snapshot.hasChild("Donation")) { for (DataSnapshot d : snapshot.child("Donation").getChildren()) { Float amt = d.child("amount").getValue(Float.class); if (amt != null) totalIncome += amt; } }
-                if (snapshot.hasChild("Expense")) { for (DataSnapshot d : snapshot.child("
+                totalIncome = 0f; 
+                totalExpense = 0f;
+                
+                if (snapshot.hasChild("Donation")) { 
+                    for (DataSnapshot d : snapshot.child("Donation").getChildren()) { 
+                        Float amt = d.child("amount").getValue(Float.class); 
+                        if (amt != null) totalIncome += amt; 
+                    } 
+                }
+                
+                if (snapshot.hasChild("Expense")) { 
+                    for (DataSnapshot d : snapshot.child("Expense").getChildren()) { 
+                        Float amt = d.child("amount").getValue(Float.class); 
+                        if (amt != null) totalExpense += amt; 
+                    } 
+                }
+                updatePieChart();
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void updatePieChart() {
+        if (pieChart == null) return;
+        List<PieEntry> entries = new ArrayList<>();
+        entries.add(new PieEntry(totalIncome, "Income"));
+        entries.add(new PieEntry(totalExpense, "Expense"));
+
+        PieDataSet dataSet = new PieDataSet(entries, "");
+        dataSet.setColors(new int[]{0xFF2E7D32, 0xFFC62828}); // Green for Income, Red for Expense
+        dataSet.setValueTextColor(0xFFFFFFFF);
+        dataSet.setValueTextSize(14f);
+
+        PieData data = new PieData(dataSet);
+        pieChart.setData(data);
+        pieChart.getDescription().setEnabled(false);
+        pieChart.setCenterText("Total Analysis");
+        pieChart.animateY(1000);
+        pieChart.invalidate();
+    }
+}
