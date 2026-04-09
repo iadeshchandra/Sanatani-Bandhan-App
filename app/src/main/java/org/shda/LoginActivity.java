@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,8 +25,6 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         
         session = new SessionManager(this);
-        
-        // ✨ FIX: Properly checks your SessionManager to stop the White Screen Loop!
         if (session.getUserId() != null && !session.getUserId().isEmpty()) {
             startActivity(new Intent(this, DashboardActivity.class));
             finish(); return;
@@ -41,13 +40,49 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
 
         btnLogin.setOnClickListener(v -> performLogin());
+        
+        // ✨ NEW: Forgot Password Trigger
+        findViewById(R.id.tvForgotPassword).setOnClickListener(v -> showForgotPasswordDialog());
+        
         findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> startActivity(new Intent(this, RegisterCommunityActivity.class)));
+    }
+
+    // ✨ NEW: Forgot Password Dialog & Firebase Logic
+    private void showForgotPasswordDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        builder.setTitle("Reset Admin Password");
+        builder.setMessage("Enter your Admin Email to receive a password reset link. (Staff members must ask their Admin to reset their PINs).");
+
+        final EditText input = new EditText(this);
+        input.setHint("Registered Admin Email");
+        input.setInputType(android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        
+        android.widget.LinearLayout layout = new android.widget.LinearLayout(this);
+        layout.setPadding(50, 20, 50, 0);
+        layout.addView(input);
+        builder.setView(layout);
+
+        builder.setPositiveButton("SEND LINK", (dialog, which) -> {
+            String email = input.getText().toString().trim();
+            if (email.isEmpty()) {
+                Toast.makeText(this, "Email is required.", Toast.LENGTH_SHORT).show(); return;
+            }
+            mAuth.sendPasswordResetEmail(email).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    Toast.makeText(this, "Reset link sent! Check your email inbox.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "Error: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        });
+        builder.setNegativeButton("CANCEL", null);
+        builder.show();
     }
 
     private void performLogin() {
         String workspace = inputWorkspace.getText().toString().trim();
         String userId = inputUserId.getText().toString().trim();
-        String secret = inputPin.getText().toString().trim(); // This acts as Password OR Pin
+        String secret = inputPin.getText().toString().trim(); 
 
         if (workspace.isEmpty() || secret.isEmpty()) {
             Toast.makeText(this, "Workspace/Email and Password/PIN are required", Toast.LENGTH_SHORT).show(); return;
@@ -55,9 +90,7 @@ public class LoginActivity extends AppCompatActivity {
 
         btnLogin.setEnabled(false); btnLogin.setText("AUTHENTICATING...");
 
-        // ✨ SMART ROUTING: If Devotee ID is empty, treat as Super Admin Login!
         if (userId.isEmpty() || userId.equalsIgnoreCase("admin")) {
-            
             mAuth.signInWithEmailAndPassword(workspace, secret).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String uid = mAuth.getCurrentUser().getUid();
@@ -69,7 +102,6 @@ public class LoginActivity extends AppCompatActivity {
                                 String role = snapshot.child("role").getValue(String.class);
                                 String name = snapshot.child("name").getValue(String.class);
                                 
-                                // ✨ FIX: Uses your exact method to securely write to memory and stop crashes!
                                 session.createLoginSession(commId, role, commName, name, "ADMIN-001", workspace);
                                 
                                 Toast.makeText(LoginActivity.this, "Admin Login Successful!", Toast.LENGTH_SHORT).show();
@@ -82,7 +114,6 @@ public class LoginActivity extends AppCompatActivity {
             });
             
         } else {
-            // ✨ SMART ROUTING: If Devotee ID is typed, treat as Staff PIN Login!
             db.child("communities").addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                     String targetCommId = null; String targetCommName = null;
@@ -100,10 +131,7 @@ public class LoginActivity extends AppCompatActivity {
                     if (dbPin != null && dbPin.equals(secret)) {
                         Member m = snapshot.child(targetCommId).child("members").child(userId).getValue(Member.class);
                         if (m != null) {
-                            
-                            // ✨ FIX: Uses your exact method to securely write to memory!
                             session.createLoginSession(targetCommId, m.role, targetCommName, m.name, m.id, m.email != null ? m.email : "");
-                            
                             Toast.makeText(LoginActivity.this, "Staff Login Successful!", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
                         } else { fail("Devotee Profile not found."); }
