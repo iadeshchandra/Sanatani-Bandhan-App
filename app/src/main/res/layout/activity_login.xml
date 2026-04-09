@@ -1,27 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="#FFFBF2" android:padding="24dp" android:gravity="center_vertical">
+    android:background="#FFFBF2" android:fillViewport="true">
 
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sanatani Bandhan" android:textSize="32sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="4dp"/>
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Universal Devotee Portal" android:textSize="16sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="32dp"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp" android:gravity="center">
 
-    <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFFFFF" android:layout_marginBottom="24dp">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
-            
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1. Workspace Details" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
-            <EditText android:id="@+id/inputWorkspace" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Email OR Workspace ID" android:inputType="textEmailAddress" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="16dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sanatani Bandhan" android:textSize="32sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="4dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Universal Devotee Portal" android:textSize="16sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="32dp"/>
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2. Personal Credentials" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
-            <EditText android:id="@+id/inputUserId" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Devotee ID (Leave blank if Admin)" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="12dp"/>
-            
-            <EditText android:id="@+id/inputPin" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Password or 4-Digit PIN" android:inputType="textPassword" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="24dp"/>
+        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFFFFF" android:layout_marginBottom="24dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+                
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1. Workspace Details" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
+                <EditText android:id="@+id/inputWorkspace" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Email OR Workspace ID" android:inputType="textEmailAddress" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="16dp"/>
 
-            <Button android:id="@+id/btnLogin" android:layout_width="match_parent" android:layout_height="60dp" android:text="SECURE LOGIN" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#E65100"/>
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2. Personal Credentials" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
+                <EditText android:id="@+id/inputUserId" android:layout_width="match_parent" android:layout_height="55dp" android:hint="User ID (Admins leave blank)" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="12dp"/>
+                
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:hintEnabled="false"
+                    app:passwordToggleEnabled="true"
+                    app:passwordToggleTint="#E65100"
+                    android:layout_marginBottom="8dp">
 
-    <TextView android:id="@+id/tvCreateWorkspace" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register a New Mandir or Community Portal" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:gravity="center" android:padding="12dp"/>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputPin"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:hint="Password OR 4-Digit PIN"
+                        android:inputType="textPassword"
+                        android:background="#F5F5F5"
+                        android:padding="12dp"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
-</LinearLayout>
+                <TextView android:id="@+id/tvForgotPassword" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Forgot Password?" android:textColor="#1976D2" android:textStyle="bold" android:layout_gravity="end" android:layout_marginBottom="24dp" android:padding="4dp"/>
+
+                <Button android:id="@+id/btnLogin" android:layout_width="match_parent" android:layout_height="60dp" android:text="SECURE LOGIN" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#E65100"/>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView android:id="@+id/tvCreateWorkspace" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register a New Mandir or Community Portal" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:gravity="center" android:padding="12dp"/>
+
+    </LinearLayout>
+</ScrollView>
