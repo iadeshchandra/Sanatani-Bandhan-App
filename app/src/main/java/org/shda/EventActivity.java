@@ -68,7 +68,6 @@ public class EventActivity extends AppCompatActivity {
         if (btnExportMaster != null) {
             btnExportMaster.setOnClickListener(v -> {
                 if (currentlyDisplayedList.isEmpty()) { Toast.makeText(this, "No events to export", Toast.LENGTH_SHORT).show(); return; }
-                // ✨ FIX: Triggers the Master PDF, respecting the Date Filters!
                 String title = filterStartTs != null ? "Filtered Event Calendar" : "Master Event Calendar";
                 try {
                     PdfReportService.generateMasterEventReport(this, session.getCommunityName(), currentlyDisplayedList, title);
@@ -156,6 +155,7 @@ public class EventActivity extends AppCompatActivity {
     }
     private interface DateRangeCallback { void onSelected(long start, long end); }
 
+    // ✨ FIX: Perfectly wired to the new item_event.xml UI! No logic changed.
     private void renderEvents() {
         eventsContainer.removeAllViews();
         long now = System.currentTimeMillis();
@@ -165,8 +165,8 @@ public class EventActivity extends AppCompatActivity {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_event, eventsContainer, false);
                 
                 ((TextView) view.findViewById(R.id.tvEventTitle)).setText("🪔 " + event.title);
-                ((TextView) view.findViewById(R.id.tvEventDate)).setText("When: " + event.dateStr + " at " + event.timeStr);
-                ((TextView) view.findViewById(R.id.tvEventLocation)).setText("Where: " + event.location);
+                ((TextView) view.findViewById(R.id.tvEventWhen)).setText("When: " + event.dateStr + " at " + event.timeStr);
+                ((TextView) view.findViewById(R.id.tvEventWhere)).setText("Where: " + event.location);
                 
                 TextView tvCountdown = view.findViewById(R.id.tvEventCountdown);
                 long diff = event.timestamp - now;
@@ -180,17 +180,22 @@ public class EventActivity extends AppCompatActivity {
                     tvCountdown.setTextColor(android.graphics.Color.parseColor("#388E3C")); 
                 }
 
-                String fullDesc = event.description;
-                if (event.adminComment != null && !event.adminComment.trim().isEmpty()) {
-                    fullDesc += "\n\n[Management Note]: " + event.adminComment;
-                }
-                ((TextView) view.findViewById(R.id.tvEventDescription)).setText(fullDesc);
+                ((TextView) view.findViewById(R.id.tvEventDesc)).setText(event.description);
 
-                view.findViewById(R.id.btnDownloadItinerary).setOnClickListener(v -> {
+                TextView tvAdminNote = view.findViewById(R.id.tvEventAdminNote);
+                if (event.adminComment != null && !event.adminComment.trim().isEmpty()) {
+                    tvAdminNote.setText("[Management Note]: " + event.adminComment);
+                    tvAdminNote.setVisibility(View.VISIBLE);
+                } else {
+                    tvAdminNote.setVisibility(View.GONE);
+                }
+
+                // 🎨 Binding the new beautifully aligned buttons!
+                view.findViewById(R.id.btnDownloadPdf).setOnClickListener(v -> {
                     PdfReportService.generateEventItinerary(this, session.getCommunityName(), event, session.getUserName());
                 });
 
-                view.findViewById(R.id.btnShareEvent).setOnClickListener(v -> {
+                view.findViewById(R.id.btnShare).setOnClickListener(v -> {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
                     String shareBody = "🙏 Namaskar! Join us for " + event.title + "\n📅 Date: " + event.dateStr + " at " + event.timeStr + "\n📍 Location: " + event.location + "\n\n" + event.description + "\n\n- Shared via Sanatani Bandhan";
@@ -198,7 +203,7 @@ public class EventActivity extends AppCompatActivity {
                     startActivity(Intent.createChooser(shareIntent, "Share Event"));
                 });
 
-                Button btnResend = view.findViewById(R.id.btnResendNotification);
+                Button btnResend = view.findViewById(R.id.btnResend);
                 if (isManagerOrAdmin && diff > 0) {
                     btnResend.setVisibility(View.VISIBLE);
                     btnResend.setText("🔔 RESEND (" + event.notificationCount + ")");
@@ -208,6 +213,8 @@ public class EventActivity extends AppCompatActivity {
                         db.child("communities").child(session.getCommunityId()).child("events").child(event.id).child("notificationCount").setValue(newCount);
                         Toast.makeText(this, "Alert Sent to All Members!", Toast.LENGTH_SHORT).show();
                     });
+                } else {
+                    btnResend.setVisibility(View.GONE);
                 }
 
                 if (isManagerOrAdmin) {
