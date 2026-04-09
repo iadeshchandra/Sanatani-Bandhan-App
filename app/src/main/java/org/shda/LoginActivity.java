@@ -1,13 +1,9 @@
 package org.shda;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,21 +14,19 @@ public class LoginActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private DatabaseReference db;
+    private SessionManager session;
     
-    private LinearLayout layoutAdminLogin, layoutStaffLogin;
-    private EditText inputAdminEmail, inputAdminPassword;
     private EditText inputWorkspace, inputUserId, inputPin;
-    private Button btnAdminLogin, btnStaffLogin;
-    private TextView tvToggleLoginMode;
-    
-    private boolean isAdminMode = true;
+    private Button btnLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        SharedPreferences prefs = getSharedPreferences("SanataniPrefs", MODE_PRIVATE);
-        if (prefs.getBoolean("IS_LOGGED_IN", false)) {
+        
+        session = new SessionManager(this);
+        
+        // ✨ FIX: Properly checks your SessionManager to stop the White Screen Loop!
+        if (session.getUserId() != null && !session.getUserId().isEmpty()) {
             startActivity(new Intent(this, DashboardActivity.class));
             finish(); return;
         }
@@ -41,134 +35,87 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseDatabase.getInstance().getReference();
 
-        layoutAdminLogin = findViewById(R.id.layoutAdminLogin);
-        layoutStaffLogin = findViewById(R.id.layoutStaffLogin);
-        inputAdminEmail = findViewById(R.id.inputAdminEmail);
-        inputAdminPassword = findViewById(R.id.inputAdminPassword);
-        
         inputWorkspace = findViewById(R.id.inputWorkspace);
         inputUserId = findViewById(R.id.inputUserId);
         inputPin = findViewById(R.id.inputPin);
-        
-        btnAdminLogin = findViewById(R.id.btnAdminLogin);
-        btnStaffLogin = findViewById(R.id.btnStaffLogin);
-        tvToggleLoginMode = findViewById(R.id.tvToggleLoginMode);
+        btnLogin = findViewById(R.id.btnLogin);
 
-        btnAdminLogin.setOnClickListener(v -> performAdminLogin());
-        btnStaffLogin.setOnClickListener(v -> performStaffLogin());
-        
-        tvToggleLoginMode.setOnClickListener(v -> toggleLoginMode());
+        btnLogin.setOnClickListener(v -> performLogin());
         findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> startActivity(new Intent(this, RegisterCommunityActivity.class)));
     }
 
-    private void toggleLoginMode() {
-        isAdminMode = !isAdminMode;
-        if (isAdminMode) {
-            layoutAdminLogin.setVisibility(View.VISIBLE);
-            layoutStaffLogin.setVisibility(View.GONE);
-            tvToggleLoginMode.setText("Switch to Staff / Member Login");
+    private void performLogin() {
+        String workspace = inputWorkspace.getText().toString().trim();
+        String userId = inputUserId.getText().toString().trim();
+        String secret = inputPin.getText().toString().trim(); // This acts as Password OR Pin
+
+        if (workspace.isEmpty() || secret.isEmpty()) {
+            Toast.makeText(this, "Workspace/Email and Password/PIN are required", Toast.LENGTH_SHORT).show(); return;
+        }
+
+        btnLogin.setEnabled(false); btnLogin.setText("AUTHENTICATING...");
+
+        // ✨ SMART ROUTING: If Devotee ID is empty, treat as Super Admin Login!
+        if (userId.isEmpty() || userId.equalsIgnoreCase("admin")) {
+            
+            mAuth.signInWithEmailAndPassword(workspace, secret).addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    String uid = mAuth.getCurrentUser().getUid();
+                    db.child("users").child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if (snapshot.exists()) {
+                                String commId = snapshot.child("communityId").getValue(String.class);
+                                String commName = snapshot.child("communityName").getValue(String.class);
+                                String role = snapshot.child("role").getValue(String.class);
+                                String name = snapshot.child("name").getValue(String.class);
+                                
+                                // ✨ FIX: Uses your exact method to securely write to memory and stop crashes!
+                                session.createLoginSession(commId, role, commName, name, "ADMIN-001", workspace);
+                                
+                                Toast.makeText(LoginActivity.this, "Admin Login Successful!", Toast.LENGTH_SHORT).show();
+                                startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
+                            } else { fail("Admin Profile missing."); }
+                        }
+                        @Override public void onCancelled(@NonNull DatabaseError error) { fail("Database Error"); }
+                    });
+                } else { fail("Invalid Admin Email or Password."); }
+            });
+            
         } else {
-            layoutAdminLogin.setVisibility(View.GONE);
-            layoutStaffLogin.setVisibility(View.VISIBLE);
-            tvToggleLoginMode.setText("Switch to Super Admin Login");
-        }
-    }
-
-    // ✨ ADMINS: Email + Password Only
-    private void performAdminLogin() {
-        String email = inputAdminEmail.getText().toString().trim();
-        String password = inputAdminPassword.getText().toString().trim();
-
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Enter Email and Password", Toast.LENGTH_SHORT).show(); return;
-        }
-
-        btnAdminLogin.setEnabled(false); btnAdminLogin.setText("AUTHENTICATING...");
-
-        mAuth.signInWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                String uid = mAuth.getCurrentUser().getUid();
-                db.child("users").child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.exists()) {
-                            SharedPreferences.Editor editor = getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit();
-                            editor.putBoolean("IS_LOGGED_IN", true);
-                            editor.putString("USER_ID", "ADMIN-001");
-                            editor.putString("USER_NAME", snapshot.child("name").getValue(String.class));
-                            editor.putString("ROLE", snapshot.child("role").getValue(String.class));
-                            editor.putString("COMMUNITY_ID", snapshot.child("communityId").getValue(String.class));
-                            editor.putString("COMMUNITY_NAME", snapshot.child("communityName").getValue(String.class));
-                            editor.apply();
-
-                            Toast.makeText(LoginActivity.this, "Admin Login Successful!", Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
-                        } else {
-                            Toast.makeText(LoginActivity.this, "Admin Profile not found.", Toast.LENGTH_SHORT).show();
-                            btnAdminLogin.setEnabled(true); btnAdminLogin.setText("ADMIN LOGIN");
+            // ✨ SMART ROUTING: If Devotee ID is typed, treat as Staff PIN Login!
+            db.child("communities").addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String targetCommId = null; String targetCommName = null;
+                    
+                    for (DataSnapshot comm : snapshot.getChildren()) {
+                        String cId = comm.getKey();
+                        String cEmail = comm.child("info").child("email").getValue(String.class);
+                        if (workspace.equalsIgnoreCase(cId) || workspace.equalsIgnoreCase(cEmail)) {
+                            targetCommId = cId; targetCommName = comm.child("name").getValue(String.class); break;
                         }
                     }
-                    @Override public void onCancelled(@NonNull DatabaseError error) {
-                        btnAdminLogin.setEnabled(true); btnAdminLogin.setText("ADMIN LOGIN");
-                    }
-                });
-            } else {
-                Toast.makeText(this, "Login Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                btnAdminLogin.setEnabled(true); btnAdminLogin.setText("ADMIN LOGIN");
-            }
-        });
+                    if (targetCommId == null) { fail("Workspace not found."); return; }
+
+                    String dbPin = snapshot.child(targetCommId).child("logins").child(userId).getValue(String.class);
+                    if (dbPin != null && dbPin.equals(secret)) {
+                        Member m = snapshot.child(targetCommId).child("members").child(userId).getValue(Member.class);
+                        if (m != null) {
+                            
+                            // ✨ FIX: Uses your exact method to securely write to memory!
+                            session.createLoginSession(targetCommId, m.role, targetCommName, m.name, m.id, m.email != null ? m.email : "");
+                            
+                            Toast.makeText(LoginActivity.this, "Staff Login Successful!", Toast.LENGTH_SHORT).show();
+                            startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
+                        } else { fail("Devotee Profile not found."); }
+                    } else { fail("Invalid Devotee ID or PIN."); }
+                }
+                @Override public void onCancelled(@NonNull DatabaseError error) { fail("Database Error"); }
+            });
+        }
     }
 
-    // ✨ STAFF: Workspace ID/Email + User ID + User PIN
-    private void performStaffLogin() {
-        String workspaceInput = inputWorkspace.getText().toString().trim();
-        String userId = inputUserId.getText().toString().trim();
-        String pin = inputPin.getText().toString().trim();
-
-        if (workspaceInput.isEmpty() || userId.isEmpty() || pin.isEmpty()) {
-            Toast.makeText(this, "Fill all fields", Toast.LENGTH_SHORT).show(); return;
-        }
-
-        btnStaffLogin.setEnabled(false); btnStaffLogin.setText("AUTHENTICATING...");
-
-        db.child("communities").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String targetCommunityId = null; String targetCommunityName = null;
-                for (DataSnapshot comm : snapshot.getChildren()) {
-                    String commId = comm.getKey();
-                    String commEmail = comm.child("info").child("email").getValue(String.class);
-                    if (workspaceInput.equalsIgnoreCase(commId) || workspaceInput.equalsIgnoreCase(commEmail)) {
-                        targetCommunityId = commId;
-                        targetCommunityName = comm.child("name").getValue(String.class); break;
-                    }
-                }
-
-                if (targetCommunityId == null) {
-                    Toast.makeText(LoginActivity.this, "Workspace ID or Email not found.", Toast.LENGTH_LONG).show();
-                    btnStaffLogin.setEnabled(true); btnStaffLogin.setText("STAFF / MEMBER LOGIN"); return;
-                }
-
-                String dbPin = snapshot.child(targetCommunityId).child("logins").child(userId).getValue(String.class);
-                if (dbPin != null && dbPin.equals(pin)) {
-                    Member m = snapshot.child(targetCommunityId).child("members").child(userId).getValue(Member.class);
-                    if (m != null) {
-                        SharedPreferences.Editor editor = getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit();
-                        editor.putBoolean("IS_LOGGED_IN", true);
-                        editor.putString("USER_ID", m.id);
-                        editor.putString("USER_NAME", m.name);
-                        editor.putString("ROLE", m.role);
-                        editor.putString("COMMUNITY_ID", targetCommunityId);
-                        editor.putString("COMMUNITY_NAME", targetCommunityName);
-                        editor.apply();
-
-                        Toast.makeText(LoginActivity.this, "Login Successful!", Toast.LENGTH_SHORT).show();
-                        startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
-                    }
-                } else {
-                    Toast.makeText(LoginActivity.this, "Invalid User ID or User PIN.", Toast.LENGTH_SHORT).show();
-                    btnStaffLogin.setEnabled(true); btnStaffLogin.setText("STAFF / MEMBER LOGIN");
-                }
-            }
-            @Override public void onCancelled(@NonNull DatabaseError error) { btnStaffLogin.setEnabled(true); btnStaffLogin.setText("STAFF / MEMBER LOGIN"); }
-        });
+    private void fail(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+        btnLogin.setEnabled(true); btnLogin.setText("SECURE LOGIN");
     }
 }
