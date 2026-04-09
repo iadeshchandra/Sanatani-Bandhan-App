@@ -7,30 +7,21 @@
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sanatani Bandhan" android:textSize="32sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="4dp"/>
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Universal Devotee Portal" android:textSize="16sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="32dp"/>
 
-    <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFFFFF" android:layout_marginBottom="16dp">
-        
-        <LinearLayout android:id="@+id/layoutAdminLogin" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Super Admin Login" android:textStyle="bold" android:textColor="#1976D2" android:layout_marginBottom="12dp"/>
-            <EditText android:id="@+id/inputAdminEmail" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Official Admin Email" android:inputType="textEmailAddress" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="12dp"/>
-            <EditText android:id="@+id/inputAdminPassword" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Password" android:inputType="textPassword" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="24dp"/>
-            <Button android:id="@+id/btnAdminLogin" android:layout_width="match_parent" android:layout_height="60dp" android:text="ADMIN LOGIN" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#E65100"/>
-        </LinearLayout>
-
-        <LinearLayout android:id="@+id/layoutStaffLogin" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp" android:visibility="gone">
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1. Workspace Details" android:textStyle="bold" android:textColor="#2E7D32" android:layout_marginBottom="4dp"/>
-            <EditText android:id="@+id/inputWorkspace" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Mandir/Community ID or Workspace Email" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="16dp"/>
-
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2. Personal Credentials" android:textStyle="bold" android:textColor="#2E7D32" android:layout_marginBottom="4dp"/>
-            <EditText android:id="@+id/inputUserId" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Your User ID (e.g. SB-1001)" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="12dp"/>
-            <EditText android:id="@+id/inputPin" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Your User PIN (Provided by Admin)" android:inputType="numberPassword" android:maxLength="4" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="24dp"/>
+    <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFFFFF" android:layout_marginBottom="24dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
             
-            <Button android:id="@+id/btnStaffLogin" android:layout_width="match_parent" android:layout_height="60dp" android:text="STAFF / MEMBER LOGIN" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#2E7D32"/>
-        </LinearLayout>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1. Workspace Details" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
+            <EditText android:id="@+id/inputWorkspace" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Email OR Workspace ID" android:inputType="textEmailAddress" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="16dp"/>
 
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2. Personal Credentials" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
+            <EditText android:id="@+id/inputUserId" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Devotee ID (Leave blank if Admin)" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="12dp"/>
+            
+            <EditText android:id="@+id/inputPin" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Password or 4-Digit PIN" android:inputType="textPassword" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="24dp"/>
+
+            <Button android:id="@+id/btnLogin" android:layout_width="match_parent" android:layout_height="60dp" android:text="SECURE LOGIN" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#E65100"/>
+        </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <TextView android:id="@+id/tvToggleLoginMode" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Switch to Staff / Member Login" android:textSize="14sp" android:textStyle="bold" android:textColor="#1976D2" android:gravity="center" android:padding="12dp" android:layout_marginBottom="12dp"/>
-
-    <TextView android:id="@+id/tvCreateWorkspace" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register a New Mandir or Community Portal" android:textSize="14sp" android:textStyle="bold" android:textColor="#424242" android:gravity="center" android:padding="12dp"/>
+    <TextView android:id="@+id/tvCreateWorkspace" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register a New Mandir or Community Portal" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:gravity="center" android:padding="12dp"/>
 
 </LinearLayout>
