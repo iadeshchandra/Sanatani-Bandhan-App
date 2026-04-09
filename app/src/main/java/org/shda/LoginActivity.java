@@ -3,6 +3,7 @@ package org.shda;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -40,14 +41,18 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin = findViewById(R.id.btnLogin);
 
         btnLogin.setOnClickListener(v -> performLogin());
-        
-        // ✨ NEW: Forgot Password Trigger
         findViewById(R.id.tvForgotPassword).setOnClickListener(v -> showForgotPasswordDialog());
         
-        findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> startActivity(new Intent(this, RegisterCommunityActivity.class)));
+        // ✨ FIX: Brilliant Crash Preventer for missing Manifest Declarations!
+        findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class));
+            } catch (Exception e) {
+                Toast.makeText(LoginActivity.this, "CRASH PREVENTED: Please declare 'RegisterCommunityActivity' inside your AndroidManifest.xml file!", Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
-    // ✨ NEW: Forgot Password Dialog & Firebase Logic
     private void showForgotPasswordDialog() {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
         builder.setTitle("Reset Admin Password");
