@@ -1,24 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="#FFFBF2" android:padding="16dp">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#FFFBF2"
+    android:padding="16dp">
 
-    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Utsav Expenses Ledger" android:textSize="26sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="4dp"/>
-    <TextView android:id="@+id/tvTotalExpenses" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Total Filtered Spent: ৳0.0" android:textSize="18sp" android:textStyle="bold" android:textColor="#455A64" android:layout_marginBottom="16dp"/>
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Utsav Expenses Ledger"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="#212121"
+        android:layout_marginBottom="4dp" />
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="12dp">
-        <Button android:id="@+id/btnAddExpense" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="+ LOG EXPENSE" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#D32F2F" android:layout_marginEnd="6dp"/>
-        <Button android:id="@+id/btnExportMaster" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="MASTER PDF" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#546E7A" android:layout_marginStart="6dp"/>
+    <TextView
+        android:id="@+id/tvTotalExpenses"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Total Filtered Spent: ৳0.0"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#455A64"
+        android:layout_marginBottom="16dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:weightSum="2"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/btnAddExpense"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="60dp"
+            android:text="+ LOG\nEXPENSE"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:backgroundTint="#D32F2F"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="8dp"
+            android:layout_marginEnd="6dp"
+            android:padding="4dp" />
+
+        <Button
+            android:id="@+id/btnExportMaster"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="60dp"
+            android:text="MASTER\nPDF"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:backgroundTint="#546E7A"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="8dp"
+            android:layout_marginStart="6dp"
+            android:padding="4dp" />
     </LinearLayout>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="16dp">
-        <EditText android:id="@+id/inputSearch" android:layout_width="0dp" android:layout_weight="1" android:layout_height="50dp" android:hint="Search Event or Item..." android:background="#FFFFFF" android:elevation="2dp" android:paddingHorizontal="12dp" android:layout_marginEnd="8dp"/>
-        <Button android:id="@+id/btnFilterDates" android:layout_width="wrap_content" android:layout_height="50dp" android:text="📅 FILTER" android:textStyle="bold" android:backgroundTint="#F57C00"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <EditText
+            android:id="@+id/inputSearch"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="55dp"
+            android:hint="Search Event or Item..."
+            android:background="#FFFFFF"
+            android:elevation="2dp"
+            android:paddingHorizontal="12dp"
+            android:layout_marginEnd="8dp"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <Button
+            android:id="@+id/btnFilterDates"
+            android:layout_width="wrap_content"
+            android:layout_height="55dp"
+            android:text="📅 FILTER"
+            android:textStyle="bold"
+            android:backgroundTint="#F57C00"
+            app:cornerRadius="8dp" />
     </LinearLayout>
 
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
-        <LinearLayout android:id="@+id/expensesContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/expensesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
     </ScrollView>
 
 </LinearLayout>
