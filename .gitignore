@@ -1,4 +1,3 @@
-# Android Studio
 *.iml
 .gradle
 /local.properties
@@ -15,10 +14,11 @@
 .cxx
 local.properties
 
-# Firebase
+# CRITICAL SECURITY: Never upload your Firebase secrets to GitHub!
 google-services.json
+app/google-services.json
 
-# User-specific stuff
+# Signing files
 *.jks
 *.keystore
-*.apk
+key.properties
