@@ -17,7 +17,6 @@ import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
-import com.github.mikephil.charting.utils.ColorTemplate;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -70,17 +69,17 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
         
-        // ✨ FIX: Powerful Hard-Wipe Logout Engine!
+        // ✨ FIX: Powerful Hard-Wipe Logout Engine linked directly to SessionManager!
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             try {
                 com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
-                getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit().clear().apply();
+                session.logout(); // Successfully calls editor.clear() on "SanataniSession"
                 Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             } catch (Exception e) {
-                Toast.makeText(this, "Logout processed", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Logout processed with minor errors", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -261,7 +260,8 @@ public class DashboardActivity extends AppCompatActivity {
                         String newName = inputName.getText().toString().trim();
                         if (!newName.isEmpty()) {
                             db.child("communities").child(session.getCommunityId()).child("name").setValue(newName);
-                            getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit().putString("COMMUNITY_NAME", newName).apply();
+                            // ✨ FIX: Properly calling the SessionManager to save the new name
+                            session.updateCommunityName(newName);
                             ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
                         }
                         db.child("communities").child(session.getCommunityId()).child("info").child("phone").setValue(inputPhone.getText().toString());
