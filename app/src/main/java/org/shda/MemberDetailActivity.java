@@ -3,6 +3,7 @@ package org.shda;
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -87,21 +88,22 @@ public class MemberDetailActivity extends AppCompatActivity {
             findViewById(R.id.btnPromote).setOnClickListener(v -> changeMemberRole("MANAGER"));
             findViewById(R.id.btnDemote).setOnClickListener(v -> changeMemberRole("MEMBER"));
 
+            // VISUAL STYLE UPGRADE: Boxed, Mono buttons for clear Admin Action
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 160); 
-            params.setMargins(10, 10, 10, 10);
+            params.setMargins(10, 20, 10, 20);
 
             Button btnViewPin = new Button(this);
-            btnViewPin.setText("👁️ VIEW DEVOTEE PIN");
-            btnViewPin.setBackgroundColor(android.graphics.Color.parseColor("#1976D2")); 
+            btnViewPin.setText("🔑 VIEW ACTIVE PIN (MONO)");
+            btnViewPin.setBackgroundColor(android.graphics.Color.parseColor("#E65100")); // Deep Saffron
             btnViewPin.setTextColor(android.graphics.Color.WHITE);
-            btnViewPin.setTypeface(null, android.graphics.Typeface.BOLD);
+            btnViewPin.setTypeface(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD);
             btnViewPin.setLayoutParams(params);
             btnViewPin.setOnClickListener(v -> showUserPin());
             containerAdminControls.addView(btnViewPin);
 
             Button btnDelete = new Button(this);
-            btnDelete.setText("🗑️ DELETE DEVOTEE RECORD");
-            btnDelete.setBackgroundColor(android.graphics.Color.parseColor("#D32F2F")); 
+            btnDelete.setText("🗑️ DANGER: ERASE RECORD");
+            btnDelete.setBackgroundColor(android.graphics.Color.parseColor("#B71C1C")); // Dark Red
             btnDelete.setTextColor(android.graphics.Color.WHITE);
             btnDelete.setTypeface(null, android.graphics.Typeface.BOLD);
             btnDelete.setLayoutParams(params);
@@ -146,19 +148,60 @@ public class MemberDetailActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * MAJOR FIX: Eliminates discrepancy between PDF PIN and App PIN.
+     * This method now ONLY fetches the existing PIN from Firebase.
+     * It will NOT re-generate a PIN if it's missing, making the logic reactive.
+     */
     private void showUserPin() {
-        db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String pin = snapshot.getValue(String.class);
-                if (pin == null || pin.isEmpty()) {
-                    pin = String.format("%04d", new java.util.Random().nextInt(10000));
-                    db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId).setValue(pin);
-                    Toast.makeText(MemberDetailActivity.this, "New PIN Auto-Generated", Toast.LENGTH_SHORT).show();
+        if (activeMember == null) return;
+        
+        db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId)
+            .addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    String pin = snapshot.getValue(String.class);
+                    
+                    if (pin == null || pin.isEmpty()) {
+                        // FIX: Logic changed from "Generate New" to "Show Warning"
+                        new AlertDialog.Builder(MemberDetailActivity.this)
+                            .setTitle("⚠️ Security Warning")
+                            .setMessage("Active Login PIN for " + activeMember.name + " (" + activeMember.id + ") has not yet been registered in the system.\n\n" +
+                                        "Please generate a fresh PDF from the Member Directory to assign a standard credential.")
+                            .setPositiveButton("CLOSE", null)
+                            .show();
+                    } else {
+                        // VISUAL UPGRADE: Professional, boxed, mono-font, centered PIN display
+                        LinearLayout layout = new LinearLayout(MemberDetailActivity.this);
+                        layout.setOrientation(LinearLayout.VERTICAL);
+                        layout.setGravity(Gravity.CENTER);
+                        layout.setPadding(30, 40, 30, 40);
+
+                        TextView tvMessage = new TextView(MemberDetailActivity.this);
+                        tvMessage.setText("This is the registered credential for: " + activeMember.name);
+                        tvMessage.setTextColor(android.graphics.Color.BLACK);
+                        tvMessage.setTextSize(16f);
+                        tvMessage.setGravity(Gravity.CENTER);
+                        layout.addView(tvMessage);
+
+                        TextView tvPin = new TextView(MemberDetailActivity.this);
+                        tvPin.setText(pin);
+                        tvPin.setTextSize(36f); // Large Font
+                        tvPin.setTypeface(android.graphics.Typeface.MONOSPACE, android.graphics.Typeface.BOLD);
+                        tvPin.setGravity(Gravity.CENTER);
+                        tvPin.setTextColor(android.graphics.Color.parseColor("#E65100")); // Deep Saffron
+                        tvPin.setPadding(0, 30, 0, 0);
+                        layout.addView(tvPin);
+
+                        new AlertDialog.Builder(MemberDetailActivity.this)
+                            .setTitle("🔑 Secure Login PIN")
+                            .setView(layout)
+                            .setPositiveButton("DONE", null)
+                            .show();
+                    }
                 }
-                new AlertDialog.Builder(MemberDetailActivity.this).setTitle("Devotee Secure PIN").setMessage("The login PIN for " + activeMember.name + " is:\n\n" + pin).setPositiveButton("CLOSE", null).show();
-            }
-            @Override public void onCancelled(@NonNull DatabaseError error) {}
-        });
+                @Override public void onCancelled(@NonNull DatabaseError error) {}
+            });
     }
 
     private void pickDateRange(DateRangeCallback callback) {
@@ -229,7 +272,6 @@ public class MemberDetailActivity extends AppCompatActivity {
 
             String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
             
-            // Fixed parameterized constructor
             TransactionActivity.SingleDonation sd = new TransactionActivity.SingleDonation(transId, activeMember.name + " [Member]", amt, note, "", "", collector, ts, session.getRole());
             db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
 
@@ -237,7 +279,7 @@ public class MemberDetailActivity extends AppCompatActivity {
 
             try {
                 TransactionActivity.GroupedDonation gd = new TransactionActivity.GroupedDonation(activeMember.name + " [Member]");
-                gd.addDonation(sd); // Using the new addDonation method
+                gd.addDonation(sd); 
                 PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd);
             } catch (Exception e) {}
         });
