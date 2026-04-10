@@ -32,9 +32,15 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # NEW FIX: Automatically delete any hidden Windows files that cause Android to crash
+    # Automatically delete any hidden Windows files that cause Android to crash
     - name: Clean up Windows Hidden Files
       run: find . -name "desktop.ini" -type f -delete
+
+    # 🔐 THE MAGIC STEP: Recreate the JSON file from your secure GitHub Vault!
+    - name: Decode and create google-services.json
+      env:
+        FIREBASE_SECRET: ${{ secrets.GOOGLE_SERVICES_JSON }}
+      run: echo "$FIREBASE_SECRET" > app/google-services.json
 
     - name: Build Installable APK
       run: ./gradlew assembleDebug
