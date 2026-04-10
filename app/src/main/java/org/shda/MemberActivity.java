@@ -40,7 +40,7 @@ public class MemberActivity extends AppCompatActivity {
 
         membersContainer = findViewById(R.id.membersContainer);
         inputSearch = findViewById(R.id.inputSearch);
-        
+
         findViewById(R.id.btnAddNew).setOnClickListener(v -> startActivity(new Intent(this, AddMemberActivity.class)));
         findViewById(R.id.btnSharePdf).setOnClickListener(v -> {
             if (!fullMemberList.isEmpty()) PdfReportService.generateMemberDirectory(this, session.getCommunityName(), fullMemberList);
@@ -99,7 +99,7 @@ public class MemberActivity extends AppCompatActivity {
         });
         inputSearch.setOnItemClickListener((parent, view, position, id) -> filterList(inputSearch.getText().toString()));
     }
-    
+
     private void filterList(String query) {
         query = query.toLowerCase().trim();
         List<Member> filteredList = new ArrayList<>();
@@ -121,13 +121,16 @@ public class MemberActivity extends AppCompatActivity {
 
         for (Member member : listToRender) {
             View view = LayoutInflater.from(this).inflate(R.layout.item_member, membersContainer, false);
-            
+
             ((TextView) view.findViewById(R.id.tvMemberName)).setText(member.name);
             ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Lifetime: ৳" + member.totalDonated);
-            ((TextView) view.findViewById(R.id.tvMemberIdPhone)).setText(member.id + "  |  📞 " + (member.phone != null ? member.phone : "N/A"));
             
+            // ✨ FIX: Sending the data to the newly separated XML IDs
+            ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id);
+            ((TextView) view.findViewById(R.id.tvMemberPhone)).setText("📞 " + (member.phone != null && !member.phone.isEmpty() ? member.phone : "N/A"));
+
             ((TextView) view.findViewById(R.id.tvMemberJoined)).setText("Joined: " + (member.timestamp > 0 ? sdfJoined.format(new Date(member.timestamp)) : "N/A"));
-            
+
             TextView tvLast = view.findViewById(R.id.tvLastDonation);
             if (lastDonationTracker.containsKey(member.name + " [Member]")) {
                 tvLast.setText(lastDonationTracker.get(member.name + " [Member]"));
