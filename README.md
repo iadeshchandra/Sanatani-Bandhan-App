@@ -69,7 +69,7 @@ We offer complete onboarding, custom Workspace creation, and dedicated support.
 📩 **Get in Touch for a Live Demo:**
 * **Developer & Architect:** Adesh Chandra
 * **WhatsApp / Phone:** +8801608533529
-* **Email:** info@annakoo.com 
+* **Email:** sanatanibandhan@gmail.com 
 
 ---
 <div align="center">
