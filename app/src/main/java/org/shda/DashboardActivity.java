@@ -33,6 +33,10 @@ public class DashboardActivity extends AppCompatActivity {
     private float totalExpense = 0f;
     private String workspaceType = "Community"; 
 
+    // Filter bounds for the Financial Overview Chart
+    private Long chartStartTs = null;
+    private Long chartEndTs = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,7 +60,9 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
-        findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> Toast.makeText(this, "Master Dashboard Date Filter active!", Toast.LENGTH_SHORT).show());
+        
+        // ✨ NEW: Functional Chart Filter
+        findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
         
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
         findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
@@ -69,11 +75,10 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
         
-        // ✨ FIX: Powerful Hard-Wipe Logout Engine linked directly to SessionManager!
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             try {
                 com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
-                session.logout(); // Successfully calls editor.clear() on "SanataniSession"
+                session.logout(); 
                 Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
@@ -86,14 +91,67 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> showMandirInfoDialog());
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> showGlobalPdfGeneratorDialog());
 
+        // ✨ NEW: Security Audit Logic
         if (!"ADMIN".equals(session.getRole())) {
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
         } else {
-            findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> PdfReportService.generateSecurityAudit(this, session.getCommunityId()));
+            findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> {
+                new AlertDialog.Builder(this)
+                    .setTitle("Generate Security Audit")
+                    .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
+                        if (which == 0) {
+                            pickDateRange((startTs, endTs) -> generateAuditPdf(startTs, endTs));
+                        } else {
+                            generateAuditPdf(0, Long.MAX_VALUE);
+                        }
+                    }).show();
+            });
         }
 
         loadWorkspaceType();
         loadFinancialData();
+    }
+
+    private void showChartDateFilterDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Filter Dashboard Chart")
+            .setItems(new String[]{"Select Specific Date Range", "Clear Filter (All Time)"}, (dialog, which) -> {
+                if (which == 0) {
+                    pickDateRange((startTs, endTs) -> {
+                        chartStartTs = startTs;
+                        chartEndTs = endTs;
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM", Locale.getDefault());
+                        ((Button) findViewById(R.id.btnFilterChartDate)).setText("FILTER ACTIVE: " + sdf.format(new Date(startTs)) + " - " + sdf.format(new Date(endTs)));
+                        loadFinancialData();
+                    });
+                } else {
+                    chartStartTs = null;
+                    chartEndTs = null;
+                    ((Button) findViewById(R.id.btnFilterChartDate)).setText("FILTER DATES");
+                    loadFinancialData();
+                }
+            }).show();
+    }
+
+    private void generateAuditPdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("audit_logs").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<AuditLog> logs = new ArrayList<>();
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    AuditLog log = d.getValue(AuditLog.class);
+                    if (log != null && log.timestamp >= startTs && log.timestamp <= endTs) {
+                        logs.add(log);
+                    }
+                }
+                if (logs.isEmpty()) {
+                    Toast.makeText(DashboardActivity.this, "No audit logs found for this range.", Toast.LENGTH_SHORT).show();
+                } else {
+                    String title = startTs > 0 ? "Security Audit Report (Filtered)" : "Security Audit Report (All Time)";
+                    PdfReportService.generateSecurityAudit(DashboardActivity.this, session.getCommunityName(), logs, title);
+                }
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
     private void loadWorkspaceType() {
@@ -137,7 +195,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void showGlobalPdfGeneratorDialog() {
         new AlertDialog.Builder(this).setTitle("Generate Master Report")
-            .setItems(new String[]{"Donations Ledger (Select Dates)", "Expenses Ledger (Select Dates)", "Income vs Expense Comparison (Select Dates)"}, (dialog, which) -> {
+            .setItems(new String[]{"Donation Ledger (Select Dates)", "Expenses Ledger (Select Dates)", "Income vs Expense Comparison (Select Dates)"}, (dialog, which) -> {
                 pickDateRange((startTs, endTs) -> {
                     if (which == 0) generateGlobalChandaPdf(startTs, endTs);
                     else if (which == 1) generateGlobalExpensePdf(startTs, endTs);
@@ -260,7 +318,6 @@ public class DashboardActivity extends AppCompatActivity {
                         String newName = inputName.getText().toString().trim();
                         if (!newName.isEmpty()) {
                             db.child("communities").child(session.getCommunityId()).child("name").setValue(newName);
-                            // ✨ FIX: Properly calling the SessionManager to save the new name
                             session.updateCommunityName(newName);
                             ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
                         }
@@ -296,14 +353,28 @@ public class DashboardActivity extends AppCompatActivity {
                 if (snapshot.hasChild("Donation")) { 
                     for (DataSnapshot d : snapshot.child("Donation").getChildren()) { 
                         Float amt = d.child("amount").getValue(Float.class); 
-                        if (amt != null) totalIncome += amt; 
+                        Long ts = d.child("timestamp").getValue(Long.class);
+                        
+                        boolean inRange = true;
+                        if (chartStartTs != null && chartEndTs != null && ts != null) {
+                            inRange = (ts >= chartStartTs && ts <= chartEndTs);
+                        }
+                        
+                        if (amt != null && inRange) totalIncome += amt; 
                     } 
                 }
                 
                 if (snapshot.hasChild("Expense")) { 
                     for (DataSnapshot d : snapshot.child("Expense").getChildren()) { 
                         Float amt = d.child("amount").getValue(Float.class); 
-                        if (amt != null) totalExpense += amt; 
+                        Long ts = d.child("timestamp").getValue(Long.class);
+                        
+                        boolean inRange = true;
+                        if (chartStartTs != null && chartEndTs != null && ts != null) {
+                            inRange = (ts >= chartStartTs && ts <= chartEndTs);
+                        }
+                        
+                        if (amt != null && inRange) totalExpense += amt; 
                     } 
                 }
                 updatePieChart();
@@ -329,5 +400,11 @@ public class DashboardActivity extends AppCompatActivity {
         pieChart.setCenterText("Total Analysis");
         pieChart.animateY(1000);
         pieChart.invalidate();
+    }
+
+    public static class AuditLog {
+        public String managerName, actionType, description;
+        public long timestamp;
+        public AuditLog() {}
     }
 }
