@@ -63,7 +63,6 @@ public class MemberDetailActivity extends AppCompatActivity {
             if (activeMember != null) PdfReportService.generateMemberProfile(this, session.getCommunityName(), activeMember);
         });
 
-        // ✨ NEW: Donation Date Filter Logic
         findViewById(R.id.btnDonationHistoryPdf).setOnClickListener(v -> {
             if (activeMember == null) return;
             new AlertDialog.Builder(this).setTitle("Generate Donation Ledger")
@@ -87,10 +86,10 @@ public class MemberDetailActivity extends AppCompatActivity {
             containerAdminControls.setVisibility(View.VISIBLE);
             findViewById(R.id.btnPromote).setOnClickListener(v -> changeMemberRole("MANAGER"));
             findViewById(R.id.btnDemote).setOnClickListener(v -> changeMemberRole("MEMBER"));
-            
+
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 160); 
             params.setMargins(10, 10, 10, 10);
-            
+
             Button btnViewPin = new Button(this);
             btnViewPin.setText("👁️ VIEW DEVOTEE PIN");
             btnViewPin.setBackgroundColor(android.graphics.Color.parseColor("#1976D2")); 
@@ -162,7 +161,6 @@ public class MemberDetailActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ NEW: Date Picker and Filtering Logic
     private void pickDateRange(DateRangeCallback callback) {
         final Calendar startCal = Calendar.getInstance();
         new DatePickerDialog(this, (view1, y1, m1, d1) -> {
@@ -204,10 +202,10 @@ public class MemberDetailActivity extends AppCompatActivity {
         builder.setTitle("Record Chanda: " + activeMember.name);
 
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 20);
-        
+
         final EditText inputAmt = new EditText(this); inputAmt.setHint("Amount in BDT (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         final EditText inputNote = new EditText(this); inputNote.setHint("Admin/Manager Note (Optional)");
-        
+
         final AutoCompleteTextView inputCollector = new AutoCompleteTextView(this);
         inputCollector.setHint("Collected By (Name with ID)");
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers);
@@ -220,24 +218,26 @@ public class MemberDetailActivity extends AppCompatActivity {
             String amtStr = inputAmt.getText().toString();
             String note = inputNote.getText().toString().trim();
             String collector = inputCollector.getText().toString().trim();
-            
+
             if (amtStr.isEmpty() || collector.isEmpty()) { Toast.makeText(this, "Amount and Collector required", Toast.LENGTH_SHORT).show(); return; }
-            
+
             float amt = Float.parseFloat(amtStr);
             long ts = System.currentTimeMillis();
-            
+
             db.child("communities").child(session.getCommunityId()).child("members").child(activeMember.id).child("totalDonated").setValue(ServerValue.increment(amt));
             db.child("communities").child(session.getCommunityId()).child("members").child(activeMember.id).child("lastDonationTimestamp").setValue(ts);
-            
+
             String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
+            
+            // Fixed parameterized constructor
             TransactionActivity.SingleDonation sd = new TransactionActivity.SingleDonation(transId, activeMember.name + " [Member]", amt, note, "", "", collector, ts, session.getRole());
             db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
-            
+
             Toast.makeText(this, "৳" + amt + " recorded! PDF ready.", Toast.LENGTH_LONG).show();
-            
+
             try {
                 TransactionActivity.GroupedDonation gd = new TransactionActivity.GroupedDonation(activeMember.name + " [Member]");
-                gd.addDonation(sd);
+                gd.addDonation(sd); // Using the new addDonation method
                 PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd);
             } catch (Exception e) {}
         });
