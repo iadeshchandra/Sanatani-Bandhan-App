@@ -160,11 +160,32 @@ public class PdfReportService {
             File file = createBaseFile(context, "Secure_Credentials_" + memberId);
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
             addSanataniHeader(document, communityName, "Confidential Login Credentials");
-            document.add(new Paragraph("Namaskar " + name + ",\nWelcome to the Sanatani Bandhan platform. Please keep these credentials strictly confidential.").setMarginBottom(20));
-            Table table = new Table(new float[]{1, 2}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addCell(new Cell().add(new Paragraph("Your Official ID").setBold())); table.addCell(new Paragraph(memberId).setFontColor(BLUE).setBold());
-            table.addCell(new Cell().add(new Paragraph("Secure Login PIN").setBold())); table.addCell(new Paragraph(pin).setFontColor(ColorConstants.RED).setBold().setFontSize(16));
-            document.add(table); document.add(new Paragraph("\nCredentials Issued By: " + generatedBy).setItalic().setFontSize(10));
+            
+            document.add(new Paragraph("Namaskar " + name + ",\nWelcome to the Sanatani Bandhan platform. Your profile has been created successfully. Please keep these credentials strictly confidential.")
+                    .setMarginBottom(20).setFontSize(12));
+            
+            // Premium Security Box layout
+            Table table = new Table(new float[]{1, 1}); 
+            table.setWidth(UnitValue.createPercentValue(100));
+            table.setMarginBottom(20);
+            
+            Cell idHeader = new Cell().add(new Paragraph("YOUR OFFICIAL ID").setBold().setFontColor(ColorConstants.WHITE)).setBackgroundColor(BLUE).setTextAlignment(TextAlignment.CENTER).setPadding(8);
+            Cell pinHeader = new Cell().add(new Paragraph("SECURE LOGIN PIN").setBold().setFontColor(ColorConstants.WHITE)).setBackgroundColor(SAFFRON).setTextAlignment(TextAlignment.CENTER).setPadding(8);
+            
+            Cell idValue = new Cell().add(new Paragraph(memberId).setBold().setFontSize(18).setFontColor(BLUE)).setTextAlignment(TextAlignment.CENTER).setPadding(12);
+            Cell pinValue = new Cell().add(new Paragraph(pin).setBold().setFontSize(26).setFontColor(SAFFRON)).setTextAlignment(TextAlignment.CENTER).setPadding(12);
+            
+            table.addCell(idHeader);
+            table.addCell(pinHeader);
+            table.addCell(idValue);
+            table.addCell(pinValue);
+            
+            document.add(table);
+            
+            document.add(new Paragraph("SECURITY WARNING: Mandir staff will never ask for your PIN. Do not share this document with anyone.")
+                    .setBold().setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.CENTER).setFontSize(10));
+            
+            document.add(new Paragraph("\nCredentials Issued By: " + generatedBy).setItalic().setFontSize(10).setMarginTop(20));
             addSanataniFooter(document); document.close();
             sharePdf(context, file); 
         } catch (Exception e) {}
