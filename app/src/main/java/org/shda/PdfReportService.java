@@ -164,7 +164,6 @@ public class PdfReportService {
             document.add(new Paragraph("Namaskar " + name + ",\nWelcome to the Sanatani Bandhan platform. Your profile has been created successfully. Please keep these credentials strictly confidential.")
                     .setMarginBottom(20).setFontSize(12));
             
-            // Premium Security Box layout
             Table table = new Table(new float[]{1, 1}); 
             table.setWidth(UnitValue.createPercentValue(100));
             table.setMarginBottom(20);
@@ -193,7 +192,7 @@ public class PdfReportService {
 
     public static void generateFinancialReport(Context context, String communityName, List<String> dates, List<String> names, List<Float> amounts, List<String> notes, float totalCollected, String title) {
         try {
-            File file = createBaseFile(context, "Master_Chanda_Ledger");
+            File file = createBaseFile(context, "Master_Donation_Ledger");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
             addSanataniHeader(document, communityName, title);
             Table table = new Table(new float[]{2, 3, 2, 3}); table.setWidth(UnitValue.createPercentValue(100));
@@ -205,7 +204,7 @@ public class PdfReportService {
                 table.addCell(new Paragraph(dates.get(i))); table.addCell(new Paragraph(names.get(i)));
                 table.addCell(new Paragraph("BDT " + amounts.get(i)).setFontColor(GREEN)); table.addCell(new Paragraph(notes.get(i)));
             }
-            document.add(table); document.add(new Paragraph("\nTotal Chanda in this Report: BDT " + totalCollected).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
+            document.add(table); document.add(new Paragraph("\nTotal Donation in this Report: BDT " + totalCollected).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
             sharePdf(context, file); 
         } catch (Exception e) {}
@@ -213,7 +212,7 @@ public class PdfReportService {
 
     public static void generateDonorStatement(Context context, String communityName, TransactionActivity.GroupedDonation gd) {
         try {
-            File file = createBaseFile(context, "Chanda_Statement_" + gd.displayName.replaceAll("[^a-zA-Z0-9]", ""));
+            File file = createBaseFile(context, "Donation_Statement_" + gd.displayName.replaceAll("[^a-zA-Z0-9]", ""));
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
             addSanataniHeader(document, communityName, "Donor Contribution Statement");
             document.add(new Paragraph("Devotee: " + gd.displayName).setBold().setFontSize(14).setMarginBottom(10));
@@ -387,7 +386,36 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    public static void generateSecurityAudit(Context context, String communityId) {
-        Toast.makeText(context, "Security Audit PDF successfully generated!", Toast.LENGTH_SHORT).show();
+    // ✨ MAJOR FIX: Fully functional Security Audit Report
+    public static void generateSecurityAudit(Context context, String communityName, List<DashboardActivity.AuditLog> logs, String title) {
+        try {
+            File file = createBaseFile(context, "Security_Audit_Report");
+            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
+            addSanataniHeader(document, communityName, title);
+
+            Table table = new Table(new float[]{2, 2, 2, 4}); 
+            table.setWidth(UnitValue.createPercentValue(100));
+            table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            table.addHeaderCell(new Cell().add(new Paragraph("User/Manager").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            table.addHeaderCell(new Cell().add(new Paragraph("Action").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+            table.addHeaderCell(new Cell().add(new Paragraph("Description").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+            for (DashboardActivity.AuditLog log : logs) {
+                table.addCell(new Paragraph(sdf.format(new Date(log.timestamp))).setFontSize(9));
+                table.addCell(new Paragraph(log.managerName != null ? log.managerName : "System").setFontSize(9));
+                table.addCell(new Paragraph(log.actionType != null ? log.actionType : "").setFontColor(ColorConstants.RED).setBold().setFontSize(9));
+                table.addCell(new Paragraph(log.description != null ? log.description : "").setFontSize(9));
+            }
+            
+            document.add(table);
+            document.add(new Paragraph("\nTotal Audit Records: " + logs.size()).setItalic().setTextAlignment(TextAlignment.RIGHT));
+            
+            addSanataniFooter(document); 
+            document.close();
+            sharePdf(context, file); 
+        } catch (Exception e) {
+            Toast.makeText(context, "Error generating Audit PDF.", Toast.LENGTH_SHORT).show();
+        }
     }
 }
