@@ -68,6 +68,7 @@ We offer complete onboarding, custom Workspace creation, and dedicated support.
 
 📩 **Get in Touch for a Live Demo:**
 * **Developer & Architect:** Adesh Chandra
+* **Hire me for custom builds:** [Fiverr - Adesh Chandra](https://www.fiverr.com/adesh_chandra)
 * **WhatsApp / Phone:** +8801608533529
 * **Email:** sanatanibandhan@gmail.com 
 
