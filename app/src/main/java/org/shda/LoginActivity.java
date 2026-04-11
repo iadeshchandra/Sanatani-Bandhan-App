@@ -43,7 +43,7 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v -> performLogin());
         findViewById(R.id.tvForgotPassword).setOnClickListener(v -> showForgotPasswordDialog());
 
-        // ✨ CRASH PREVENTER (Preserved exactly as you built it!)
+        // ✨ CRASH PREVENTER
         findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> {
             try {
                 startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class));
@@ -107,7 +107,6 @@ public class LoginActivity extends AppCompatActivity {
                                 String role = snapshot.child("role").getValue(String.class);
                                 String name = snapshot.child("name").getValue(String.class);
 
-                                // Save credentials for future offline use
                                 saveOfflineCredentials(workspace, userId, secret, commId, role, commName, name);
                                 session.createLoginSession(commId, role, commName, name, "ADMIN-001", workspace);
 
@@ -115,7 +114,10 @@ public class LoginActivity extends AppCompatActivity {
                                 startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
                             } else { attemptOfflineLogin(workspace, userId, secret, "Admin Profile missing."); }
                         }
-                        @Override public void onCancelled(@NonNull DatabaseError error) { attemptOfflineLogin(workspace, userId, secret, "Database Error"); }
+                        // ✨ FIX: Now shows the REAL Firebase error!
+                        @Override public void onCancelled(@NonNull DatabaseError error) { 
+                            attemptOfflineLogin(workspace, userId, secret, "Server Rejected: " + error.getMessage()); 
+                        }
                     });
                 } else { attemptOfflineLogin(workspace, userId, secret, "Invalid Admin Email or Password."); }
             });
@@ -130,9 +132,8 @@ public class LoginActivity extends AppCompatActivity {
                         String cEmail = comm.child("info").child("email").getValue(String.class);
                         if (workspace.equalsIgnoreCase(cId) || (cEmail != null && workspace.equalsIgnoreCase(cEmail))) {
                             targetCommId = cId; 
-                            // ✨ FIX: Safely grabbing the exact Community Name from the 'info' node!
                             targetCommName = comm.child("info").child("communityName").getValue(String.class); 
-                            if (targetCommName == null) targetCommName = "Sanatani Community"; // Fallback to avoid null crashes
+                            if (targetCommName == null) targetCommName = "Sanatani Community";
                             break;
                         }
                     }
@@ -142,7 +143,6 @@ public class LoginActivity extends AppCompatActivity {
                     if (dbPin != null && dbPin.equals(secret)) {
                         Member m = snapshot.child(targetCommId).child("members").child(userId).getValue(Member.class);
                         if (m != null) {
-                            // Save credentials for future offline use
                             saveOfflineCredentials(workspace, userId, secret, targetCommId, m.role, targetCommName, m.name);
                             session.createLoginSession(targetCommId, m.role, targetCommName, m.name, m.id, m.email != null ? m.email : "");
                             Toast.makeText(LoginActivity.this, "Staff Login Successful!", Toast.LENGTH_SHORT).show();
@@ -150,12 +150,14 @@ public class LoginActivity extends AppCompatActivity {
                         } else { attemptOfflineLogin(workspace, userId, secret, "Devotee Profile not found."); }
                     } else { attemptOfflineLogin(workspace, userId, secret, "Invalid Devotee ID or PIN."); }
                 }
-                @Override public void onCancelled(@NonNull DatabaseError error) { attemptOfflineLogin(workspace, userId, secret, "Database Error"); }
+                // ✨ FIX: Now shows the REAL Firebase error!
+                @Override public void onCancelled(@NonNull DatabaseError error) { 
+                    attemptOfflineLogin(workspace, userId, secret, "Server Rejected: " + error.getMessage()); 
+                }
             });
         }
     }
 
-    // Saves the footprint locally when online login succeeds
     private void saveOfflineCredentials(String workspace, String userId, String secret, String commId, String role, String commName, String name) {
         SharedPreferences.Editor editor = getSharedPreferences("OfflineLogins", MODE_PRIVATE).edit();
         editor.putString("workspace", workspace);
@@ -168,7 +170,6 @@ public class LoginActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    // Bypasses Firebase network errors if the local footprint matches!
     private void attemptOfflineLogin(String workspace, String userId, String secret, String defaultErrorMsg) {
         SharedPreferences prefs = getSharedPreferences("OfflineLogins", MODE_PRIVATE);
         String cachedWorkspace = prefs.getString("workspace", "");
@@ -189,7 +190,7 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(new Intent(this, DashboardActivity.class));
             finish();
         } else {
-            fail(defaultErrorMsg); // Perfect fail-safe: if local cache fails too, show the real error.
+            fail(defaultErrorMsg); 
         }
     }
 
