@@ -239,16 +239,18 @@
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#283593"/>
+            
         <Button
             android:id="@+id/btnGenerateReports"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="📄 GENERATE MASTER PDFS"
+            android:text="📄 GENERATE MASTER REPORTS"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#546E7A"/>
+            
         <Button
             android:id="@+id/btnDownloadAudit"
             android:layout_width="match_parent"
@@ -281,6 +283,7 @@
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#795548"/>
+            
         <Button
             android:id="@+id/btnHelpSupport"
             android:layout_width="match_parent"
@@ -291,6 +294,7 @@
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#00695C"/>
+            
         <Button
             android:id="@+id/btnLogout"
             android:layout_width="match_parent"
