@@ -1,7 +1,6 @@
 package org.shda;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,6 +16,7 @@ public class RegisterCommunityActivity extends AppCompatActivity {
 
     private FirebaseAuth mAuth;
     private DatabaseReference db;
+    private SessionManager session;
     private EditText inputCommName, inputAdminName, inputEmail, inputAdminPhone, inputPassword;
     private RadioGroup rgWorkspaceType;
     private Button btnRegister;
@@ -24,10 +24,11 @@ public class RegisterCommunityActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register);
+        setContentView(R.layout.activity_register_community); // ✨ FIX: Exact layout match
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseDatabase.getInstance().getReference();
+        session = new SessionManager(this); // ✨ FIX: Initiating SessionManager
 
         inputCommName = findViewById(R.id.inputCommName);
         inputAdminName = findViewById(R.id.inputAdminName);
@@ -38,7 +39,10 @@ public class RegisterCommunityActivity extends AppCompatActivity {
         btnRegister = findViewById(R.id.btnRegister);
 
         btnRegister.setOnClickListener(v -> registerWorkspace());
-        findViewById(R.id.tvGoToLogin).setOnClickListener(v -> { startActivity(new Intent(this, LoginActivity.class)); finish(); });
+        findViewById(R.id.tvGoToLogin).setOnClickListener(v -> { 
+            startActivity(new Intent(this, LoginActivity.class)); 
+            finish(); 
+        });
     }
 
     private void registerWorkspace() {
@@ -48,14 +52,16 @@ public class RegisterCommunityActivity extends AppCompatActivity {
         String phone = inputAdminPhone.getText().toString().trim();
         String password = inputPassword.getText().toString().trim();
 
-        if (commName.isEmpty() || adminName.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show(); return;
+        if (commName.isEmpty() || adminName.isEmpty() || email.isEmpty() || password.isEmpty() || phone.isEmpty()) {
+            Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show(); 
+            return;
         }
 
-        btnRegister.setEnabled(false); btnRegister.setText("CREATING WORKSPACE...");
+        btnRegister.setEnabled(false); 
+        btnRegister.setText("CREATING WORKSPACE...");
 
         mAuth.createUserWithEmailAndPassword(email, password).addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
+            if (task.isSuccessful() && mAuth.getCurrentUser() != null) {
                 String uid = mAuth.getCurrentUser().getUid();
 
                 // 1. Generate Workspace ID based on Mandir/Community
@@ -66,7 +72,9 @@ public class RegisterCommunityActivity extends AppCompatActivity {
                 // 2. Initialize Community Info
                 db.child("communities").child(commId).child("name").setValue(commName);
                 HashMap<String, Object> infoMap = new HashMap<>();
-                infoMap.put("type", type); infoMap.put("email", email); infoMap.put("phone", phone);
+                infoMap.put("type", type); 
+                infoMap.put("email", email); 
+                infoMap.put("phone", phone);
                 db.child("communities").child(commId).child("info").setValue(infoMap);
 
                 // 3. Create Global Admin Record for Firebase Auth Login
@@ -88,21 +96,16 @@ public class RegisterCommunityActivity extends AppCompatActivity {
                 adminMap.put("timestamp", System.currentTimeMillis());
                 db.child("communities").child(commId).child("members").child("ADMIN-001").setValue(adminMap);
 
-                // 5. Save local session and enter App
-                SharedPreferences.Editor editor = getSharedPreferences("SanataniPrefs", MODE_PRIVATE).edit();
-                editor.putBoolean("IS_LOGGED_IN", true);
-                editor.putString("USER_ID", "ADMIN-001");
-                editor.putString("USER_NAME", adminName);
-                editor.putString("ROLE", "ADMIN");
-                editor.putString("COMMUNITY_ID", commId);
-                editor.putString("COMMUNITY_NAME", commName);
-                editor.apply();
+                // 5. ✨ FIX: Save local session securely via our formal SessionManager
+                session.createLoginSession(commId, "ADMIN", commName, adminName, "ADMIN-001", email);
 
                 Toast.makeText(this, "Registration Complete!", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, DashboardActivity.class)); finish();
+                startActivity(new Intent(this, DashboardActivity.class)); 
+                finish();
             } else {
-                Toast.makeText(this, "Failed: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
-                btnRegister.setEnabled(true); btnRegister.setText("CREATE SECURE WORKSPACE");
+                Toast.makeText(this, "Failed: " + (task.getException() != null ? task.getException().getMessage() : "Unknown error"), Toast.LENGTH_LONG).show();
+                btnRegister.setEnabled(true); 
+                btnRegister.setText("CREATE SECURE WORKSPACE");
             }
         });
     }
