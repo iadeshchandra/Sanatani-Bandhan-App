@@ -148,27 +148,32 @@ public class MemberDetailActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * MAJOR FIX: Eliminates discrepancy between PDF PIN and App PIN.
-     * This method now ONLY fetches the existing PIN from Firebase.
-     * It will NOT re-generate a PIN if it's missing, making the logic reactive.
-     */
     private void showUserPin() {
         if (activeMember == null) return;
-        
+
         db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId)
             .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     String pin = snapshot.getValue(String.class);
-                    
+
                     if (pin == null || pin.isEmpty()) {
-                        // FIX: Logic changed from "Generate New" to "Show Warning"
+                        // ✨ THE FIX: We now offer a button to generate the missing PIN instantly!
                         new AlertDialog.Builder(MemberDetailActivity.this)
                             .setTitle("⚠️ Security Warning")
-                            .setMessage("Active Login PIN for " + activeMember.name + " (" + activeMember.id + ") has not yet been registered in the system.\n\n" +
-                                        "Please generate a fresh PDF from the Member Directory to assign a standard credential.")
-                            .setPositiveButton("CLOSE", null)
+                            .setMessage("Active Login PIN for " + activeMember.name + " (" + activeMember.id + ") has not yet been registered in the system.\n\nWould you like to generate and assign a new secure PIN right now?")
+                            .setPositiveButton("GENERATE NEW PIN", (dialog, which) -> {
+                                // 1. Generate new PIN
+                                String newPin = String.format("%04d", new java.util.Random().nextInt(10000));
+                                // 2. Save it to Firebase instantly
+                                db.child("communities").child(session.getCommunityId()).child("logins").child(passedMemberId).setValue(newPin);
+                                Toast.makeText(MemberDetailActivity.this, "New PIN Saved! Generating PDF...", Toast.LENGTH_SHORT).show();
+                                // 3. Auto-generate the fresh, fixed PDF for them!
+                                try {
+                                    PdfReportService.generateLoginCredentialsPdf(MemberDetailActivity.this, session.getCommunityName(), activeMember.name, passedMemberId, newPin, session.getRole());
+                                } catch (Exception e) {}
+                            })
+                            .setNegativeButton("CANCEL", null)
                             .show();
                     } else {
                         // VISUAL UPGRADE: Professional, boxed, mono-font, centered PIN display
@@ -271,7 +276,7 @@ public class MemberDetailActivity extends AppCompatActivity {
             db.child("communities").child(session.getCommunityId()).child("members").child(activeMember.id).child("lastDonationTimestamp").setValue(ts);
 
             String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
-            
+
             TransactionActivity.SingleDonation sd = new TransactionActivity.SingleDonation(transId, activeMember.name + " [Member]", amt, note, "", "", collector, ts, session.getRole());
             db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
 
