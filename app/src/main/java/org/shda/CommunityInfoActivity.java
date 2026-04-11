@@ -36,7 +36,6 @@ public class CommunityInfoActivity extends AppCompatActivity {
         inputAddress = findViewById(R.id.infoAddress);
         btnSave = findViewById(R.id.btnSaveInfo);
 
-        // Security check: Lock editing if not an ADMIN
         if (!"ADMIN".equals(session.getRole())) {
             inputName.setEnabled(false);
             inputPhone.setEnabled(false);
@@ -53,6 +52,15 @@ public class CommunityInfoActivity extends AppCompatActivity {
     private void loadCommunityData() {
         inputId.setText(session.getCommunityId());
         
+        // ✨ SMART FALLBACK: If email is missing in Realtime DB (older accounts), fetch from Firebase Auth!
+        String fallbackEmail = session.getWorkspaceEmail();
+        if ((fallbackEmail == null || fallbackEmail.isEmpty()) && com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser() != null) {
+            fallbackEmail = com.google.firebase.auth.FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        }
+        if (fallbackEmail != null && !fallbackEmail.isEmpty()) {
+            inputEmail.setText(fallbackEmail);
+        }
+
         db.child("communities").child(session.getCommunityId()).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -63,7 +71,12 @@ public class CommunityInfoActivity extends AppCompatActivity {
                     String address = snapshot.child("info/address").getValue(String.class);
 
                     if (name != null) inputName.setText(name);
-                    if (email != null) inputEmail.setText(email);
+                    
+                    // Only overwrite with DB email if it actually exists
+                    if (email != null && !email.isEmpty()) {
+                        inputEmail.setText(email);
+                    }
+                    
                     if (phone != null) inputPhone.setText(phone);
                     if (address != null) inputAddress.setText(address);
                 }
@@ -93,7 +106,6 @@ public class CommunityInfoActivity extends AppCompatActivity {
         db.child("communities").child(session.getCommunityId()).child("info").child("phone").setValue(newPhone);
         db.child("communities").child(session.getCommunityId()).child("info").child("address").setValue(newAddress)
             .addOnSuccessListener(aVoid -> {
-                // Keep local session updated if name changes
                 session.updateCommunityName(newName);
                 Toast.makeText(CommunityInfoActivity.this, "Workspace Info Updated Successfully!", Toast.LENGTH_SHORT).show();
                 finish();
