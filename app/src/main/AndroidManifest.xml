@@ -23,6 +23,9 @@
         </activity>
 
         <activity android:name=".LoginActivity" android:exported="false" />
+        
+        <activity android:name=".RegisterCommunityActivity" android:exported="false" />
+        
         <activity android:name=".DashboardActivity" android:exported="false" />
         <activity android:name=".MemberActivity" android:exported="false" />
         <activity android:name=".AddMemberActivity" android:exported="false" />
@@ -33,7 +36,6 @@
         <activity android:name=".PollActivity" android:exported="false" />
         <activity android:name=".PanjikaActivity" android:exported="false" />
         <activity android:name=".UserProfileActivity" android:exported="false" />
-        
         <activity android:name=".MemberDetailActivity" android:exported="false" />
 
         <service
@@ -47,7 +49,7 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
-            
+
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/black" />
