@@ -18,11 +18,14 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class ExpenseActivity extends AppCompatActivity {
     private DatabaseReference db;
@@ -30,7 +33,7 @@ public class ExpenseActivity extends AppCompatActivity {
     private LinearLayout expensesContainer;
     private TextView tvTotalExpenses;
     private EditText inputSearch;
-    
+
     private List<Expense> fullExpenseList = new ArrayList<>();
     private List<Expense> currentlyDisplayedList = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
@@ -102,7 +105,6 @@ public class ExpenseActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ FIX: Brilliant Dual Auto-Complete Engine! Loads BOTH Scheduled Events AND Past Utsavs automatically!
     private void loadEventsForAutocomplete() {
         // 1. Fetch Scheduled Events
         db.child("communities").child(session.getCommunityId()).child("events").addListenerForSingleValueEvent(new ValueEventListener() {
@@ -112,7 +114,7 @@ public class ExpenseActivity extends AppCompatActivity {
                     String title = data.child("title").getValue(String.class);
                     if (title != null && !autocompleteEvents.contains(title)) { autocompleteEvents.add(title); }
                 }
-                
+
                 // 2. Fetch Past Logged Utsavs
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -152,17 +154,17 @@ public class ExpenseActivity extends AppCompatActivity {
         for (Expense e : fullExpenseList) {
             boolean matchesSearch = query.isEmpty() || (e.eventName != null && e.eventName.toLowerCase().contains(query)) || (e.itemName != null && e.itemName.toLowerCase().contains(query));
             boolean matchesDate = true;
-            
+
             if (filterStartTs != null && filterEndTs != null) {
                 matchesDate = (e.timestamp >= filterStartTs && e.timestamp <= filterEndTs);
             }
-            
+
             if (matchesSearch && matchesDate) {
                 currentlyDisplayedList.add(e);
                 totalSpent += e.amount;
             }
         }
-        
+
         tvTotalExpenses.setText("Total Filtered Spent: ৳" + totalSpent);
         processAndRenderList(currentlyDisplayedList);
     }
@@ -214,22 +216,32 @@ public class ExpenseActivity extends AppCompatActivity {
             if (!groupedMap.containsKey(key)) groupedMap.put(key, new GroupedExpense(e.eventName != null ? e.eventName : "Unknown Event"));
             groupedMap.get(key).addExpense(e);
         }
-        
+
         List<GroupedExpense> groupedList = new ArrayList<>(groupedMap.values());
         Collections.sort(groupedList, (a, b) -> Float.compare(b.totalSpent, a.totalSpent));
-        
+
         expensesContainer.removeAllViews();
+        // ✨ NEW: Added Date formatter for Timestamp
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+
         for (GroupedExpense ge : groupedList) {
             try {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_expense, expensesContainer, false);
                 ((TextView) view.findViewById(R.id.tvExpenseEvent)).setText("🪔 " + ge.eventDisplayName);
                 ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + ge.totalSpent);
                 ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText(ge.history.size() + " items logged in this range");
-                
+
+                // ✨ NEW: Sort history by latest and set the timestamp text!
+                Collections.sort(ge.history, (a, b) -> Long.compare(b.timestamp, a.timestamp));
+                if (!ge.history.isEmpty()) {
+                    Expense latest = ge.history.get(0);
+                    ((TextView) view.findViewById(R.id.tvExpenseLastLogged)).setText("Last Logged: ৳" + latest.amount + " on " + sdf.format(new Date(latest.timestamp)));
+                }
+
                 view.setOnClickListener(v -> {
                     try { PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge); } catch (Exception ex) { Toast.makeText(this, "Error viewing details.", Toast.LENGTH_SHORT).show(); }
                 });
-                
+
                 if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
                     view.setOnLongClickListener(v -> { 
                         try { showExpenseManagerDialog(ge); } catch (Exception ex) {}
@@ -254,7 +266,7 @@ public class ExpenseActivity extends AppCompatActivity {
 
             final EditText inputItem = new EditText(this); inputItem.setHint("Item Purchased / Service");
             final EditText inputAmt = new EditText(this); inputAmt.setHint("Cost (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            
+
             final AutoCompleteTextView inputHandler = new AutoCompleteTextView(this);
             inputHandler.setHint("Handled By");
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers);
@@ -274,18 +286,17 @@ public class ExpenseActivity extends AppCompatActivity {
                 if (event.isEmpty() || item.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { Toast.makeText(this, "All fields required", Toast.LENGTH_SHORT).show(); return; }
 
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Saving...");
-                
+
                 float amt = Float.parseFloat(amtStr);
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey();
-                
+
                 HashMap<String, Object> expMap = new HashMap<>();
                 expMap.put("id", transId); expMap.put("eventName", event); expMap.put("itemName", item); expMap.put("amount", amt);
                 expMap.put("involvedPerson", handler); expMap.put("timestamp", System.currentTimeMillis()); expMap.put("loggedBy", session.getUserName());
-                
+
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(transId).setValue(expMap);
                 Toast.makeText(this, "Expense Logged!", Toast.LENGTH_SHORT).show(); dialog.dismiss();
-                
-                // Refresh Autocomplete instantly after logging!
+
                 if (!autocompleteEvents.contains(event)) autocompleteEvents.add(event);
             });
         } catch (Exception e) {
