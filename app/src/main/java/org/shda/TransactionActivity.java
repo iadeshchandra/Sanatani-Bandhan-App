@@ -44,7 +44,6 @@ public class TransactionActivity extends AppCompatActivity {
     private List<String> autocompleteManagers = new ArrayList<>();
     private HashMap<String, String> phoneMap = new HashMap<>();
 
-    // ✨ NEW: Upgraded Guest Lists for Smart Auto-Suggest
     private List<Guest> officialGuestList = new ArrayList<>();
     private List<String> historicalGuestNames = new ArrayList<>();
 
@@ -178,8 +177,8 @@ public class TransactionActivity extends AppCompatActivity {
                     SingleDonation d = data.getValue(SingleDonation.class);
                     if (d != null) {
                         fullDonationList.add(d);
-                        // Build historical guest list
-                        if (d.name != null && !d.name.contains("[Member]")) {
+                        // ✨ FIX: Stronger filter! Blocks [Member], (SB-, and (ADMIN-
+                        if (d.name != null && !d.name.contains("[Member]") && !d.name.contains("(SB-") && !d.name.contains("(ADMIN-")) {
                             String cleanName = d.name.replace(" [Guest]", "").trim();
                             // Only add if they don't have an ID attached yet
                             if (!cleanName.contains("GST-") && !historicalGuestNames.contains(cleanName)) {
@@ -354,12 +353,10 @@ public class TransactionActivity extends AppCompatActivity {
             guestLayout.setOrientation(LinearLayout.VERTICAL);
             guestScroll.addView(guestLayout);
 
-            // 1. Setup the Smart Dropdown Map
             final HashMap<String, Guest> smartGuestMap = new HashMap<>();
             List<String> dropdownOptions = new ArrayList<>();
 
             for (Guest g : officialGuestList) {
-                // If they have same name, phone number distinguishes them!
                 String display = (g.phone != null && !g.phone.isEmpty()) ? (g.name + " | 📞 " + g.phone) : (g.name + " | 🆔 " + g.id);
                 smartGuestMap.put(display, g);
                 dropdownOptions.add(display);
@@ -374,7 +371,6 @@ public class TransactionActivity extends AppCompatActivity {
             inputGuestName.setThreshold(1);
             guestLayout.addView(inputGuestName);
 
-            // 2. The Hideable Details Container
             final LinearLayout detailsContainer = new LinearLayout(this);
             detailsContainer.setOrientation(LinearLayout.VERTICAL);
             
@@ -390,7 +386,6 @@ public class TransactionActivity extends AppCompatActivity {
             detailsContainer.addView(inputGuestFather); detailsContainer.addView(inputGuestMother);
             guestLayout.addView(detailsContainer);
 
-            // 3. The Always-Visible Payment Fields
             final EditText inputGuestAmt = new EditText(this); inputGuestAmt.setHint("Amount (৳)"); inputGuestAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             final EditText inputGuestNote = new EditText(this); inputGuestNote.setHint("Note / Purpose");
             final EditText inputGuestComment = new EditText(this); inputGuestComment.setHint("Admin Comment (Optional)");
@@ -402,14 +397,11 @@ public class TransactionActivity extends AppCompatActivity {
             guestLayout.addView(inputGuestAmt); guestLayout.addView(inputGuestNote);
             guestLayout.addView(inputGuestComment); guestLayout.addView(inputGuestHandler);
 
-            // 4. Smart UI Listeners
             inputGuestName.setOnItemClickListener((parent, view, position, id) -> {
                 String selected = (String) parent.getItemAtPosition(position);
                 if (smartGuestMap.containsKey(selected)) {
-                    // It's an official guest! Hide the redundant fields.
                     detailsContainer.setVisibility(View.GONE);
                 } else {
-                    // It's a historical guest or new name. Show fields so admin can officially register them!
                     detailsContainer.setVisibility(View.VISIBLE);
                 }
             });
@@ -417,7 +409,6 @@ public class TransactionActivity extends AppCompatActivity {
             inputGuestName.addTextChangedListener(new TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
                 @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    // If they start typing again, bring the fields back just in case
                     detailsContainer.setVisibility(View.VISIBLE);
                 }
                 @Override public void afterTextChanged(Editable s) {}
@@ -426,7 +417,6 @@ public class TransactionActivity extends AppCompatActivity {
             mainLayout.addView(memberLayout);
             mainLayout.addView(guestScroll);
 
-            // Logic to switch tabs dynamically
             final boolean[] isGuestMode = {false};
             Runnable updateUI = () -> {
                 if (isGuestMode[0]) {
@@ -470,15 +460,13 @@ public class TransactionActivity extends AppCompatActivity {
                     }
 
                     if (smartGuestMap.containsKey(typedString)) {
-                        // ✨ EXISTING GUEST PATH: We hide the details, so we don't save any new profile data. Just log it!
                         Guest existing = smartGuestMap.get(typedString);
                         logDonationToDatabase(existing.name + " (" + existing.id + ") [Guest]", amt, finalNote, handler);
                     } else {
-                        // ✨ NEW OR HISTORICAL GUEST PATH: Create their new official profile!
                         String guestId = "GST-" + (1000 + new Random().nextInt(9000));
                         Guest newGuest = new Guest();
                         newGuest.id = guestId;
-                        newGuest.name = typedString; // Whatever they typed is the new name
+                        newGuest.name = typedString;
                         newGuest.phone = inputGuestPhone.getText().toString().trim();
                         newGuest.address = inputGuestAddress.getText().toString().trim();
                         newGuest.email = inputGuestEmail.getText().toString().trim();
