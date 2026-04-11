@@ -346,8 +346,8 @@ public class TransactionActivity extends AppCompatActivity {
             final HashMap<String, Guest> smartGuestMap = new HashMap<>();
             List<String> dropdownOptions = new ArrayList<>();
 
+            // 1. Load guests from the Official Database
             for (Guest g : officialGuestList) {
-                // ✨ FIX: Strictly format to show Name and GST- ID so Admin always knows it's an official guest!
                 String display = g.name + " (" + g.id + ")";
                 if (g.phone != null && !g.phone.isEmpty()) {
                     display += " | 📞 " + g.phone;
@@ -356,9 +356,40 @@ public class TransactionActivity extends AppCompatActivity {
                 dropdownOptions.add(display);
             }
 
+            // 2. The Deep Ledger Scanner
+            for (SingleDonation d : fullDonationList) {
+                if (d.name != null && d.name.contains("(GST-")) {
+                    String cleanName = d.name.replace(" [Guest]", "").trim(); 
+                    
+                    boolean alreadyFound = false;
+                    for (String option : dropdownOptions) {
+                        if (option.contains(cleanName)) {
+                            alreadyFound = true; 
+                            break;
+                        }
+                    }
+
+                    if (!alreadyFound) {
+                        Guest recoveredGuest = new Guest();
+                        try {
+                            recoveredGuest.id = cleanName.substring(cleanName.indexOf("(GST-") + 1, cleanName.indexOf(")"));
+                            recoveredGuest.name = cleanName.substring(0, cleanName.indexOf(" (GST-")).trim();
+                        } catch (Exception e) {
+                            recoveredGuest.name = cleanName;
+                            recoveredGuest.id = "UNKNOWN";
+                        }
+                        
+                        smartGuestMap.put(cleanName, recoveredGuest);
+                        dropdownOptions.add(cleanName);
+                    }
+                }
+            }
+
             final AutoCompleteTextView inputGuestName = new AutoCompleteTextView(this);
+            inputGuestName.setId(View.generateViewId()); // Fixes UI clipping
             inputGuestName.setHint("Search Official Guest Name");
-            inputGuestName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, dropdownOptions));
+            ArrayAdapter<String> guestAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, dropdownOptions);
+            inputGuestName.setAdapter(guestAdapter);
             inputGuestName.setThreshold(1);
             guestLayout.addView(inputGuestName);
 
@@ -450,10 +481,24 @@ public class TransactionActivity extends AppCompatActivity {
                         finalNote = baseNote.isEmpty() ? ("Admin Note: " + adminComment) : (baseNote + " | Admin Note: " + adminComment);
                     }
 
-                    if (smartGuestMap.containsKey(typedString)) {
-                        Guest existing = smartGuestMap.get(typedString);
-                        logDonationToDatabase(existing.name + " (" + existing.id + ") [Guest]", amt, finalNote, handler);
+                    // ✨ NEW SMART FALLBACK: Did they type an exact name but ignore the dropdown?
+                    Guest existingGuest = smartGuestMap.get(typedString);
+                    if (existingGuest == null) {
+                        for (String key : smartGuestMap.keySet()) {
+                            Guest g = smartGuestMap.get(key);
+                            // If what they typed matches a known guest name exactly, auto-link it!
+                            if (g.name.equalsIgnoreCase(typedString)) {
+                                existingGuest = g;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (existingGuest != null) {
+                        // Use the existing or auto-linked Guest
+                        logDonationToDatabase(existingGuest.name + " (" + existingGuest.id + ") [Guest]", amt, finalNote, handler);
                     } else {
+                        // Create brand new Guest
                         String guestId = "GST-" + (1000 + new Random().nextInt(9000));
                         Guest newGuest = new Guest();
                         newGuest.id = guestId;
