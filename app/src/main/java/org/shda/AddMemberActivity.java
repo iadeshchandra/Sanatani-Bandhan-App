@@ -51,13 +51,15 @@ public class AddMemberActivity extends AppCompatActivity {
     private void saveMemberStrictly() {
         String name = inputName.getText().toString().trim();
         String phone = inputPhone.getText().toString().trim();
+        
         if (name.isEmpty() || phone.isEmpty()) { 
             Toast.makeText(this, "Name and Phone are required!", Toast.LENGTH_SHORT).show(); 
             return; 
         }
 
+        // 1. INSTANTLY disable the button so the user cannot spam click it.
         btnSaveMember.setEnabled(false); 
-        btnSaveMember.setText("Syncing to Server...");
+        btnSaveMember.setText("QUEUED FOR SYNC...");
 
         String memberId = "SB-" + (1000 + new Random().nextInt(9000)); 
         String pinPassword = String.format("%04d", new Random().nextInt(10000));
@@ -75,29 +77,21 @@ public class AddMemberActivity extends AppCompatActivity {
         memberMap.put("totalDonated", 0f);
         memberMap.put("timestamp", System.currentTimeMillis());
 
-        // TRANSACTIONAL SAVE: Wait for Member save, then wait for PIN save, THEN generate PDF.
-        db.child("communities").child(session.getCommunityId()).child("members").child(memberId).setValue(memberMap)
-            .addOnSuccessListener(aVoid -> {
-                db.child("communities").child(session.getCommunityId()).child("logins").child(memberId).setValue(pinPassword)
-                    .addOnSuccessListener(aVoid2 -> {
-                        try { 
-                            PdfReportService.generateLoginCredentialsPdf(AddMemberActivity.this, session.getCommunityName(), name, memberId, pinPassword, session.getRole()); 
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        Toast.makeText(AddMemberActivity.this, "Devotee saved successfully! Credentials generated.", Toast.LENGTH_LONG).show(); 
-                        finish(); 
-                    })
-                    .addOnFailureListener(e -> {
-                        btnSaveMember.setEnabled(true); 
-                        btnSaveMember.setText("SAVE DEVOTEE");
-                        Toast.makeText(AddMemberActivity.this, "Network Error: Could not save secure PIN.", Toast.LENGTH_SHORT).show();
-                    });
-            })
-            .addOnFailureListener(e -> {
-                btnSaveMember.setEnabled(true); 
-                btnSaveMember.setText("SAVE DEVOTEE");
-                Toast.makeText(AddMemberActivity.this, "Network Error: Could not save Devotee profile.", Toast.LENGTH_SHORT).show();
-            });
+        // 2. FIRE AND FORGET: We push the data to Firebase. 
+        // If offline, Firebase silently queues it. If online, it sends it instantly.
+        db.child("communities").child(session.getCommunityId()).child("members").child(memberId).setValue(memberMap);
+        db.child("communities").child(session.getCommunityId()).child("logins").child(memberId).setValue(pinPassword);
+
+        // 3. OFFLINE PDF GENERATION: We generate the PDF locally, which requires zero internet!
+        try { 
+            PdfReportService.generateLoginCredentialsPdf(this, session.getCommunityName(), name, memberId, pinPassword, session.getRole()); 
+            Toast.makeText(this, "Devotee Queued. PDF Credentials Generated!", Toast.LENGTH_LONG).show(); 
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Devotee Queued, but error making PDF.", Toast.LENGTH_LONG).show(); 
+        }
+
+        // 4. INSTANT CLOSE: Kick them back to the directory so they can't click save again!
+        finish(); 
     }
 }
