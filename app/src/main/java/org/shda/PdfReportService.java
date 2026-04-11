@@ -63,8 +63,10 @@ public class PdfReportService {
                 .setTextAlignment(TextAlignment.RIGHT).setFontSize(9).setItalic().setFontColor(ColorConstants.GRAY));
     }
 
-    private static void addThankYouMessage(Document document) {
-        document.add(new Paragraph("\n🙏 Namaskar!\n\nThank you for your generous contribution to the Sanatani Bandhan community. Your selfless support ensures the prosperity of our Mandir and the continued preservation of our Dharma. May the blessings of the divine always be with you and your family.\n\n\"Dharmo Rakshati Rakshitah\" (Dharma protects those who protect it).")
+    // ✨ FIX: Now accurately inserts your specific Community/Mandir Name!
+    private static void addThankYouMessage(Document document, String communityName) {
+        String orgName = communityName != null ? communityName : "our community";
+        document.add(new Paragraph("\n🙏 Namaskar!\n\nThank you for your generous contribution to " + orgName + ". Your selfless support ensures our prosperity and the continued preservation of our Dharma. May the blessings of the divine always be with you and your family.\n\n\"Dharmo Rakshati Rakshitah\" (Dharma protects those who protect it).")
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(12).setItalic().setFontColor(SAFFRON).setMarginTop(20));
     }
 
@@ -179,8 +181,6 @@ public class PdfReportService {
             table.addCell(idValue);
             table.addCell(pinValue);
             
-            document.add(table);
-            
             document.add(new Paragraph("SECURITY WARNING: Mandir staff will never ask for your PIN. Do not share this document with anyone.")
                     .setBold().setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.CENTER).setFontSize(10));
             
@@ -229,7 +229,11 @@ public class PdfReportService {
                 table.addCell(new Paragraph(sd.collectedBy!=null?sd.collectedBy:""));
             }
             document.add(table); document.add(new Paragraph("\nTotal Donated in this Statement: BDT " + gd.totalDonated).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
-            addThankYouMessage(document); addSanataniFooter(document); document.close();
+            
+            // ✨ FIX: Calling the updated method to pass your Mandir name!
+            addThankYouMessage(document, communityName); 
+            
+            addSanataniFooter(document); document.close();
             sharePdf(context, file); 
         } catch (Exception e) {}
     }
@@ -386,7 +390,6 @@ public class PdfReportService {
         } catch (Exception e) {}
     }
 
-    // ✨ MAJOR FIX: Fully functional Security Audit Report
     public static void generateSecurityAudit(Context context, String communityName, List<DashboardActivity.AuditLog> logs, String title) {
         try {
             File file = createBaseFile(context, "Security_Audit_Report");
