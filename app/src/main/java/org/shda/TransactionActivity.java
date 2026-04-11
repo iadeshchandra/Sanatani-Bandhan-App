@@ -39,7 +39,7 @@ public class TransactionActivity extends AppCompatActivity {
     private List<SingleDonation> fullDonationList = new ArrayList<>();
     private List<SingleDonation> currentlyDisplayedList = new ArrayList<>();
 
-    // ✨ NEW: Segregated lists for clean Auto-Suggestions
+    // Segregated lists for clean Auto-Suggestions
     private List<String> autocompleteOnlyMembers = new ArrayList<>();
     private List<String> autocompleteOnlyGuests = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
@@ -279,7 +279,6 @@ public class TransactionActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ NEW: Completely Rewritten Dual-Tab Dialog!
     private void showAddDonationDialog() {
         try {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -393,7 +392,6 @@ public class TransactionActivity extends AppCompatActivity {
             AlertDialog dialog = builder.create(); 
             dialog.show();
 
-            // Override click to prevent dialog closing if validation fails
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 if (isGuestMode[0]) {
                     String name = inputGuestName.getText().toString().trim();
@@ -408,10 +406,8 @@ public class TransactionActivity extends AppCompatActivity {
                     String note = inputGuestNote.getText().toString().trim();
 
                     if (name.contains("(") && name.contains(")")) {
-                        // Existing guest from suggestion dropdown
                         logDonationToDatabase(name + " [Guest]", amt, note, handler);
                     } else {
-                        // Brand New Guest! Register them fully.
                         String guestId = "GST-" + (1000 + new Random().nextInt(9000));
                         Guest newGuest = new Guest();
                         newGuest.id = guestId;
@@ -452,11 +448,32 @@ public class TransactionActivity extends AppCompatActivity {
     private void logDonationToDatabase(String formattedDonorName, float amt, String note, String handler) {
         String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
         SingleDonation sd = new SingleDonation(transId, formattedDonorName, amt, note, "", "", handler, System.currentTimeMillis(), session.getRole());
-        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd);
-        Toast.makeText(this, "Donation Logged!", Toast.LENGTH_SHORT).show(); 
+        
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd)
+            .addOnSuccessListener(aVoid -> {
+                // ✨ FIX: Smart Prompt for PDF Generation added here
+                new AlertDialog.Builder(TransactionActivity.this)
+                    .setTitle("✅ Donation Logged")
+                    .setMessage("Do you want to generate a formal PDF receipt for " + formattedDonorName + "?")
+                    .setPositiveButton("GENERATE PDF", (dialog, which) -> {
+                        try {
+                            GroupedDonation receiptData = new GroupedDonation(formattedDonorName);
+                            receiptData.addDonation(sd);
+                            PdfReportService.generateDonorStatement(TransactionActivity.this, session.getCommunityName(), receiptData);
+                        } catch (Exception e) {
+                            Toast.makeText(TransactionActivity.this, "Error generating receipt", Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .setNegativeButton("NO THANKS", (dialog, which) -> {
+                        Toast.makeText(TransactionActivity.this, "Saved without PDF.", Toast.LENGTH_SHORT).show();
+                    })
+                    .show();
+            })
+            .addOnFailureListener(e -> {
+                Toast.makeText(TransactionActivity.this, "Network Error: Could not log donation.", Toast.LENGTH_SHORT).show();
+            });
     }
 
-    // ✨ EXPANDED: Now holds all the detailed Guest info!
     public static class Guest {
         public String id, name, phone, email, address, bloodGroup, fatherName, motherName, adminComment;
         public long timestamp;
