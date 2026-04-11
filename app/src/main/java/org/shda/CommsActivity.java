@@ -19,11 +19,11 @@ public class CommsActivity extends AppCompatActivity {
     private SessionManager session;
     private EditText inputGreeting, inputMessage;
     private RadioGroup radioGroupCategory;
-    
+
     // ✨ NEW: We now hold TWO separate lists of phone numbers!
     private ArrayList<String> memberPhoneNumbers = new ArrayList<>();
     private ArrayList<String> guestPhoneNumbers = new ArrayList<>();
-    
+
     private Button btnSendWhatsApp, btnSendSms;
 
     @Override
@@ -68,7 +68,7 @@ public class CommsActivity extends AppCompatActivity {
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // 2. ✨ NEW: Load Guest numbers silently in the background
+        // 2. Load Guest numbers silently in the background
         DatabaseReference guestsRef = db.child("communities").child(session.getCommunityId()).child("guests");
         guestsRef.keepSynced(true);
         guestsRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -91,7 +91,7 @@ public class CommsActivity extends AppCompatActivity {
     private void prepareAndSendBroadcast(boolean isWhatsApp) {
         String customGreeting = inputGreeting.getText().toString().trim();
         String baseMessage = inputMessage.getText().toString().trim();
-        
+
         if (customGreeting.isEmpty()) customGreeting = "🙏 Namaskar";
         if (baseMessage.isEmpty()) {
             Toast.makeText(this, "Main message cannot be empty", Toast.LENGTH_SHORT).show(); return;
@@ -102,7 +102,7 @@ public class CommsActivity extends AppCompatActivity {
         String category = "UPDATE";
         String emoji = "📢";
         int checkedId = radioGroupCategory.getCheckedRadioButtonId();
-        
+
         if (checkedId == R.id.rbMeeting) { category = "COMMUNITY MEETING NOTICE"; emoji = "📋"; }
         else if (checkedId == R.id.rbUtsav) { category = "UTSAV GREETING"; emoji = "🪔"; }
         else if (checkedId == R.id.rbGeneral) { category = "GENERAL ANNOUNCEMENT"; emoji = "📢"; }
@@ -112,16 +112,18 @@ public class CommsActivity extends AppCompatActivity {
             targetList = guestPhoneNumbers; // Switch routing to Guests!
         }
 
-        if (targetList.isEmpty()) {
+        // ✨ THE FIX: We ONLY block if they are trying to send Standard SMS with an empty list.
+        // WhatsApp doesn't need numbers to open, so we let it pass perfectly!
+        if (targetList.isEmpty() && !isWhatsApp) {
             String groupName = (checkedId == R.id.rbGuest) ? "Guests" : "Members";
-            Toast.makeText(this, "No valid phone numbers found for " + groupName + " in directory.", Toast.LENGTH_SHORT).show(); 
+            Toast.makeText(this, "No valid phone numbers found for " + groupName + " to send SMS.", Toast.LENGTH_SHORT).show(); 
             return;
         }
 
         btnSendWhatsApp.setEnabled(false); btnSendSms.setEnabled(false);
         btnSendWhatsApp.setText("ROUTING..."); btnSendSms.setText("ROUTING...");
 
-        // ✨ BRANDING FIX: Exact requested formatting
+        // BRANDING FIX: Exact requested formatting
         String finalMessage = customGreeting + "\n\n" +
                               emoji + " *" + category + "*\n\n" +
                               baseMessage + "\n\n" +
@@ -137,6 +139,7 @@ public class CommsActivity extends AppCompatActivity {
         try {
             if (isWhatsApp) {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
+                // Opens WhatsApp with the text ready to manually select contacts/groups
                 intent.setData(Uri.parse("https://wa.me/?text=" + Uri.encode(finalMessage)));
                 startActivity(intent);
             } else {
