@@ -12,6 +12,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
@@ -38,7 +39,9 @@ public class TransactionActivity extends AppCompatActivity {
     private List<SingleDonation> fullDonationList = new ArrayList<>();
     private List<SingleDonation> currentlyDisplayedList = new ArrayList<>();
 
-    private List<String> autocompleteMembers = new ArrayList<>();
+    // ✨ NEW: Segregated lists for clean Auto-Suggestions
+    private List<String> autocompleteOnlyMembers = new ArrayList<>();
+    private List<String> autocompleteOnlyGuests = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
     private HashMap<String, String> phoneMap = new HashMap<>();
 
@@ -73,13 +76,12 @@ public class TransactionActivity extends AppCompatActivity {
 
         if (btnFilterDates != null) { btnFilterDates.setOnClickListener(v -> showGlobalDateFilterDialog()); }
 
-        // ✨ NEW: Master PDF Date Picker Logic
         if (btnExportMaster != null) {
             btnExportMaster.setOnClickListener(v -> {
                 if (fullDonationList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
                 
                 new AlertDialog.Builder(this)
-                    .setTitle("Generate Master PDF")
+                    .setTitle("Generate Master Report")
                     .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
                         if (which == 0) {
                             pickDateRange((startTs, endTs) -> exportMasterPdf(startTs, endTs));
@@ -125,9 +127,8 @@ public class TransactionActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ UPDATED: Now loads both Official Members AND Guest Donors into the AutoComplete
     private void loadMembersAndManagers() {
-        autocompleteMembers.clear(); autocompleteManagers.clear(); phoneMap.clear();
+        autocompleteOnlyMembers.clear(); autocompleteManagers.clear(); phoneMap.clear();
         
         db.child("communities").child(session.getCommunityId()).child("members").keepSynced(true);
         db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
@@ -135,26 +136,27 @@ public class TransactionActivity extends AppCompatActivity {
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Member m = data.getValue(Member.class);
                     if (m != null) {
-                        autocompleteMembers.add(m.name + " (" + m.id + ")");
+                        autocompleteOnlyMembers.add(m.name + " (" + m.id + ")");
                         if (m.phone != null && !m.phone.isEmpty()) phoneMap.put(m.id, m.phone);
                         if ("MANAGER".equals(m.role) || "ADMIN".equals(m.role)) autocompleteManagers.add(m.name + " (" + m.id + ")");
                     }
                 }
                 if (!autocompleteManagers.contains(session.getUserName())) autocompleteManagers.add(session.getUserName() + " (" + session.getUserId() + ")");
-                loadGuestDonors(); // Chain loading
+                loadGuestDonors(); 
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
     private void loadGuestDonors() {
+        autocompleteOnlyGuests.clear();
         db.child("communities").child(session.getCommunityId()).child("guests").keepSynced(true);
         db.child("communities").child(session.getCommunityId()).child("guests").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Guest g = data.getValue(Guest.class);
                     if (g != null) {
-                        autocompleteMembers.add(g.name + " (" + g.id + ")");
+                        autocompleteOnlyGuests.add(g.name + " (" + g.id + ")");
                         if (g.phone != null && !g.phone.isEmpty()) phoneMap.put(g.id, g.phone);
                     }
                 }
@@ -277,81 +279,174 @@ public class TransactionActivity extends AppCompatActivity {
         }
     }
 
+    // ✨ NEW: Completely Rewritten Dual-Tab Dialog!
     private void showAddDonationDialog() {
         try {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Log New Donation");
-            LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
 
-            final AutoCompleteTextView inputDonor = new AutoCompleteTextView(this);
-            inputDonor.setHint("Select Donor (or type new Guest)");
-            ArrayAdapter<String> donorAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteMembers);
-            inputDonor.setAdapter(donorAdapter); inputDonor.setThreshold(1);
+            LinearLayout mainLayout = new LinearLayout(this);
+            mainLayout.setOrientation(LinearLayout.VERTICAL);
+            mainLayout.setPadding(40, 20, 40, 0);
 
-            final EditText inputAmt = new EditText(this); inputAmt.setHint("Amount (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            final EditText inputNote = new EditText(this); inputNote.setHint("Note / Purpose (Optional)");
+            // Toggle Tab Buttons
+            LinearLayout toggleLayout = new LinearLayout(this);
+            toggleLayout.setOrientation(LinearLayout.HORIZONTAL);
+            toggleLayout.setWeightSum(2);
+            toggleLayout.setPadding(0, 0, 0, 20);
+            
+            Button btnTabMember = new Button(this);
+            btnTabMember.setText("MEMBER");
+            btnTabMember.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            
+            Button btnTabGuest = new Button(this);
+            btnTabGuest.setText("GUEST / NEW");
+            btnTabGuest.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
+            
+            toggleLayout.addView(btnTabMember);
+            toggleLayout.addView(btnTabGuest);
+            mainLayout.addView(toggleLayout);
 
-            final AutoCompleteTextView inputHandler = new AutoCompleteTextView(this);
-            inputHandler.setHint("Collected By");
-            ArrayAdapter<String> handlerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers);
-            inputHandler.setAdapter(handlerAdapter); inputHandler.setThreshold(1); inputHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
+            // ================== MEMBER VIEW ==================
+            LinearLayout memberLayout = new LinearLayout(this);
+            memberLayout.setOrientation(LinearLayout.VERTICAL);
+            
+            final AutoCompleteTextView inputMemberName = new AutoCompleteTextView(this);
+            inputMemberName.setHint("Select Official Member");
+            inputMemberName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteOnlyMembers));
+            inputMemberName.setThreshold(1);
+            
+            final EditText inputMemberAmt = new EditText(this); 
+            inputMemberAmt.setHint("Amount (৳)"); 
+            inputMemberAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            
+            final EditText inputMemberNote = new EditText(this); 
+            inputMemberNote.setHint("Note / Purpose (Optional)");
+            
+            final AutoCompleteTextView inputMemberHandler = new AutoCompleteTextView(this);
+            inputMemberHandler.setHint("Collected By");
+            inputMemberHandler.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers));
+            inputMemberHandler.setThreshold(1); 
+            inputMemberHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
 
-            layout.addView(inputDonor); layout.addView(inputAmt); layout.addView(inputNote); layout.addView(inputHandler);
-            builder.setView(layout);
-            builder.setPositiveButton("RECORD", null); builder.setNegativeButton("CANCEL", null);
+            memberLayout.addView(inputMemberName); 
+            memberLayout.addView(inputMemberAmt); 
+            memberLayout.addView(inputMemberNote); 
+            memberLayout.addView(inputMemberHandler);
 
-            AlertDialog dialog = builder.create(); dialog.show();
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                String donor = inputDonor.getText().toString().trim();
-                String amtStr = inputAmt.getText().toString().trim();
-                String handler = inputHandler.getText().toString().trim();
+            // ================== GUEST VIEW (ScrollView) ==================
+            ScrollView guestScroll = new ScrollView(this);
+            LinearLayout guestLayout = new LinearLayout(this);
+            guestLayout.setOrientation(LinearLayout.VERTICAL);
+            guestScroll.addView(guestLayout);
 
-                if (donor.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { Toast.makeText(this, "Fields missing", Toast.LENGTH_SHORT).show(); return; }
+            final AutoCompleteTextView inputGuestName = new AutoCompleteTextView(this);
+            inputGuestName.setHint("Select or Type Guest Name");
+            inputGuestName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteOnlyGuests));
+            inputGuestName.setThreshold(1);
+            
+            final EditText inputGuestPhone = new EditText(this); inputGuestPhone.setHint("Phone Number"); inputGuestPhone.setInputType(InputType.TYPE_CLASS_PHONE);
+            final EditText inputGuestAddress = new EditText(this); inputGuestAddress.setHint("Address");
+            final EditText inputGuestEmail = new EditText(this); inputGuestEmail.setHint("Email Address"); inputGuestEmail.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+            final EditText inputGuestBloodGroup = new EditText(this); inputGuestBloodGroup.setHint("Blood Group (Optional)");
+            final EditText inputGuestFather = new EditText(this); inputGuestFather.setHint("Father's Name (Optional)");
+            final EditText inputGuestMother = new EditText(this); inputGuestMother.setHint("Mother's Name (Optional)");
+            
+            final EditText inputGuestAmt = new EditText(this); inputGuestAmt.setHint("Amount (৳)"); inputGuestAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            final EditText inputGuestNote = new EditText(this); inputGuestNote.setHint("Note / Purpose");
+            final EditText inputGuestComment = new EditText(this); inputGuestComment.setHint("Admin Comment (Optional)");
+            
+            final AutoCompleteTextView inputGuestHandler = new AutoCompleteTextView(this);
+            inputGuestHandler.setHint("Collected By");
+            inputGuestHandler.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers));
+            inputGuestHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
 
-                float amt = Float.parseFloat(amtStr);
-                String note = inputNote.getText().toString().trim();
+            guestLayout.addView(inputGuestName); guestLayout.addView(inputGuestPhone); guestLayout.addView(inputGuestAddress);
+            guestLayout.addView(inputGuestEmail); guestLayout.addView(inputGuestBloodGroup); guestLayout.addView(inputGuestFather);
+            guestLayout.addView(inputGuestMother); guestLayout.addView(inputGuestAmt); guestLayout.addView(inputGuestNote);
+            guestLayout.addView(inputGuestComment); guestLayout.addView(inputGuestHandler);
 
-                dialog.dismiss();
+            mainLayout.addView(memberLayout);
+            mainLayout.addView(guestScroll);
 
-                // ✨ NEW: Guest Interception Logic
-                if (!donor.contains("(") || !donor.contains(")")) {
-                    showNewGuestDialog(donor, amt, note, handler);
+            // Logic to switch tabs dynamically
+            final boolean[] isGuestMode = {false};
+            Runnable updateUI = () -> {
+                if (isGuestMode[0]) {
+                    btnTabGuest.setBackgroundColor(0xFFE65100); btnTabGuest.setTextColor(0xFFFFFFFF);
+                    btnTabMember.setBackgroundColor(0xFFE0E0E0); btnTabMember.setTextColor(0xFF000000);
+                    memberLayout.setVisibility(View.GONE); guestScroll.setVisibility(View.VISIBLE);
                 } else {
-                    logDonationToDatabase(donor, amt, note, handler);
+                    btnTabMember.setBackgroundColor(0xFF1976D2); btnTabMember.setTextColor(0xFFFFFFFF);
+                    btnTabGuest.setBackgroundColor(0xFFE0E0E0); btnTabGuest.setTextColor(0xFF000000);
+                    memberLayout.setVisibility(View.VISIBLE); guestScroll.setVisibility(View.GONE);
+                }
+            };
+            btnTabMember.setOnClickListener(v -> { isGuestMode[0] = false; updateUI.run(); });
+            btnTabGuest.setOnClickListener(v -> { isGuestMode[0] = true; updateUI.run(); });
+            updateUI.run(); // Init
+
+            builder.setView(mainLayout);
+            builder.setPositiveButton("RECORD", null); 
+            builder.setNegativeButton("CANCEL", null);
+
+            AlertDialog dialog = builder.create(); 
+            dialog.show();
+
+            // Override click to prevent dialog closing if validation fails
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                if (isGuestMode[0]) {
+                    String name = inputGuestName.getText().toString().trim();
+                    String amtStr = inputGuestAmt.getText().toString().trim();
+                    String handler = inputGuestHandler.getText().toString().trim();
+
+                    if (name.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { 
+                        Toast.makeText(this, "Guest Name, Amount, and Handler are required", Toast.LENGTH_SHORT).show(); return; 
+                    }
+
+                    float amt = Float.parseFloat(amtStr);
+                    String note = inputGuestNote.getText().toString().trim();
+
+                    if (name.contains("(") && name.contains(")")) {
+                        // Existing guest from suggestion dropdown
+                        logDonationToDatabase(name + " [Guest]", amt, note, handler);
+                    } else {
+                        // Brand New Guest! Register them fully.
+                        String guestId = "GST-" + (1000 + new Random().nextInt(9000));
+                        Guest newGuest = new Guest();
+                        newGuest.id = guestId;
+                        newGuest.name = name;
+                        newGuest.phone = inputGuestPhone.getText().toString().trim();
+                        newGuest.address = inputGuestAddress.getText().toString().trim();
+                        newGuest.email = inputGuestEmail.getText().toString().trim();
+                        newGuest.bloodGroup = inputGuestBloodGroup.getText().toString().trim();
+                        newGuest.fatherName = inputGuestFather.getText().toString().trim();
+                        newGuest.motherName = inputGuestMother.getText().toString().trim();
+                        newGuest.adminComment = inputGuestComment.getText().toString().trim();
+                        newGuest.timestamp = System.currentTimeMillis();
+
+                        db.child("communities").child(session.getCommunityId()).child("guests").child(guestId).setValue(newGuest);
+                        logDonationToDatabase(name + " (" + guestId + ") [Guest]", amt, note, handler);
+                    }
+                    dialog.dismiss();
+                } else {
+                    String name = inputMemberName.getText().toString().trim();
+                    String amtStr = inputMemberAmt.getText().toString().trim();
+                    String handler = inputMemberHandler.getText().toString().trim();
+
+                    if (name.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { 
+                        Toast.makeText(this, "Member Name, Amount, and Handler are required", Toast.LENGTH_SHORT).show(); return; 
+                    }
+
+                    float amt = Float.parseFloat(amtStr);
+                    String note = inputMemberNote.getText().toString().trim();
+
+                    if (!name.contains("[")) name = name + " [Member]";
+                    logDonationToDatabase(name, amt, note, handler);
+                    dialog.dismiss();
                 }
             });
         } catch (Exception e) { Toast.makeText(this, "UI Error", Toast.LENGTH_SHORT).show(); }
-    }
-
-    private void showNewGuestDialog(String guestName, float amt, String note, String handler) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Register Guest Donor");
-        builder.setMessage("'" + guestName + "' is not in our system. Please provide their contact details to track future donations.");
-
-        LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
-
-        final EditText inputPhone = new EditText(this); inputPhone.setHint("Phone Number (Optional)"); inputPhone.setInputType(InputType.TYPE_CLASS_PHONE);
-        final EditText inputEmail = new EditText(this); inputEmail.setHint("Email Address (Optional)"); inputEmail.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-
-        layout.addView(inputPhone); layout.addView(inputEmail);
-        builder.setView(layout);
-        
-        builder.setPositiveButton("SAVE & RECORD", (dialog, which) -> {
-            String guestId = "GST-" + (1000 + new Random().nextInt(9000));
-            Guest newGuest = new Guest();
-            newGuest.id = guestId;
-            newGuest.name = guestName;
-            newGuest.phone = inputPhone.getText().toString().trim();
-            newGuest.email = inputEmail.getText().toString().trim();
-            newGuest.timestamp = System.currentTimeMillis();
-
-            db.child("communities").child(session.getCommunityId()).child("guests").child(guestId).setValue(newGuest);
-
-            String formattedDonorName = guestName + " (" + guestId + ")";
-            logDonationToDatabase(formattedDonorName, amt, note, handler);
-        });
-        builder.setNegativeButton("CANCEL", null);
-        builder.show();
     }
 
     private void logDonationToDatabase(String formattedDonorName, float amt, String note, String handler) {
@@ -361,8 +456,9 @@ public class TransactionActivity extends AppCompatActivity {
         Toast.makeText(this, "Donation Logged!", Toast.LENGTH_SHORT).show(); 
     }
 
+    // ✨ EXPANDED: Now holds all the detailed Guest info!
     public static class Guest {
-        public String id, name, phone, email;
+        public String id, name, phone, email, address, bloodGroup, fatherName, motherName, adminComment;
         public long timestamp;
         public Guest() {}
     }
