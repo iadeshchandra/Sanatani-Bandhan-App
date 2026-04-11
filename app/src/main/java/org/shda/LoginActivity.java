@@ -107,7 +107,7 @@ public class LoginActivity extends AppCompatActivity {
                                 String role = snapshot.child("role").getValue(String.class);
                                 String name = snapshot.child("name").getValue(String.class);
 
-                                // ✨ FIX: Save credentials for future offline use
+                                // Save credentials for future offline use
                                 saveOfflineCredentials(workspace, userId, secret, commId, role, commName, name);
                                 session.createLoginSession(commId, role, commName, name, "ADMIN-001", workspace);
 
@@ -129,7 +129,11 @@ public class LoginActivity extends AppCompatActivity {
                         String cId = comm.getKey();
                         String cEmail = comm.child("info").child("email").getValue(String.class);
                         if (workspace.equalsIgnoreCase(cId) || (cEmail != null && workspace.equalsIgnoreCase(cEmail))) {
-                            targetCommId = cId; targetCommName = comm.child("name").getValue(String.class); break;
+                            targetCommId = cId; 
+                            // ✨ FIX: Safely grabbing the exact Community Name from the 'info' node!
+                            targetCommName = comm.child("info").child("communityName").getValue(String.class); 
+                            if (targetCommName == null) targetCommName = "Sanatani Community"; // Fallback to avoid null crashes
+                            break;
                         }
                     }
                     if (targetCommId == null) { attemptOfflineLogin(workspace, userId, secret, "Workspace not found."); return; }
@@ -138,7 +142,7 @@ public class LoginActivity extends AppCompatActivity {
                     if (dbPin != null && dbPin.equals(secret)) {
                         Member m = snapshot.child(targetCommId).child("members").child(userId).getValue(Member.class);
                         if (m != null) {
-                            // ✨ FIX: Save credentials for future offline use
+                            // Save credentials for future offline use
                             saveOfflineCredentials(workspace, userId, secret, targetCommId, m.role, targetCommName, m.name);
                             session.createLoginSession(targetCommId, m.role, targetCommName, m.name, m.id, m.email != null ? m.email : "");
                             Toast.makeText(LoginActivity.this, "Staff Login Successful!", Toast.LENGTH_SHORT).show();
@@ -151,7 +155,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ NEW: Saves the footprint locally when online login succeeds
+    // Saves the footprint locally when online login succeeds
     private void saveOfflineCredentials(String workspace, String userId, String secret, String commId, String role, String commName, String name) {
         SharedPreferences.Editor editor = getSharedPreferences("OfflineLogins", MODE_PRIVATE).edit();
         editor.putString("workspace", workspace);
@@ -164,7 +168,7 @@ public class LoginActivity extends AppCompatActivity {
         editor.apply();
     }
 
-    // ✨ NEW: Bypasses Firebase network errors if the local footprint matches!
+    // Bypasses Firebase network errors if the local footprint matches!
     private void attemptOfflineLogin(String workspace, String userId, String secret, String defaultErrorMsg) {
         SharedPreferences prefs = getSharedPreferences("OfflineLogins", MODE_PRIVATE);
         String cachedWorkspace = prefs.getString("workspace", "");
@@ -173,7 +177,7 @@ public class LoginActivity extends AppCompatActivity {
 
         if (!cachedWorkspace.isEmpty() && cachedWorkspace.equalsIgnoreCase(workspace) 
              && cachedUserId.equalsIgnoreCase(userId) && cachedSecret.equals(secret)) {
-            
+
             String commId = prefs.getString("commId", "");
             String role = prefs.getString("role", "");
             String commName = prefs.getString("commName", "");
