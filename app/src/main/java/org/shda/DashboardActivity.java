@@ -33,7 +33,6 @@ public class DashboardActivity extends AppCompatActivity {
     private float totalExpense = 0f;
     private String workspaceType = "Community"; 
 
-    // Filter bounds for the Financial Overview Chart
     private Long chartStartTs = null;
     private Long chartEndTs = null;
 
@@ -60,8 +59,6 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
-        
-        // ✨ NEW: Functional Chart Filter
         findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
         
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
@@ -88,10 +85,11 @@ public class DashboardActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> showMandirInfoDialog());
+        // ✨ FIX: Launch the new Dedicated Page instead of the old Dialog
+        findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
+        
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> showGlobalPdfGeneratorDialog());
 
-        // ✨ NEW: Security Audit Logic
         if (!"ADMIN".equals(session.getRole())) {
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
         } else {
@@ -293,55 +291,6 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    private void showMandirInfoDialog() {
-        db.child("communities").child(session.getCommunityId()).child("info").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                String phone = snapshot.child("phone").getValue(String.class);
-                String email = snapshot.child("email").getValue(String.class);
-                String address = snapshot.child("address").getValue(String.class);
-
-                AlertDialog.Builder builder = new AlertDialog.Builder(DashboardActivity.this);
-                builder.setTitle("🏛️ " + workspaceType + " Information");
-                
-                LinearLayout layout = new LinearLayout(DashboardActivity.this);
-                layout.setOrientation(LinearLayout.VERTICAL);
-                layout.setPadding(50, 20, 50, 0);
-
-                if ("ADMIN".equals(session.getRole())) {
-                    final EditText inputName = new EditText(DashboardActivity.this); inputName.setHint(workspaceType + " Name"); inputName.setText(session.getCommunityName());
-                    final EditText inputPhone = new EditText(DashboardActivity.this); inputPhone.setHint("Official Phone"); inputPhone.setText(phone);
-                    final EditText inputEmail = new EditText(DashboardActivity.this); inputEmail.setHint("Official Email"); inputEmail.setText(email);
-                    final EditText inputAddress = new EditText(DashboardActivity.this); inputAddress.setHint("Official Address"); inputAddress.setText(address);
-                    layout.addView(inputName); layout.addView(inputPhone); layout.addView(inputEmail); layout.addView(inputAddress);
-                    builder.setView(layout);
-                    builder.setPositiveButton("SAVE", (d, w) -> {
-                        String newName = inputName.getText().toString().trim();
-                        if (!newName.isEmpty()) {
-                            db.child("communities").child(session.getCommunityId()).child("name").setValue(newName);
-                            session.updateCommunityName(newName);
-                            ((TextView) findViewById(R.id.tvDashboardTitle)).setText(newName);
-                        }
-                        db.child("communities").child(session.getCommunityId()).child("info").child("phone").setValue(inputPhone.getText().toString());
-                        db.child("communities").child(session.getCommunityId()).child("info").child("email").setValue(inputEmail.getText().toString());
-                        db.child("communities").child(session.getCommunityId()).child("info").child("address").setValue(inputAddress.getText().toString());
-                        Toast.makeText(DashboardActivity.this, workspaceType + " Info Updated!", Toast.LENGTH_SHORT).show();
-                    });
-                    builder.setNegativeButton("CANCEL", null);
-                } else {
-                    TextView tvName = new TextView(DashboardActivity.this); tvName.setText("Name: " + session.getCommunityName()); tvName.setTextSize(16f); tvName.setPadding(0,0,0,10);
-                    TextView tvPhone = new TextView(DashboardActivity.this); tvPhone.setText("Phone: " + (phone!=null?phone:"N/A")); tvPhone.setTextSize(16f); tvPhone.setPadding(0,0,0,10);
-                    TextView tvEmail = new TextView(DashboardActivity.this); tvEmail.setText("Email: " + (email!=null?email:"N/A")); tvEmail.setTextSize(16f); tvEmail.setPadding(0,0,0,10);
-                    TextView tvAddr = new TextView(DashboardActivity.this); tvAddr.setText("Address: " + (address!=null?address:"N/A")); tvAddr.setTextSize(16f);
-                    layout.addView(tvName); layout.addView(tvPhone); layout.addView(tvEmail); layout.addView(tvAddr);
-                    builder.setView(layout);
-                    builder.setPositiveButton("CLOSE", null);
-                }
-                builder.show();
-            }
-            @Override public void onCancelled(@NonNull DatabaseError error) {}
-        });
-    }
-
     private void loadFinancialData() {
         DatabaseReference logsRef = db.child("communities").child(session.getCommunityId()).child("logs");
         logsRef.keepSynced(true);
@@ -390,7 +339,7 @@ public class DashboardActivity extends AppCompatActivity {
         entries.add(new PieEntry(totalExpense, "Expense"));
 
         PieDataSet dataSet = new PieDataSet(entries, "");
-        dataSet.setColors(new int[]{0xFF2E7D32, 0xFFC62828}); // Green for Income, Red for Expense
+        dataSet.setColors(new int[]{0xFF2E7D32, 0xFFC62828}); 
         dataSet.setValueTextColor(0xFFFFFFFF);
         dataSet.setValueTextSize(14f);
 
