@@ -7,6 +7,7 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -40,9 +41,12 @@ public class TransactionActivity extends AppCompatActivity {
     private List<SingleDonation> currentlyDisplayedList = new ArrayList<>();
 
     private List<String> autocompleteOnlyMembers = new ArrayList<>();
-    private List<String> autocompleteOnlyGuests = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
     private HashMap<String, String> phoneMap = new HashMap<>();
+
+    // ✨ NEW: Upgraded Guest Lists for Smart Auto-Suggest
+    private List<Guest> officialGuestList = new ArrayList<>();
+    private List<String> historicalGuestNames = new ArrayList<>();
 
     private float totalDonated = 0f;
     private Long filterStartTs = null;
@@ -126,7 +130,6 @@ public class TransactionActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ FIX: Changed to addValueEventListener so Member dropdown updates instantly
     private void loadMembersAndManagers() {
         db.child("communities").child(session.getCommunityId()).child("members").keepSynced(true);
         db.child("communities").child(session.getCommunityId()).child("members").addValueEventListener(new ValueEventListener() {
@@ -147,16 +150,15 @@ public class TransactionActivity extends AppCompatActivity {
         loadGuestDonors(); 
     }
 
-    // ✨ FIX: Changed to addValueEventListener so Guest dropdown updates instantly
     private void loadGuestDonors() {
         db.child("communities").child(session.getCommunityId()).child("guests").keepSynced(true);
         db.child("communities").child(session.getCommunityId()).child("guests").addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
-                autocompleteOnlyGuests.clear();
+                officialGuestList.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Guest g = data.getValue(Guest.class);
                     if (g != null) {
-                        autocompleteOnlyGuests.add(g.name + " (" + g.id + ")");
+                        officialGuestList.add(g);
                         if (g.phone != null && !g.phone.isEmpty()) phoneMap.put(g.id, g.phone);
                     }
                 }
@@ -171,9 +173,20 @@ public class TransactionActivity extends AppCompatActivity {
         donRef.addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 fullDonationList.clear();
+                historicalGuestNames.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     SingleDonation d = data.getValue(SingleDonation.class);
-                    if (d != null) fullDonationList.add(d);
+                    if (d != null) {
+                        fullDonationList.add(d);
+                        // Build historical guest list
+                        if (d.name != null && !d.name.contains("[Member]")) {
+                            String cleanName = d.name.replace(" [Guest]", "").trim();
+                            // Only add if they don't have an ID attached yet
+                            if (!cleanName.contains("GST-") && !historicalGuestNames.contains(cleanName)) {
+                                historicalGuestNames.add(cleanName);
+                            }
+                        }
+                    }
                 }
                 applyFilters();
             }
@@ -304,6 +317,9 @@ public class TransactionActivity extends AppCompatActivity {
             toggleLayout.addView(btnTabGuest);
             mainLayout.addView(toggleLayout);
 
+            // ==========================================
+            // MEMBER TAB UI
+            // ==========================================
             LinearLayout memberLayout = new LinearLayout(this);
             memberLayout.setOrientation(LinearLayout.VERTICAL);
             
@@ -330,15 +346,37 @@ public class TransactionActivity extends AppCompatActivity {
             memberLayout.addView(inputMemberNote); 
             memberLayout.addView(inputMemberHandler);
 
+            // ==========================================
+            // GUEST TAB UI (SMART DYNAMIC FORM)
+            // ==========================================
             ScrollView guestScroll = new ScrollView(this);
             LinearLayout guestLayout = new LinearLayout(this);
             guestLayout.setOrientation(LinearLayout.VERTICAL);
             guestScroll.addView(guestLayout);
 
+            // 1. Setup the Smart Dropdown Map
+            final HashMap<String, Guest> smartGuestMap = new HashMap<>();
+            List<String> dropdownOptions = new ArrayList<>();
+
+            for (Guest g : officialGuestList) {
+                // If they have same name, phone number distinguishes them!
+                String display = (g.phone != null && !g.phone.isEmpty()) ? (g.name + " | 📞 " + g.phone) : (g.name + " | 🆔 " + g.id);
+                smartGuestMap.put(display, g);
+                dropdownOptions.add(display);
+            }
+            for (String hName : historicalGuestNames) {
+                if (!dropdownOptions.contains(hName)) dropdownOptions.add(hName);
+            }
+
             final AutoCompleteTextView inputGuestName = new AutoCompleteTextView(this);
-            inputGuestName.setHint("Select or Type Guest Name");
-            inputGuestName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteOnlyGuests));
+            inputGuestName.setHint("Search Guest Name or Phone");
+            inputGuestName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, dropdownOptions));
             inputGuestName.setThreshold(1);
+            guestLayout.addView(inputGuestName);
+
+            // 2. The Hideable Details Container
+            final LinearLayout detailsContainer = new LinearLayout(this);
+            detailsContainer.setOrientation(LinearLayout.VERTICAL);
             
             final EditText inputGuestPhone = new EditText(this); inputGuestPhone.setHint("Phone Number"); inputGuestPhone.setInputType(InputType.TYPE_CLASS_PHONE);
             final EditText inputGuestAddress = new EditText(this); inputGuestAddress.setHint("Address");
@@ -346,24 +384,49 @@ public class TransactionActivity extends AppCompatActivity {
             final EditText inputGuestBloodGroup = new EditText(this); inputGuestBloodGroup.setHint("Blood Group (Optional)");
             final EditText inputGuestFather = new EditText(this); inputGuestFather.setHint("Father's Name (Optional)");
             final EditText inputGuestMother = new EditText(this); inputGuestMother.setHint("Mother's Name (Optional)");
-            
+
+            detailsContainer.addView(inputGuestPhone); detailsContainer.addView(inputGuestAddress);
+            detailsContainer.addView(inputGuestEmail); detailsContainer.addView(inputGuestBloodGroup);
+            detailsContainer.addView(inputGuestFather); detailsContainer.addView(inputGuestMother);
+            guestLayout.addView(detailsContainer);
+
+            // 3. The Always-Visible Payment Fields
             final EditText inputGuestAmt = new EditText(this); inputGuestAmt.setHint("Amount (৳)"); inputGuestAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             final EditText inputGuestNote = new EditText(this); inputGuestNote.setHint("Note / Purpose");
             final EditText inputGuestComment = new EditText(this); inputGuestComment.setHint("Admin Comment (Optional)");
-            
             final AutoCompleteTextView inputGuestHandler = new AutoCompleteTextView(this);
             inputGuestHandler.setHint("Collected By");
             inputGuestHandler.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers));
             inputGuestHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
 
-            guestLayout.addView(inputGuestName); guestLayout.addView(inputGuestPhone); guestLayout.addView(inputGuestAddress);
-            guestLayout.addView(inputGuestEmail); guestLayout.addView(inputGuestBloodGroup); guestLayout.addView(inputGuestFather);
-            guestLayout.addView(inputGuestMother); guestLayout.addView(inputGuestAmt); guestLayout.addView(inputGuestNote);
+            guestLayout.addView(inputGuestAmt); guestLayout.addView(inputGuestNote);
             guestLayout.addView(inputGuestComment); guestLayout.addView(inputGuestHandler);
+
+            // 4. Smart UI Listeners
+            inputGuestName.setOnItemClickListener((parent, view, position, id) -> {
+                String selected = (String) parent.getItemAtPosition(position);
+                if (smartGuestMap.containsKey(selected)) {
+                    // It's an official guest! Hide the redundant fields.
+                    detailsContainer.setVisibility(View.GONE);
+                } else {
+                    // It's a historical guest or new name. Show fields so admin can officially register them!
+                    detailsContainer.setVisibility(View.VISIBLE);
+                }
+            });
+
+            inputGuestName.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    // If they start typing again, bring the fields back just in case
+                    detailsContainer.setVisibility(View.VISIBLE);
+                }
+                @Override public void afterTextChanged(Editable s) {}
+            });
 
             mainLayout.addView(memberLayout);
             mainLayout.addView(guestScroll);
 
+            // Logic to switch tabs dynamically
             final boolean[] isGuestMode = {false};
             Runnable updateUI = () -> {
                 if (isGuestMode[0]) {
@@ -389,35 +452,43 @@ public class TransactionActivity extends AppCompatActivity {
 
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 if (isGuestMode[0]) {
-                    String name = inputGuestName.getText().toString().trim();
+                    String typedString = inputGuestName.getText().toString().trim();
                     String amtStr = inputGuestAmt.getText().toString().trim();
                     String handler = inputGuestHandler.getText().toString().trim();
 
-                    if (name.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { 
-                        Toast.makeText(this, "Guest Name, Amount, and Handler are required", Toast.LENGTH_SHORT).show(); return; 
+                    if (typedString.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { 
+                        Toast.makeText(this, "Name, Amount, and Handler are required", Toast.LENGTH_SHORT).show(); return; 
                     }
 
                     float amt = Float.parseFloat(amtStr);
-                    String note = inputGuestNote.getText().toString().trim();
+                    String baseNote = inputGuestNote.getText().toString().trim();
+                    String adminComment = inputGuestComment.getText().toString().trim();
+                    
+                    String finalNote = baseNote;
+                    if (!adminComment.isEmpty()) {
+                        finalNote = baseNote.isEmpty() ? ("Admin Note: " + adminComment) : (baseNote + " | Admin Note: " + adminComment);
+                    }
 
-                    if (name.contains("(") && name.contains(")")) {
-                        logDonationToDatabase(name + " [Guest]", amt, note, handler);
+                    if (smartGuestMap.containsKey(typedString)) {
+                        // ✨ EXISTING GUEST PATH: We hide the details, so we don't save any new profile data. Just log it!
+                        Guest existing = smartGuestMap.get(typedString);
+                        logDonationToDatabase(existing.name + " (" + existing.id + ") [Guest]", amt, finalNote, handler);
                     } else {
+                        // ✨ NEW OR HISTORICAL GUEST PATH: Create their new official profile!
                         String guestId = "GST-" + (1000 + new Random().nextInt(9000));
                         Guest newGuest = new Guest();
                         newGuest.id = guestId;
-                        newGuest.name = name;
+                        newGuest.name = typedString; // Whatever they typed is the new name
                         newGuest.phone = inputGuestPhone.getText().toString().trim();
                         newGuest.address = inputGuestAddress.getText().toString().trim();
                         newGuest.email = inputGuestEmail.getText().toString().trim();
                         newGuest.bloodGroup = inputGuestBloodGroup.getText().toString().trim();
                         newGuest.fatherName = inputGuestFather.getText().toString().trim();
                         newGuest.motherName = inputGuestMother.getText().toString().trim();
-                        newGuest.adminComment = inputGuestComment.getText().toString().trim();
                         newGuest.timestamp = System.currentTimeMillis();
 
                         db.child("communities").child(session.getCommunityId()).child("guests").child(guestId).setValue(newGuest);
-                        logDonationToDatabase(name + " (" + guestId + ") [Guest]", amt, note, handler);
+                        logDonationToDatabase(newGuest.name + " (" + guestId + ") [Guest]", amt, finalNote, handler);
                     }
                     dialog.dismiss();
                 } else {
