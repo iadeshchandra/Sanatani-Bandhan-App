@@ -31,11 +31,11 @@ public class EventActivity extends AppCompatActivity {
     private SessionManager session;
     private LinearLayout eventsContainer;
     private EditText inputSearch;
-    
+
     private List<Event> fullEventList = new ArrayList<>();
     private List<Event> currentlyDisplayedList = new ArrayList<>();
     private boolean isManagerOrAdmin;
-    
+
     private Long filterStartTs = null;
     private Long filterEndTs = null;
 
@@ -104,11 +104,11 @@ public class EventActivity extends AppCompatActivity {
         for (Event e : fullEventList) {
             boolean matchesSearch = query.isEmpty() || (e.title != null && e.title.toLowerCase().contains(query)) || (e.location != null && e.location.toLowerCase().contains(query));
             boolean matchesDate = true;
-            
+
             if (filterStartTs != null && filterEndTs != null) {
                 matchesDate = (e.timestamp >= filterStartTs && e.timestamp <= filterEndTs);
             }
-            
+
             if (matchesSearch && matchesDate) currentlyDisplayedList.add(e);
         }
         Collections.sort(currentlyDisplayedList, (a, b) -> Long.compare(a.timestamp, b.timestamp));
@@ -155,7 +155,6 @@ public class EventActivity extends AppCompatActivity {
     }
     private interface DateRangeCallback { void onSelected(long start, long end); }
 
-    // ✨ FIX: Perfectly wired to the new item_event.xml UI! No logic changed.
     private void renderEvents() {
         eventsContainer.removeAllViews();
         long now = System.currentTimeMillis();
@@ -163,24 +162,52 @@ public class EventActivity extends AppCompatActivity {
         for (Event event : currentlyDisplayedList) {
             try {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_event, eventsContainer, false);
-                
-                ((TextView) view.findViewById(R.id.tvEventTitle)).setText("🪔 " + event.title);
-                ((TextView) view.findViewById(R.id.tvEventWhen)).setText("When: " + event.dateStr + " at " + event.timeStr);
-                ((TextView) view.findViewById(R.id.tvEventWhere)).setText("Where: " + event.location);
-                
+
+                // ✨ FIX: Null-Safety applied to prevent the "null at null" ghost error
+                String safeDate = (event.dateStr != null && !event.dateStr.isEmpty()) ? event.dateStr : "Date TBA";
+                String safeTime = (event.timeStr != null && !event.timeStr.isEmpty()) ? event.timeStr : "Time TBA";
+                String safeLoc = (event.location != null && !event.location.isEmpty()) ? event.location : "Location TBA";
+
+                ((TextView) view.findViewById(R.id.tvEventTitle)).setText("🪔 " + (event.title != null ? event.title : "Untitled Event"));
+                ((TextView) view.findViewById(R.id.tvEventWhen)).setText("When: " + safeDate + " at " + safeTime);
+                ((TextView) view.findViewById(R.id.tvEventWhere)).setText("Where: " + safeLoc);
+
                 TextView tvCountdown = view.findViewById(R.id.tvEventCountdown);
+                Button btnShare = view.findViewById(R.id.btnShare);
+                Button btnResend = view.findViewById(R.id.btnResend);
+                
                 long diff = event.timestamp - now;
+                
                 if (diff > 0) {
+                    // EVENT IS UPCOMING
                     long days = diff / (1000 * 60 * 60 * 24);
                     long hours = (diff / (1000 * 60 * 60)) % 24;
                     tvCountdown.setText("⏳ Starts in: " + days + " Days, " + hours + " Hours");
                     tvCountdown.setTextColor(android.graphics.Color.parseColor("#E65100")); 
+                    
+                    btnShare.setVisibility(View.VISIBLE);
+                    if (isManagerOrAdmin) {
+                        btnResend.setVisibility(View.VISIBLE);
+                        btnResend.setText("🔔 RESEND (" + event.notificationCount + ")");
+                        btnResend.setOnClickListener(v -> {
+                            notifyAllMembers(event.title, safeDate, safeTime);
+                            int newCount = event.notificationCount + 1;
+                            db.child("communities").child(session.getCommunityId()).child("events").child(event.id).child("notificationCount").setValue(newCount);
+                            Toast.makeText(this, "Alert Sent to All Members!", Toast.LENGTH_SHORT).show();
+                        });
+                    } else {
+                        btnResend.setVisibility(View.GONE);
+                    }
                 } else {
+                    // ✨ FIX: EVENT HAS CONCLUDED! Hide Share and Resend completely.
                     tvCountdown.setText("✅ Event Started / Concluded");
                     tvCountdown.setTextColor(android.graphics.Color.parseColor("#388E3C")); 
+                    
+                    btnShare.setVisibility(View.GONE);
+                    btnResend.setVisibility(View.GONE);
                 }
 
-                ((TextView) view.findViewById(R.id.tvEventDesc)).setText(event.description);
+                ((TextView) view.findViewById(R.id.tvEventDesc)).setText(event.description != null ? event.description : "");
 
                 TextView tvAdminNote = view.findViewById(R.id.tvEventAdminNote);
                 if (event.adminComment != null && !event.adminComment.trim().isEmpty()) {
@@ -190,32 +217,17 @@ public class EventActivity extends AppCompatActivity {
                     tvAdminNote.setVisibility(View.GONE);
                 }
 
-                // 🎨 Binding the new beautifully aligned buttons!
                 view.findViewById(R.id.btnDownloadPdf).setOnClickListener(v -> {
                     PdfReportService.generateEventItinerary(this, session.getCommunityName(), event, session.getUserName());
                 });
 
-                view.findViewById(R.id.btnShare).setOnClickListener(v -> {
+                btnShare.setOnClickListener(v -> {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
-                    String shareBody = "🙏 Namaskar! Join us for " + event.title + "\n📅 Date: " + event.dateStr + " at " + event.timeStr + "\n📍 Location: " + event.location + "\n\n" + event.description + "\n\n- Shared via Sanatani Bandhan";
+                    String shareBody = "🙏 Namaskar! Join us for " + event.title + "\n📅 Date: " + safeDate + " at " + safeTime + "\n📍 Location: " + safeLoc + "\n\n" + (event.description != null ? event.description : "") + "\n\n- Shared via Sanatani Bandhan";
                     shareIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
                     startActivity(Intent.createChooser(shareIntent, "Share Event"));
                 });
-
-                Button btnResend = view.findViewById(R.id.btnResend);
-                if (isManagerOrAdmin && diff > 0) {
-                    btnResend.setVisibility(View.VISIBLE);
-                    btnResend.setText("🔔 RESEND (" + event.notificationCount + ")");
-                    btnResend.setOnClickListener(v -> {
-                        notifyAllMembers(event.title, event.dateStr, event.timeStr);
-                        int newCount = event.notificationCount + 1;
-                        db.child("communities").child(session.getCommunityId()).child("events").child(event.id).child("notificationCount").setValue(newCount);
-                        Toast.makeText(this, "Alert Sent to All Members!", Toast.LENGTH_SHORT).show();
-                    });
-                } else {
-                    btnResend.setVisibility(View.GONE);
-                }
 
                 if (isManagerOrAdmin) {
                     view.setOnLongClickListener(v -> {
@@ -240,10 +252,10 @@ public class EventActivity extends AppCompatActivity {
         final EditText inputLocation = new EditText(this); inputLocation.setHint("Location (e.g., Haritola Mandir)");
         final EditText inputDesc = new EditText(this); inputDesc.setHint("About the Event");
         final EditText inputAdminComment = new EditText(this); inputAdminComment.setHint("Admin Note (Optional)");
-        
+
         final Button btnSelectDateTime = new Button(this);
         btnSelectDateTime.setText("Select Date & Time");
-        
+
         final Calendar calendar = Calendar.getInstance();
         final String[] selectedDateStr = {""};
         final String[] selectedTimeStr = {""};
@@ -252,13 +264,13 @@ public class EventActivity extends AppCompatActivity {
             new DatePickerDialog(this, (view, year, month, day) -> {
                 calendar.set(Calendar.YEAR, year); calendar.set(Calendar.MONTH, month); calendar.set(Calendar.DAY_OF_MONTH, day);
                 selectedDateStr[0] = new SimpleDateFormat("EEEE, dd MMM yyyy", Locale.getDefault()).format(calendar.getTime());
-                
+
                 new TimePickerDialog(this, (timeView, hourOfDay, minute) -> {
                     calendar.set(Calendar.HOUR_OF_DAY, hourOfDay); calendar.set(Calendar.MINUTE, minute);
                     selectedTimeStr[0] = new SimpleDateFormat("hh:mm a", Locale.getDefault()).format(calendar.getTime());
                     btnSelectDateTime.setText(selectedDateStr[0] + " at " + selectedTimeStr[0]);
                 }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), false).show();
-                
+
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show();
         });
 
@@ -267,14 +279,17 @@ public class EventActivity extends AppCompatActivity {
 
         builder.setPositiveButton("SCHEDULE", null); 
         builder.setNegativeButton("CANCEL", null); 
-        
+
         AlertDialog dialog = builder.create();
         dialog.show();
 
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String title = inputTitle.getText().toString().trim();
-            if (title.isEmpty() || selectedDateStr[0].isEmpty()) {
-                Toast.makeText(this, "Title and Date/Time are required", Toast.LENGTH_SHORT).show(); return;
+            
+            // ✨ FIX: Strict validation forces Admin to complete the Time Picker!
+            if (title.isEmpty() || selectedDateStr[0].isEmpty() || selectedTimeStr[0].isEmpty()) {
+                Toast.makeText(this, "Title, Date AND Time are required!", Toast.LENGTH_SHORT).show(); 
+                return;
             }
 
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
@@ -282,7 +297,7 @@ public class EventActivity extends AppCompatActivity {
 
             String eventId = db.child("communities").child(session.getCommunityId()).child("events").push().getKey();
             Event newEvent = new Event(eventId, title, selectedDateStr[0], selectedTimeStr[0], inputLocation.getText().toString(), inputDesc.getText().toString(), inputAdminComment.getText().toString(), session.getUserName(), calendar.getTimeInMillis(), 1);
-            
+
             db.child("communities").child(session.getCommunityId()).child("events").child(eventId).setValue(newEvent);
 
             notifyAllMembers(title, selectedDateStr[0], selectedTimeStr[0]);
@@ -296,7 +311,13 @@ public class EventActivity extends AppCompatActivity {
         membersRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 long ts = System.currentTimeMillis();
-                String message = "Reminder: " + eventTitle + " is scheduled on " + dateStr + " at " + timeStr;
+                
+                // Safe values passed from renderEvents
+                String safeTitle = eventTitle != null ? eventTitle : "Mandir Event";
+                String safeDate = dateStr != null ? dateStr : "Date TBA";
+                String safeTime = timeStr != null ? timeStr : "Time TBA";
+                
+                String message = "Reminder: " + safeTitle + " is scheduled on " + safeDate + " at " + safeTime;
                 for (DataSnapshot memberSnap : snapshot.getChildren()) {
                     String memberId = memberSnap.getKey();
                     if (memberId != null) {
