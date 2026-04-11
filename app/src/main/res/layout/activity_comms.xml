@@ -7,23 +7,31 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
 
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Mass Sandesh Broadcast" android:textSize="26sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="4dp"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Reach all devotees offline via WhatsApp or SMS." android:textSize="14sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="24dp"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Reach your devotees and guests offline via WhatsApp or SMS." android:textSize="14sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="24dp"/>
 
         <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="3dp" android:layout_marginBottom="16dp" app:cardBackgroundColor="#FFFFFF">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Select Sandesh Category:" android:textSize="16sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
                 <RadioGroup android:id="@+id/radioGroupCategory" android:layout_width="match_parent" android:layout_height="wrap_content">
-                    <RadioButton android:id="@+id/rbMeeting" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mandir Meeting Alert" android:textColor="#424242"/>
-                    <RadioButton android:id="@+id/rbUtsav" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Utsav / Puja Greeting" android:textColor="#424242"/>
-                    <RadioButton android:id="@+id/rbGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="General Announcement" android:textColor="#424242" android:checked="true"/>
+                    <RadioButton android:id="@+id/rbMeeting" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📋 Mandir Meeting Alert" android:textColor="#424242"/>
+                    <RadioButton android:id="@+id/rbUtsav" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🪔 Utsav / Puja Greeting" android:textColor="#424242"/>
+                    <RadioButton android:id="@+id/rbGeneral" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📢 General Announcement" android:textColor="#424242" android:checked="true"/>
+                    <RadioButton android:id="@+id/rbGuest" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💌 Guest / New Devotee Invitation" android:textColor="#D32F2F" android:textStyle="bold"/>
                 </RadioGroup>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="3dp" android:layout_marginBottom="24dp" app:cardBackgroundColor="#FFFFFF">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="System will auto-add '🙏 Namaskar' at the top and 'Powered by Sanatani Bandhan CRM' at the bottom." android:textSize="12sp" android:textStyle="italic" android:textColor="#1976D2" android:layout_marginBottom="12dp"/>
-                <EditText android:id="@+id/inputMessage" android:layout_width="match_parent" android:layout_height="150dp" android:hint="Type your main message here..." android:background="@null" android:gravity="top" android:inputType="textMultiLine" android:textColor="#212121" android:textSize="16sp"/>
+                
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="System will auto-add your Greeting at the top and 'Powered by Sanatani Bandhan CRM' at the bottom." android:textSize="12sp" android:textStyle="italic" android:textColor="#1976D2" android:layout_marginBottom="16dp"/>
+                
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Opening Greeting:" android:textSize="12sp" android:textColor="#757575"/>
+                <EditText android:id="@+id/inputGreeting" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="🙏 Namaskar" android:hint="e.g., 🌺 Jay Shri Ram" android:textColor="#E65100" android:textStyle="bold" android:layout_marginBottom="16dp" android:backgroundTint="#EEEEEE"/>
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Main Message:" android:textSize="12sp" android:textColor="#757575"/>
+                <EditText android:id="@+id/inputMessage" android:layout_width="match_parent" android:layout_height="130dp" android:hint="Type the main body of your announcement or invitation here..." android:background="@null" android:gravity="top" android:inputType="textMultiLine" android:textColor="#212121" android:textSize="15sp"/>
+                
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
