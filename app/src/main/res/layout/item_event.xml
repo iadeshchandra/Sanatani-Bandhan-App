@@ -21,12 +21,12 @@
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
 
-            <Button android:id="@+id/btnDownloadPdf" android:layout_width="match_parent" android:layout_height="55dp" android:text="📄 DOWNLOAD PDF" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#7B1FA2" android:layout_marginBottom="8dp" android:maxLines="1"/>
+            <Button android:id="@+id/btnDownloadPdf" android:layout_width="match_parent" android:layout_height="55dp" android:text="📄 DOWNLOAD PDF" android:textSize="14sp" android:textStyle="bold" android:backgroundTint="#7B1FA2" android:layout_marginBottom="8dp"/>
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
                 
-                <Button android:id="@+id/btnShare" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="📤 SHARE" android:textSize="13sp" android:textStyle="bold" android:backgroundTint="#1976D2" android:layout_marginEnd="4dp" android:maxLines="1" android:padding="0dp"/>
-                <Button android:id="@+id/btnResend" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="🔔 RESEND" android:textSize="13sp" android:textStyle="bold" android:backgroundTint="#D32F2F" android:layout_marginStart="4dp" android:maxLines="1" android:padding="0dp"/>
+                <Button android:id="@+id/btnShare" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="📤 SHARE" android:textSize="13sp" android:textStyle="bold" android:backgroundTint="#1976D2" android:layout_marginEnd="4dp" android:maxLines="1" android:singleLine="true" android:padding="0dp"/>
+                <Button android:id="@+id/btnResend" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp" android:text="🔔 RESEND" android:textSize="13sp" android:textStyle="bold" android:backgroundTint="#D32F2F" android:layout_marginStart="4dp" android:maxLines="1" android:singleLine="true" android:padding="0dp"/>
             </LinearLayout>
 
         </LinearLayout>
