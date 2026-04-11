@@ -45,7 +45,6 @@ public class TransactionActivity extends AppCompatActivity {
     private HashMap<String, String> phoneMap = new HashMap<>();
 
     private List<Guest> officialGuestList = new ArrayList<>();
-    private List<String> historicalGuestNames = new ArrayList<>();
 
     private float totalDonated = 0f;
     private Long filterStartTs = null;
@@ -172,19 +171,10 @@ public class TransactionActivity extends AppCompatActivity {
         donRef.addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 fullDonationList.clear();
-                historicalGuestNames.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     SingleDonation d = data.getValue(SingleDonation.class);
                     if (d != null) {
                         fullDonationList.add(d);
-                        // ✨ FIX: Stronger filter! Blocks [Member], (SB-, and (ADMIN-
-                        if (d.name != null && !d.name.contains("[Member]") && !d.name.contains("(SB-") && !d.name.contains("(ADMIN-")) {
-                            String cleanName = d.name.replace(" [Guest]", "").trim();
-                            // Only add if they don't have an ID attached yet
-                            if (!cleanName.contains("GST-") && !historicalGuestNames.contains(cleanName)) {
-                                historicalGuestNames.add(cleanName);
-                            }
-                        }
                     }
                 }
                 applyFilters();
@@ -357,16 +347,17 @@ public class TransactionActivity extends AppCompatActivity {
             List<String> dropdownOptions = new ArrayList<>();
 
             for (Guest g : officialGuestList) {
-                String display = (g.phone != null && !g.phone.isEmpty()) ? (g.name + " | 📞 " + g.phone) : (g.name + " | 🆔 " + g.id);
+                // ✨ FIX: Strictly format to show Name and GST- ID so Admin always knows it's an official guest!
+                String display = g.name + " (" + g.id + ")";
+                if (g.phone != null && !g.phone.isEmpty()) {
+                    display += " | 📞 " + g.phone;
+                }
                 smartGuestMap.put(display, g);
                 dropdownOptions.add(display);
             }
-            for (String hName : historicalGuestNames) {
-                if (!dropdownOptions.contains(hName)) dropdownOptions.add(hName);
-            }
 
             final AutoCompleteTextView inputGuestName = new AutoCompleteTextView(this);
-            inputGuestName.setHint("Search Guest Name or Phone");
+            inputGuestName.setHint("Search Official Guest Name");
             inputGuestName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, dropdownOptions));
             inputGuestName.setThreshold(1);
             guestLayout.addView(inputGuestName);
