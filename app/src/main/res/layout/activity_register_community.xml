@@ -127,16 +127,24 @@
                     android:layout_marginBottom="12dp"/>
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#EEEEEE" android:layout_marginBottom="12dp"/>
 
-                <EditText
-                    android:id="@+id/inputPassword"
+                <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
-                    android:layout_height="55dp"
-                    android:hint="Secure Password"
-                    android:inputType="textPassword"
-                    android:background="@android:color/transparent"
-                    android:padding="12dp"
-                    android:singleLine="true"
-                    android:layout_marginBottom="16dp"/>
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:hintEnabled="false"
+                    app:endIconMode="password_toggle"
+                    app:endIconTint="#E65100">
+
+                    <EditText
+                        android:id="@+id/inputPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:hint="Secure Password"
+                        android:inputType="textPassword"
+                        android:background="@android:color/transparent"
+                        android:padding="12dp"
+                        android:singleLine="true"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <Button
                     android:id="@+id/btnRegister"
