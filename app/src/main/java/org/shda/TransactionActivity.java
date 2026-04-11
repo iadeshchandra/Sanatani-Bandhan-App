@@ -39,7 +39,6 @@ public class TransactionActivity extends AppCompatActivity {
     private List<SingleDonation> fullDonationList = new ArrayList<>();
     private List<SingleDonation> currentlyDisplayedList = new ArrayList<>();
 
-    // Segregated lists for clean Auto-Suggestions
     private List<String> autocompleteOnlyMembers = new ArrayList<>();
     private List<String> autocompleteOnlyGuests = new ArrayList<>();
     private List<String> autocompleteManagers = new ArrayList<>();
@@ -127,12 +126,12 @@ public class TransactionActivity extends AppCompatActivity {
         }
     }
 
+    // ✨ FIX: Changed to addValueEventListener so Member dropdown updates instantly
     private void loadMembersAndManagers() {
-        autocompleteOnlyMembers.clear(); autocompleteManagers.clear(); phoneMap.clear();
-        
         db.child("communities").child(session.getCommunityId()).child("members").keepSynced(true);
-        db.child("communities").child(session.getCommunityId()).child("members").addListenerForSingleValueEvent(new ValueEventListener() {
+        db.child("communities").child(session.getCommunityId()).child("members").addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                autocompleteOnlyMembers.clear(); autocompleteManagers.clear(); phoneMap.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Member m = data.getValue(Member.class);
                     if (m != null) {
@@ -142,17 +141,18 @@ public class TransactionActivity extends AppCompatActivity {
                     }
                 }
                 if (!autocompleteManagers.contains(session.getUserName())) autocompleteManagers.add(session.getUserName() + " (" + session.getUserId() + ")");
-                loadGuestDonors(); 
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
+        loadGuestDonors(); 
     }
 
+    // ✨ FIX: Changed to addValueEventListener so Guest dropdown updates instantly
     private void loadGuestDonors() {
-        autocompleteOnlyGuests.clear();
         db.child("communities").child(session.getCommunityId()).child("guests").keepSynced(true);
-        db.child("communities").child(session.getCommunityId()).child("guests").addListenerForSingleValueEvent(new ValueEventListener() {
+        db.child("communities").child(session.getCommunityId()).child("guests").addValueEventListener(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                autocompleteOnlyGuests.clear();
                 for (DataSnapshot data : snapshot.getChildren()) {
                     Guest g = data.getValue(Guest.class);
                     if (g != null) {
@@ -160,7 +160,6 @@ public class TransactionActivity extends AppCompatActivity {
                         if (g.phone != null && !g.phone.isEmpty()) phoneMap.put(g.id, g.phone);
                     }
                 }
-                applyFilters(); 
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
@@ -288,7 +287,6 @@ public class TransactionActivity extends AppCompatActivity {
             mainLayout.setOrientation(LinearLayout.VERTICAL);
             mainLayout.setPadding(40, 20, 40, 0);
 
-            // Toggle Tab Buttons
             LinearLayout toggleLayout = new LinearLayout(this);
             toggleLayout.setOrientation(LinearLayout.HORIZONTAL);
             toggleLayout.setWeightSum(2);
@@ -306,7 +304,6 @@ public class TransactionActivity extends AppCompatActivity {
             toggleLayout.addView(btnTabGuest);
             mainLayout.addView(toggleLayout);
 
-            // ================== MEMBER VIEW ==================
             LinearLayout memberLayout = new LinearLayout(this);
             memberLayout.setOrientation(LinearLayout.VERTICAL);
             
@@ -333,7 +330,6 @@ public class TransactionActivity extends AppCompatActivity {
             memberLayout.addView(inputMemberNote); 
             memberLayout.addView(inputMemberHandler);
 
-            // ================== GUEST VIEW (ScrollView) ==================
             ScrollView guestScroll = new ScrollView(this);
             LinearLayout guestLayout = new LinearLayout(this);
             guestLayout.setOrientation(LinearLayout.VERTICAL);
@@ -368,7 +364,6 @@ public class TransactionActivity extends AppCompatActivity {
             mainLayout.addView(memberLayout);
             mainLayout.addView(guestScroll);
 
-            // Logic to switch tabs dynamically
             final boolean[] isGuestMode = {false};
             Runnable updateUI = () -> {
                 if (isGuestMode[0]) {
@@ -383,7 +378,7 @@ public class TransactionActivity extends AppCompatActivity {
             };
             btnTabMember.setOnClickListener(v -> { isGuestMode[0] = false; updateUI.run(); });
             btnTabGuest.setOnClickListener(v -> { isGuestMode[0] = true; updateUI.run(); });
-            updateUI.run(); // Init
+            updateUI.run(); 
 
             builder.setView(mainLayout);
             builder.setPositiveButton("RECORD", null); 
@@ -451,7 +446,6 @@ public class TransactionActivity extends AppCompatActivity {
         
         db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd)
             .addOnSuccessListener(aVoid -> {
-                // ✨ FIX: Smart Prompt for PDF Generation added here
                 new AlertDialog.Builder(TransactionActivity.this)
                     .setTitle("✅ Donation Logged")
                     .setMessage("Do you want to generate a formal PDF receipt for " + formattedDonorName + "?")
@@ -484,19 +478,9 @@ public class TransactionActivity extends AppCompatActivity {
         public String id, name, note, collectedBy, mndId, orgId, role;
         public float amount; 
         public long timestamp;
-        
         public SingleDonation() {} 
-
         public SingleDonation(String id, String name, float amount, String note, String mndId, String orgId, String collectedBy, long timestamp, String role) {
-            this.id = id;
-            this.name = name;
-            this.amount = amount;
-            this.note = note;
-            this.mndId = mndId;
-            this.orgId = orgId;
-            this.collectedBy = collectedBy;
-            this.timestamp = timestamp;
-            this.role = role;
+            this.id = id; this.name = name; this.amount = amount; this.note = note; this.mndId = mndId; this.orgId = orgId; this.collectedBy = collectedBy; this.timestamp = timestamp; this.role = role;
         }
     }
 
@@ -505,19 +489,11 @@ public class TransactionActivity extends AppCompatActivity {
         public float totalDonated = 0f;
         public long lastUpdated;
         public List<SingleDonation> history = new ArrayList<>();
-        
         public GroupedDonation() {} 
-
-        public GroupedDonation(String displayName) {
-            this.displayName = displayName;
-        }
-
+        public GroupedDonation(String displayName) { this.displayName = displayName; }
         public void addDonation(SingleDonation sd) {
-            this.history.add(sd);
-            this.totalDonated += sd.amount;
-            if (sd.timestamp > this.lastUpdated) {
-                this.lastUpdated = sd.timestamp;
-            }
+            this.history.add(sd); this.totalDonated += sd.amount;
+            if (sd.timestamp > this.lastUpdated) { this.lastUpdated = sd.timestamp; }
         }
     }
 }
