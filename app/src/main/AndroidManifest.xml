@@ -23,10 +23,11 @@
         </activity>
 
         <activity android:name=".LoginActivity" android:exported="false" />
-        
         <activity android:name=".RegisterCommunityActivity" android:exported="false" />
-        
         <activity android:name=".DashboardActivity" android:exported="false" />
+        
+        <activity android:name=".CommunityInfoActivity" android:exported="false" />
+        
         <activity android:name=".MemberActivity" android:exported="false" />
         <activity android:name=".AddMemberActivity" android:exported="false" />
         <activity android:name=".TransactionActivity" android:exported="false" />
