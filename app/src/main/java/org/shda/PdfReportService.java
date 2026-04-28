@@ -3,6 +3,14 @@ package org.shda;
 import android.content.Context;
 import android.os.Environment;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.geom.PageSize;
@@ -28,6 +36,7 @@ public class PdfReportService {
     private static final DeviceRgb GREEN = new DeviceRgb(46, 125, 50);
     private static final DeviceRgb BLUE = new DeviceRgb(25, 118, 210);
 
+    // ✨ STANDARD SHARE (Unlimited for basic receipts and credentials)
     private static void sharePdf(Context context, File file) {
         try {
             android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
@@ -39,6 +48,47 @@ public class PdfReportService {
         } catch (Exception e) {
             Toast.makeText(context, "PDF Saved to Documents! (View in File Manager)", Toast.LENGTH_LONG).show();
         }
+    }
+
+    // ✨ FREEMIUM ENFORCER: Checks limit before sharing Master Reports
+    private static void checkMasterPdfLimitAndShare(Context context, File file) {
+        SessionManager session = new SessionManager(context);
+        
+        if ("PREMIUM".equals(session.getPlan())) {
+            sharePdf(context, file);
+            return;
+        }
+
+        DatabaseReference db = FirebaseDatabase.getInstance().getReference();
+        db.child("communities").child(session.getCommunityId()).child("info")
+          .addListenerForSingleValueEvent(new ValueEventListener() {
+              @Override
+              public void onDataChange(@NonNull DataSnapshot snapshot) {
+                  Integer pdfs = snapshot.child("pdfsGeneratedThisMonth").getValue(Integer.class);
+                  if (pdfs == null) pdfs = 0;
+
+                  if (pdfs >= 3) {
+                      new AlertDialog.Builder(context)
+                          .setTitle("🌟 Upgrade to Premium")
+                          .setMessage("You have reached the Free Plan limit of 3 Master PDF Reports per month.\n\nUpgrade to Sanatani Premium for unlimited professional exports.")
+                          .setPositiveButton("UPGRADE NOW", (d, w) -> {
+                              Toast.makeText(context, "Payment Gateway opening soon (Phase 3)!", Toast.LENGTH_LONG).show();
+                          })
+                          .setNegativeButton("CANCEL", null)
+                          .show();
+                      // Deny access and delete the blocked file
+                      if(file.exists()) file.delete(); 
+                  } else {
+                      // Allow access and increment the counter
+                      snapshot.getRef().child("pdfsGeneratedThisMonth").setValue(ServerValue.increment(1));
+                      sharePdf(context, file);
+                  }
+              }
+              @Override
+              public void onCancelled(@NonNull DatabaseError error) {
+                  sharePdf(context, file); // Offline fallback
+              }
+          });
     }
 
     private static File createBaseFile(Context context, String fileName) {
@@ -69,6 +119,7 @@ public class PdfReportService {
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(12).setItalic().setFontColor(SAFFRON).setMarginTop(20));
     }
 
+    // 🔒 MASTER REPORT (Checked)
     public static void generateComparisonReport(Context context, String communityName, List<TransactionActivity.SingleDonation> donations, List<ExpenseActivity.Expense> expenses, long startTs, long endTs, float totalIncome, float totalExpense) {
         try {
             File file = createBaseFile(context, "Income_Vs_Expense_Report");
@@ -108,10 +159,11 @@ public class PdfReportService {
             document.add(new Paragraph("\nNET BALANCE FOR PERIOD: BDT " + net).setBold().setFontSize(16).setTextAlignment(TextAlignment.RIGHT).setFontColor(netColor).setMarginTop(10));
 
             addSanataniFooter(document); document.close();
-            sharePdf(context, file);
+            checkMasterPdfLimitAndShare(context, file); // ✨ APPLIED HERE
         } catch (Exception e) {}
     }
 
+    // 🔒 MASTER REPORT (Checked)
     public static void generateMemberDirectory(Context context, String communityName, List<Member> members) {
         try {
             File file = createBaseFile(context, "Member_Directory");
@@ -127,10 +179,11 @@ public class PdfReportService {
                 table.addCell(new Paragraph(m.gotra!=null?m.gotra:"")); table.addCell(new Paragraph("BDT " + m.totalDonated).setFontColor(GREEN));
             }
             document.add(table); addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            checkMasterPdfLimitAndShare(context, file); // ✨ APPLIED HERE
         } catch (Exception e) { Toast.makeText(context, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show(); }
     }
 
+    // 🔓 BASIC UTILITY (Unlimited)
     public static void generateMemberProfile(Context context, String communityName, Member m) {
         try {
             File file = createBaseFile(context, "Devotee_Profile_" + m.id);
@@ -152,10 +205,11 @@ public class PdfReportService {
             table.addCell(new Cell().add(new Paragraph("Last Donation Date").setBold())); table.addCell(new Paragraph(lastDonationStr).setItalic());
             document.add(table); document.add(new Paragraph("\nData Verified By: " + (m.addedBySignature!=null?m.addedBySignature:"System")).setItalic().setFontSize(10));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            sharePdf(context, file); // UNLIMITED
         } catch (Exception e) {}
     }
 
+    // 🔓 BASIC UTILITY (Unlimited)
     public static void generateLoginCredentialsPdf(Context context, String communityName, String name, String memberId, String pin, String generatedBy) {
         try {
             File file = createBaseFile(context, "Secure_Credentials_" + memberId);
@@ -180,7 +234,6 @@ public class PdfReportService {
             table.addCell(idValue);
             table.addCell(pinValue);
 
-            // ✨ THE FIX: We actually tell the document to draw the table now!
             document.add(table);
 
             document.add(new Paragraph("SECURITY WARNING: Mandir staff will never ask for your PIN. Do not share this document with anyone.")
@@ -188,10 +241,11 @@ public class PdfReportService {
 
             document.add(new Paragraph("\nCredentials Issued By: " + generatedBy).setItalic().setFontSize(10).setMarginTop(20));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            sharePdf(context, file); // UNLIMITED
         } catch (Exception e) {}
     }
 
+    // 🔒 MASTER REPORT (Checked)
     public static void generateFinancialReport(Context context, String communityName, List<String> dates, List<String> names, List<Float> amounts, List<String> notes, float totalCollected, String title) {
         try {
             File file = createBaseFile(context, "Master_Donation_Ledger");
@@ -208,10 +262,11 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Donation in this Report: BDT " + totalCollected).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            checkMasterPdfLimitAndShare(context, file); // ✨ APPLIED HERE
         } catch (Exception e) {}
     }
 
+    // 🔓 BASIC UTILITY (Unlimited)
     public static void generateDonorStatement(Context context, String communityName, TransactionActivity.GroupedDonation gd) {
         try {
             File file = createBaseFile(context, "Donation_Statement_" + gd.displayName.replaceAll("[^a-zA-Z0-9]", ""));
@@ -233,10 +288,11 @@ public class PdfReportService {
             document.add(table); document.add(new Paragraph("\nTotal Donated in this Statement: BDT " + gd.totalDonated).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
             addThankYouMessage(document, communityName); 
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            sharePdf(context, file); // UNLIMITED
         } catch (Exception e) {}
     }
 
+    // 🔒 MASTER REPORT (Checked)
     public static void generateExpenseReport(Context context, String communityName, List<ExpenseActivity.Expense> expenses, float totalSpent, String title) {
         try {
             File file = createBaseFile(context, "Master_Utsav_Expense");
@@ -256,10 +312,11 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Expenses in this Report: BDT " + totalSpent).setBold().setFontSize(14).setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            checkMasterPdfLimitAndShare(context, file); // ✨ APPLIED HERE
         } catch (Exception e) {}
     }
 
+    // 🔓 BASIC UTILITY (Unlimited)
     public static void generateUtsavStatement(Context context, String communityName, ExpenseActivity.GroupedExpense ge) {
         try {
             File file = createBaseFile(context, "Utsav_Statement_" + ge.eventDisplayName.replaceAll("[^a-zA-Z0-9]", ""));
@@ -280,10 +337,11 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Event Expense: BDT " + ge.totalSpent).setBold().setFontSize(14).setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            sharePdf(context, file); // UNLIMITED
         } catch (Exception e) {}
     }
 
+    // 🔓 BASIC UTILITY (Unlimited)
     public static void generatePollReport(Context context, String communityName, Poll poll, boolean includeVoterNames) {
         try {
             File file = createBaseFile(context, "Panchayat_Poll_Insight");
@@ -314,10 +372,11 @@ public class PdfReportService {
                 document.add(vTable);
             }
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            sharePdf(context, file); // UNLIMITED
         } catch (Exception e) {}
     }
 
+    // 🔒 MASTER REPORT (Checked)
     public static void generateMultiplePollsReport(Context context, String communityName, List<Poll> polls, String title, boolean includeVoterNames) {
         try {
             File file = createBaseFile(context, "Master_Polls_Report");
@@ -338,10 +397,11 @@ public class PdfReportService {
                 document.add(new Paragraph("--------------------------------------------------").setFontColor(ColorConstants.LIGHT_GRAY));
             }
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            checkMasterPdfLimitAndShare(context, file); // ✨ APPLIED HERE
         } catch (Exception e) {}
     }
 
+    // 🔓 BASIC UTILITY (Unlimited)
     public static void generateEventItinerary(Context context, String communityName, EventActivity.Event event, String generatedBy) {
         try {
             File file = createBaseFile(context, "Mandir_Event_" + event.title.replaceAll("[^a-zA-Z0-9]", ""));
@@ -361,10 +421,11 @@ public class PdfReportService {
             }
             document.add(new Paragraph("\nItinerary Issued By: " + generatedBy).setItalic().setFontSize(10));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            sharePdf(context, file); // UNLIMITED
         } catch (Exception e) {}
     }
 
+    // 🔒 MASTER REPORT (Checked)
     public static void generateMasterEventReport(Context context, String communityName, List<EventActivity.Event> events, String title) {
         try {
             File file = createBaseFile(context, "Master_Event_Calendar");
@@ -385,10 +446,11 @@ public class PdfReportService {
             }
             document.add(table); document.add(new Paragraph("\nTotal Events listed: " + events.size()).setItalic().setTextAlignment(TextAlignment.RIGHT));
             addSanataniFooter(document); document.close();
-            sharePdf(context, file); 
+            checkMasterPdfLimitAndShare(context, file); // ✨ APPLIED HERE
         } catch (Exception e) {}
     }
 
+    // 🔒 MASTER REPORT (Checked)
     public static void generateSecurityAudit(Context context, String communityName, List<DashboardActivity.AuditLog> logs, String title) {
         try {
             File file = createBaseFile(context, "Security_Audit_Report");
@@ -415,7 +477,7 @@ public class PdfReportService {
 
             addSanataniFooter(document); 
             document.close();
-            sharePdf(context, file); 
+            checkMasterPdfLimitAndShare(context, file); // ✨ APPLIED HERE
         } catch (Exception e) {
             Toast.makeText(context, "Error generating Audit PDF.", Toast.LENGTH_SHORT).show();
         }
