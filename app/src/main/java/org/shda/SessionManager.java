@@ -13,7 +13,8 @@ public class SessionManager {
     private static final String KEY_COMM_NAME = "communityName";
     private static final String KEY_USER_NAME = "userName"; 
     private static final String KEY_USER_ID = "userId";     
-    private static final String KEY_WORKSPACE_EMAIL = "workspaceEmail"; // NEW
+    private static final String KEY_WORKSPACE_EMAIL = "workspaceEmail"; 
+    private static final String KEY_PLAN = "plan"; // ✨ NEW: Tracks Freemium vs Premium offline
 
     public SessionManager(Context context) {
         prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
@@ -28,6 +29,16 @@ public class SessionManager {
         editor.putString(KEY_USER_ID, userId);
         editor.putString(KEY_WORKSPACE_EMAIL, workspaceEmail);
         editor.apply();
+    }
+
+    // ✨ NEW: Methods to handle the SaaS Subscription Plan
+    public void setPlan(String plan) {
+        editor.putString(KEY_PLAN, plan);
+        editor.apply();
+    }
+
+    public String getPlan() { 
+        return prefs.getString(KEY_PLAN, "FREE"); // Defaults to FREE if not found
     }
 
     public void updateCommunityName(String newName) {
