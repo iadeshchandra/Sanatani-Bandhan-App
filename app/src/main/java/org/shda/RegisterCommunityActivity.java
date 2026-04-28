@@ -24,11 +24,11 @@ public class RegisterCommunityActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register_community); // ✨ FIX: Exact layout match
+        setContentView(R.layout.activity_register_community); 
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseDatabase.getInstance().getReference();
-        session = new SessionManager(this); // ✨ FIX: Initiating SessionManager
+        session = new SessionManager(this); 
 
         inputCommName = findViewById(R.id.inputCommName);
         inputAdminName = findViewById(R.id.inputAdminName);
@@ -75,6 +75,14 @@ public class RegisterCommunityActivity extends AppCompatActivity {
                 infoMap.put("type", type); 
                 infoMap.put("email", email); 
                 infoMap.put("phone", phone);
+                infoMap.put("communityName", commName); // FIX: Ensures LoginActivity can grab this easily
+
+                // ✨ FREEMIUM INJECTION: Setup default plan and counters
+                infoMap.put("plan", "FREE"); 
+                infoMap.put("devoteeCount", 1); // Starts at 1 because we are adding the Admin
+                infoMap.put("pdfsGeneratedThisMonth", 0);
+                infoMap.put("broadcastsSentThisMonth", 0);
+                
                 db.child("communities").child(commId).child("info").setValue(infoMap);
 
                 // 3. Create Global Admin Record for Firebase Auth Login
@@ -96,8 +104,9 @@ public class RegisterCommunityActivity extends AppCompatActivity {
                 adminMap.put("timestamp", System.currentTimeMillis());
                 db.child("communities").child(commId).child("members").child("ADMIN-001").setValue(adminMap);
 
-                // 5. ✨ FIX: Save local session securely via our formal SessionManager
+                // 5. Save local session securely 
                 session.createLoginSession(commId, "ADMIN", commName, adminName, "ADMIN-001", email);
+                session.setPlan("FREE"); // ✨ FREEMIUM: Save the plan to offline cache!
 
                 Toast.makeText(this, "Registration Complete!", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, DashboardActivity.class)); 
