@@ -6,9 +6,15 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -45,20 +51,69 @@ public class AddMemberActivity extends AppCompatActivity {
 
         if (!"ADMIN".equals(session.getRole())) spinnerRole.setEnabled(false);
 
-        btnSaveMember.setOnClickListener(v -> saveMemberStrictly());
+        btnSaveMember.setOnClickListener(v -> checkLimitsAndSave());
     }
 
-    private void saveMemberStrictly() {
+    // ✨ FREEMIUM ENFORCER: Checks limits before proceeding
+    private void checkLimitsAndSave() {
         String name = inputName.getText().toString().trim();
         String phone = inputPhone.getText().toString().trim();
-        
+
         if (name.isEmpty() || phone.isEmpty()) { 
             Toast.makeText(this, "Name and Phone are required!", Toast.LENGTH_SHORT).show(); 
             return; 
         }
 
-        // 1. INSTANTLY disable the button so the user cannot spam click it.
         btnSaveMember.setEnabled(false); 
+        btnSaveMember.setText("VERIFYING WORKSPACE...");
+
+        // Fast Offline-First Read
+        db.child("communities").child(session.getCommunityId()).child("info")
+          .addListenerForSingleValueEvent(new ValueEventListener() {
+              @Override
+              public void onDataChange(@NonNull DataSnapshot snapshot) {
+                  String plan = snapshot.child("plan").getValue(String.class);
+                  Integer count = snapshot.child("devoteeCount").getValue(Integer.class);
+                  
+                  if (plan == null) plan = "FREE";
+                  if (count == null) count = 0;
+
+                  if (plan.equals("FREE") && count >= 50) {
+                      showUpgradeDialog();
+                  } else {
+                      executeSaveStrictly(name, phone);
+                  }
+              }
+
+              @Override
+              public void onCancelled(@NonNull DatabaseError error) {
+                  // Fallback: If network fails, check local cache to be safe
+                  if ("FREE".equals(session.getPlan())) {
+                      Toast.makeText(AddMemberActivity.this, "Cannot verify Devotee limit while offline.", Toast.LENGTH_SHORT).show();
+                      btnSaveMember.setEnabled(true);
+                      btnSaveMember.setText("SAVE DEVOTEE");
+                  } else {
+                      executeSaveStrictly(name, phone);
+                  }
+              }
+          });
+    }
+
+    private void showUpgradeDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("🌟 Upgrade to Premium")
+            .setMessage("Your community is growing! The Free Plan allows up to 50 Devotees.\n\nUpgrade to Sanatani Premium to unlock Unlimited Devotees, Master PDFs, and Mass WhatsApp Broadcasts.")
+            .setPositiveButton("UPGRADE NOW", (d, w) -> {
+                Toast.makeText(this, "Payment Gateway opening soon (Phase 3)!", Toast.LENGTH_LONG).show();
+            })
+            .setNegativeButton("CANCEL", null)
+            .show();
+            
+        btnSaveMember.setEnabled(true);
+        btnSaveMember.setText("SAVE DEVOTEE");
+    }
+
+    private void executeSaveStrictly(String name, String phone) {
         btnSaveMember.setText("QUEUED FOR SYNC...");
 
         String memberId = "SB-" + (1000 + new Random().nextInt(9000)); 
@@ -77,21 +132,20 @@ public class AddMemberActivity extends AppCompatActivity {
         memberMap.put("totalDonated", 0f);
         memberMap.put("timestamp", System.currentTimeMillis());
 
-        // 2. FIRE AND FORGET: We push the data to Firebase. 
-        // If offline, Firebase silently queues it. If online, it sends it instantly.
+        // 1. Push new member
         db.child("communities").child(session.getCommunityId()).child("members").child(memberId).setValue(memberMap);
         db.child("communities").child(session.getCommunityId()).child("logins").child(memberId).setValue(pinPassword);
+        
+        // 2. ✨ INCREMENT THE COUNTER INSTANTLY
+        db.child("communities").child(session.getCommunityId()).child("info").child("devoteeCount").setValue(ServerValue.increment(1));
 
-        // 3. OFFLINE PDF GENERATION: We generate the PDF locally, which requires zero internet!
         try { 
             PdfReportService.generateLoginCredentialsPdf(this, session.getCommunityName(), name, memberId, pinPassword, session.getRole()); 
-            Toast.makeText(this, "Devotee Queued. PDF Credentials Generated!", Toast.LENGTH_LONG).show(); 
+            Toast.makeText(this, "Devotee Saved. PDF Credentials Generated!", Toast.LENGTH_LONG).show(); 
         } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(this, "Devotee Queued, but error making PDF.", Toast.LENGTH_LONG).show(); 
+            Toast.makeText(this, "Devotee Saved, but error making PDF.", Toast.LENGTH_LONG).show(); 
         }
 
-        // 4. INSTANT CLOSE: Kick them back to the directory so they can't click save again!
         finish(); 
     }
 }
