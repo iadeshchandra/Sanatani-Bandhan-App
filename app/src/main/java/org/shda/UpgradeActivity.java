@@ -8,13 +8,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.card.MaterialCardView;
 
 public class UpgradeActivity extends AppCompatActivity {
 
-    private Button btnPayBD, btnPayIntl, btnCheckoutLink, btnVerifyPayment, btnCopyNumber;
+    private Button btnPayBD, btnPayIntl, btnCheckoutLink, btnVerifyPayment, btnCopyNumber, btnHowToPay;
     private MaterialCardView cardBanglaQR, cardIntlPayment;
     private SessionManager session;
 
@@ -43,6 +45,7 @@ public class UpgradeActivity extends AppCompatActivity {
         btnCheckoutLink = findViewById(R.id.btnCheckoutLink);
         btnVerifyPayment = findViewById(R.id.btnVerifyPayment);
         btnCopyNumber = findViewById(R.id.btnCopyNumber);
+        btnHowToPay = findViewById(R.id.btnHowToPay); // ✨ NEW
 
         // Toggle to Bangladesh QR View
         btnPayBD.setOnClickListener(v -> {
@@ -72,6 +75,22 @@ public class UpgradeActivity extends AppCompatActivity {
                 clipboard.setPrimaryClip(clip);
                 Toast.makeText(UpgradeActivity.this, "Number Copied! Paste into your Payment App", Toast.LENGTH_LONG).show();
             }
+        });
+
+        // ✨ NEW: Pop up the Instruction Manual Image ✨
+        btnHowToPay.setOnClickListener(v -> {
+            ImageView instructionImage = new ImageView(this);
+            // IMPORTANT: Crop the instruction side of your PDF and save it as 'talipay_instructions.jpg' inside res/drawable/
+            // Then change this line to point to it, e.g., instructionImage.setImageResource(R.drawable.talipay_instructions);
+            instructionImage.setImageResource(R.mipmap.ic_launcher); // Placeholder
+            instructionImage.setAdjustViewBounds(true);
+            instructionImage.setPadding(20, 20, 20, 20);
+
+            new AlertDialog.Builder(this)
+                .setTitle("Supported Apps & Instructions")
+                .setView(instructionImage)
+                .setPositiveButton("CLOSE", null)
+                .show();
         });
 
         // Open Wise/Payoneer Link
