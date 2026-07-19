@@ -56,10 +56,31 @@ public class DashboardActivity extends AppCompatActivity {
             return;
         }
 
-        // ✨ NEW: Continuously sync the user's Plan (FREE vs PREMIUM) in the background
         syncWorkspacePlan();
 
         pieChart = findViewById(R.id.pieChart);
+
+        // ✨ THE STEALTH ADMIN DOOR ✨
+        findViewById(R.id.tvDashboardTitle).setOnLongClickListener(v -> {
+            EditText input = new EditText(DashboardActivity.this);
+            input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+            input.setHint("Enter Master PIN");
+            
+            new AlertDialog.Builder(DashboardActivity.this)
+                .setTitle("Super Admin Access")
+                .setView(input)
+                .setPositiveButton("LOGIN", (dialog, which) -> {
+                    String pin = input.getText().toString();
+                    if ("987744".equals(pin)) { 
+                        startActivity(new Intent(DashboardActivity.this, SuperAdminActivity.class));
+                    } else {
+                        Toast.makeText(DashboardActivity.this, "Access Denied", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("CANCEL", null)
+                .show();
+            return true;
+        });
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
@@ -76,18 +97,40 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
         
-        // 🔒 THE GATEKEEPER: Lock Mass Sandesh for FREE Users
-        findViewById(R.id.cardComms).setOnClickListener(v -> {
-            if ("FREE".equalsIgnoreCase(session.getPlan())) {
-                startActivity(new Intent(this, UpgradeActivity.class));
-            } else {
-                startActivity(new Intent(this, CommsActivity.class));
-            }
-        });
+        // 🔒 THE GATEKEEPER: Mass Sandesh (1 Free Per Month)
+        findViewById(R.id.cardComms).setOnClickListener(v -> 
+            checkQuotaAndProceed("sandesh_sent", 1, () -> startActivity(new Intent(this, CommsActivity.class)))
+        );
+
+        // 🔒 THE GATEKEEPER: Master Reports (3 Free Per Month)
+        findViewById(R.id.btnGenerateReports).setOnClickListener(v -> 
+            checkQuotaAndProceed("pdfs_generated", 3, this::showGlobalPdfGeneratorDialog)
+        );
+
+        if (!"ADMIN".equals(session.getRole())) {
+            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
+        } else {
+            // 🔒 THE GATEKEEPER: Security Audit (1 Free Per Month)
+            findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> 
+                checkQuotaAndProceed("audits_downloaded", 1, () -> {
+                    new AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.btn_security_audit))
+                        .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
+                            if (which == 0) {
+                                pickDateRange((startTs, endTs) -> generateAuditPdf(startTs, endTs));
+                            } else {
+                                generateAuditPdf(0, Long.MAX_VALUE);
+                            }
+                        }).show();
+                })
+            );
+        }
 
         findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
+        
+        findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
 
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             try {
@@ -102,35 +145,62 @@ public class DashboardActivity extends AppCompatActivity {
             }
         });
 
-        findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
-        findViewById(R.id.btnGenerateReports).setOnClickListener(v -> showGlobalPdfGeneratorDialog());
-
-        if (!"ADMIN".equals(session.getRole())) {
-            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
-        } else {
-            // 🔒 THE GATEKEEPER: Lock Security Audit for FREE Users
-            findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> {
-                if ("FREE".equalsIgnoreCase(session.getPlan())) {
-                    startActivity(new Intent(this, UpgradeActivity.class));
-                } else {
-                    new AlertDialog.Builder(this)
-                        .setTitle(getString(R.string.btn_security_audit))
-                        .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
-                            if (which == 0) {
-                                pickDateRange((startTs, endTs) -> generateAuditPdf(startTs, endTs));
-                            } else {
-                                generateAuditPdf(0, Long.MAX_VALUE);
-                            }
-                        }).show();
-                }
-            });
-        }
-
         loadWorkspaceType();
         loadFinancialData();
     }
 
-    // ✨ NEW METHOD: Keeps the user's plan securely synced with Firebase
+    // ✨ THE MONTHLY CHAKRA GATEKEEPER ENGINE ✨
+    private void checkQuotaAndProceed(String feature, int freeLimit, Runnable action) {
+        if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
+            action.run(); // Premium gets unlimited access
+            return;
+        }
+
+        String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
+        DatabaseReference usageRef = db.child("communities").child(session.getCommunityId()).child("usage_tracking");
+
+        usageRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Usage usage = snapshot.getValue(Usage.class);
+                
+                // If no record exists, or if the month has changed, reset the tracking!
+                if (usage == null || !currentMonth.equals(usage.current_month)) {
+                    usage = new Usage();
+                    usage.current_month = currentMonth;
+                }
+
+                int currentUsage = 0;
+                if (feature.equals("pdfs_generated")) currentUsage = usage.pdfs_generated;
+                else if (feature.equals("sandesh_sent")) currentUsage = usage.sandesh_sent;
+                else if (feature.equals("audits_downloaded")) currentUsage = usage.audits_downloaded;
+
+                if (currentUsage < freeLimit) {
+                    // Update the limits and save back to Firebase
+                    if (feature.equals("pdfs_generated")) usage.pdfs_generated++;
+                    else if (feature.equals("sandesh_sent")) usage.sandesh_sent++;
+                    else if (feature.equals("audits_downloaded")) usage.audits_downloaded++;
+
+                    usageRef.setValue(usage);
+                    
+                    int remaining = freeLimit - (currentUsage + 1);
+                    Toast.makeText(DashboardActivity.this, "Free Seva Limit: " + remaining + " remaining this month.", Toast.LENGTH_SHORT).show();
+                    
+                    // Execute the requested feature
+                    action.run();
+                } else {
+                    // Limit Reached! Open the Upgrade UI
+                    startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class));
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(DashboardActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
     private void syncWorkspacePlan() {
         db.child("communities").child(session.getCommunityId()).child("info").child("plan")
           .addValueEventListener(new ValueEventListener() {
@@ -140,7 +210,6 @@ public class DashboardActivity extends AppCompatActivity {
                   if (currentPlan != null) {
                       session.setPlan(currentPlan);
                   } else {
-                      // If no plan is set yet, default them to FREE
                       db.child("communities").child(session.getCommunityId()).child("info").child("plan").setValue("FREE");
                       session.setPlan("FREE");
                   }
@@ -404,5 +473,14 @@ public class DashboardActivity extends AppCompatActivity {
         public String managerName, actionType, description;
         public long timestamp;
         public AuditLog() {}
+    }
+
+    // ✨ NEW DATA MODEL FOR TRACKING QUOTA ✨
+    public static class Usage {
+        public String current_month = "";
+        public int pdfs_generated = 0;
+        public int sandesh_sent = 0;
+        public int audits_downloaded = 0;
+        public Usage() {}
     }
 }
