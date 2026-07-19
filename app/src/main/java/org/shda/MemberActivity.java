@@ -8,9 +8,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
@@ -25,8 +27,14 @@ public class MemberActivity extends AppCompatActivity {
     private SessionManager session;
     private LinearLayout membersContainer;
     private AutoCompleteTextView inputSearch;
+    private TextView tvPlanStatus;
+    private Button btnAddNew;
+    
     private List<Member> fullMemberList = new ArrayList<>();
     private HashMap<String, String> lastDonationTracker = new HashMap<>();
+
+    private final int FREE_PLAN_LIMIT = 50;
+    private int currentMemberCount = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +48,32 @@ public class MemberActivity extends AppCompatActivity {
 
         membersContainer = findViewById(R.id.membersContainer);
         inputSearch = findViewById(R.id.inputSearch);
+        tvPlanStatus = findViewById(R.id.tvPlanStatus);
+        btnAddNew = findViewById(R.id.btnAddNew);
 
-        findViewById(R.id.btnAddNew).setOnClickListener(v -> startActivity(new Intent(this, AddMemberActivity.class)));
+        // ✨ ROLE-BASED ACCESS CONTROL (RBAC) ✨
+        // Only Admins or Managers can add new devotees to the Mandir
+        String role = session.getRole();
+        if ("MEMBER".equalsIgnoreCase(role) || "DEVOTEE".equalsIgnoreCase(role)) {
+            btnAddNew.setVisibility(View.GONE);
+        }
+
+        // ✨ THE GATEKEEPER ✨
+        btnAddNew.setOnClickListener(v -> {
+            if ("FREE".equalsIgnoreCase(session.getPlan()) && currentMemberCount >= FREE_PLAN_LIMIT) {
+                new AlertDialog.Builder(this)
+                    .setTitle("Community Limit Reached!")
+                    .setMessage("Your Sanatani community is growing beautifully! You have reached the " + FREE_PLAN_LIMIT + " devotee limit on the Seva Plan.\n\nOffer Dakshina for SAMRAT PRO to welcome unlimited devotees.")
+                    .setPositiveButton("UPGRADE NOW", (dialog, which) -> {
+                        startActivity(new Intent(MemberActivity.this, UpgradeActivity.class));
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            } else {
+                startActivity(new Intent(this, AddMemberActivity.class));
+            }
+        });
+
         findViewById(R.id.btnSharePdf).setOnClickListener(v -> {
             if (!fullMemberList.isEmpty()) PdfReportService.generateMemberDirectory(this, session.getCommunityName(), fullMemberList);
         });
@@ -64,6 +96,17 @@ public class MemberActivity extends AppCompatActivity {
                         suggestions.add(m.name + " (" + m.id + ")");
                     }
                 }
+                
+                currentMemberCount = fullMemberList.size();
+                
+                // Update UI Quota Tracker
+                if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
+                    tvPlanStatus.setText("Total Devotees: " + currentMemberCount + " (Samrat Pro: Unlimited)");
+                    tvPlanStatus.setTextColor(0xFF4CAF50); // Green
+                } else {
+                    tvPlanStatus.setText("Total Devotees: " + currentMemberCount + "/" + FREE_PLAN_LIMIT + " (Seva Free Plan)");
+                }
+
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(MemberActivity.this, android.R.layout.simple_dropdown_item_1line, suggestions);
                 inputSearch.setAdapter(adapter);
                 renderList(fullMemberList);
@@ -124,8 +167,7 @@ public class MemberActivity extends AppCompatActivity {
 
             ((TextView) view.findViewById(R.id.tvMemberName)).setText(member.name);
             ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Lifetime: ৳" + member.totalDonated);
-            
-            // ✨ FIX: Sending the data to the newly separated XML IDs
+
             ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id);
             ((TextView) view.findViewById(R.id.tvMemberPhone)).setText("📞 " + (member.phone != null && !member.phone.isEmpty() ? member.phone : "N/A"));
 
