@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -8,6 +9,7 @@ import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -209,6 +211,9 @@ public class ExpenseActivity extends AppCompatActivity {
     private interface DateRangeCallback { void onSelected(long start, long end); }
 
     private void processAndRenderList(List<Expense> rawList) {
+        // ✨ Null safety check
+        if (isFinishing() || isDestroyed() || expensesContainer == null) return;
+        
         HashMap<String, GroupedExpense> groupedMap = new HashMap<>();
         for (Expense e : rawList) {
             String key = e.eventName != null ? e.eventName.trim().toLowerCase() : "unknown";
@@ -227,7 +232,7 @@ public class ExpenseActivity extends AppCompatActivity {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_expense, expensesContainer, false);
                 ((TextView) view.findViewById(R.id.tvExpenseEvent)).setText("🪔 " + ge.eventDisplayName);
                 ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + ge.totalSpent);
-                ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText(ge.history.size() + " items logged in this range");
+                ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText("Seva Items: " + ge.history.size());
 
                 Collections.sort(ge.history, (a, b) -> Long.compare(b.timestamp, a.timestamp));
                 if (!ge.history.isEmpty()) {
@@ -235,7 +240,6 @@ public class ExpenseActivity extends AppCompatActivity {
                     ((TextView) view.findViewById(R.id.tvExpenseLastLogged)).setText("Last Logged: ৳" + latest.amount + " on " + sdf.format(new Date(latest.timestamp)));
                 }
 
-                // ✨ NEW: Click now opens the powerful ExpenseDetailActivity!
                 view.setOnClickListener(v -> {
                     Intent intent = new Intent(ExpenseActivity.this, ExpenseDetailActivity.class);
                     intent.putExtra("EVENT_NAME", ge.eventDisplayName);
@@ -279,6 +283,10 @@ public class ExpenseActivity extends AppCompatActivity {
 
                 if (event.isEmpty() || item.isEmpty() || amtStr.isEmpty() || handler.isEmpty()) { Toast.makeText(this, "All fields required", Toast.LENGTH_SHORT).show(); return; }
 
+                // Hide Keyboard
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (getCurrentFocus() != null) imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Saving...");
 
                 float amt = Float.parseFloat(amtStr);
@@ -298,12 +306,11 @@ public class ExpenseActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ NEW: Updated Model to track Edit History
     public static class Expense {
         public String id, eventName, itemName, involvedPerson, loggedBy;
         public float amount; 
         public long timestamp;
-        public HashMap<String, String> editHistory; // Key: pushID, Value: Text log
+        public HashMap<String, String> editHistory; 
 
         public Expense() {}
         public Expense(String id, String ev, String it, float a, String inv, long ts, String logBy) {
