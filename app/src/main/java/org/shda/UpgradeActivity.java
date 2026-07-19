@@ -1,31 +1,33 @@
 package org.shda;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
-import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import java.util.HashMap;
+import com.google.android.material.card.MaterialCardView;
 
 public class UpgradeActivity extends AppCompatActivity {
 
+    private Button btnPayBD, btnPayIntl, btnCheckoutLink, btnVerifyPayment, btnCopyNumber;
+    private MaterialCardView cardBanglaQR, cardIntlPayment;
     private SessionManager session;
-    private DatabaseReference db;
 
-    private RadioGroup rgPaymentMethod;
-    private RadioButton rbBangladesh, rbInternational;
-    private TextView tvPaymentInstructions, tvManualNumber;
-    private ImageView imgQrCode;
-    private EditText inputTrxId;
-    private Button btnSubmitUpgrade;
+    // Paste your Wise or Payoneer Request Link here
+    private final String INTL_PAYMENT_LINK = "https://wise.com/pay/me/adeshc"; 
+    
+    // Your exact TaliPay Number
+    private final String MERCHANT_NUMBER = "01701987744"; 
+
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,82 +35,65 @@ public class UpgradeActivity extends AppCompatActivity {
         setContentView(R.layout.activity_upgrade);
 
         session = new SessionManager(this);
-        db = FirebaseDatabase.getInstance().getReference();
 
-        // If they are already premium, don't let them stay on this screen!
-        if ("PREMIUM".equals(session.getPlan())) {
-            Toast.makeText(this, "Workspace is already Premium!", Toast.LENGTH_SHORT).show();
-            finish(); return;
-        }
+        btnPayBD = findViewById(R.id.btnPayBD);
+        btnPayIntl = findViewById(R.id.btnPayIntl);
+        cardBanglaQR = findViewById(R.id.cardBanglaQR);
+        cardIntlPayment = findViewById(R.id.cardIntlPayment);
+        btnCheckoutLink = findViewById(R.id.btnCheckoutLink);
+        btnVerifyPayment = findViewById(R.id.btnVerifyPayment);
+        btnCopyNumber = findViewById(R.id.btnCopyNumber);
 
-        rgPaymentMethod = findViewById(R.id.rgPaymentMethod);
-        rbBangladesh = findViewById(R.id.rbBangladesh);
-        rbInternational = findViewById(R.id.rbInternational);
-        tvPaymentInstructions = findViewById(R.id.tvPaymentInstructions);
-        tvManualNumber = findViewById(R.id.tvManualNumber);
-        imgQrCode = findViewById(R.id.imgQrCode);
-        inputTrxId = findViewById(R.id.inputTrxId);
-        btnSubmitUpgrade = findViewById(R.id.btnSubmitUpgrade);
+        // Toggle to Bangladesh QR View
+        btnPayBD.setOnClickListener(v -> {
+            cardBanglaQR.setVisibility(View.VISIBLE);
+            cardIntlPayment.setVisibility(View.GONE);
+            btnPayBD.setBackgroundColor(0xFF2E7D32); // Green
+            btnPayBD.setTextColor(0xFFFFFFFF);
+            btnPayIntl.setBackgroundColor(0xFFE0E0E0); // Gray
+            btnPayIntl.setTextColor(0xFF424242);
+        });
 
-        // Smart UI Switching based on Currency
-        rgPaymentMethod.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.rbBangladesh) {
-                setupTallyPayUI();
-            } else if (checkedId == R.id.rbInternational) {
-                setupPayoneerUI();
+        // Toggle to International Link View
+        btnPayIntl.setOnClickListener(v -> {
+            cardBanglaQR.setVisibility(View.GONE);
+            cardIntlPayment.setVisibility(View.VISIBLE);
+            btnPayIntl.setBackgroundColor(0xFF1976D2); // Blue
+            btnPayIntl.setTextColor(0xFFFFFFFF);
+            btnPayBD.setBackgroundColor(0xFFE0E0E0); // Gray
+            btnPayBD.setTextColor(0xFF424242);
+        });
+        
+        // Clipboard Logic for TaliPay Number
+        btnCopyNumber.setOnClickListener(v -> {
+            ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("TaliPay Number", MERCHANT_NUMBER);
+            if (clipboard != null) {
+                clipboard.setPrimaryClip(clip);
+                Toast.makeText(UpgradeActivity.this, "Number Copied! Paste into your Payment App", Toast.LENGTH_LONG).show();
             }
         });
 
-        btnSubmitUpgrade.setOnClickListener(v -> submitUpgradeRequest());
-    }
+        // Open Wise/Payoneer Link
+        btnCheckoutLink.setOnClickListener(v -> {
+            Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(INTL_PAYMENT_LINK));
+            startActivity(browserIntent);
+        });
 
-    private void setupTallyPayUI() {
-        tvPaymentInstructions.setText("Scan with bKash, Nagad, or Rocket to Pay via TallyPay (৳500).");
-        imgQrCode.setVisibility(View.VISIBLE); // Shows the TallyPay QR
-        tvManualNumber.setText("Or Send Money to: 01701 987 744");
-    }
-
-    private void setupPayoneerUI() {
-        tvPaymentInstructions.setText("Please transfer $5 USD to our official Payoneer account.");
-        imgQrCode.setVisibility(View.GONE); // Hide QR for international
-        tvManualNumber.setText("Payoneer Email: iadeshchandra@gmail.com");
-    }
-
-    private void submitUpgradeRequest() {
-        String trxId = inputTrxId.getText().toString().trim();
-
-        if (trxId.isEmpty()) {
-            Toast.makeText(this, "Please enter your Transaction ID", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        btnSubmitUpgrade.setEnabled(false);
-        btnSubmitUpgrade.setText("SUBMITTING REQUEST...");
-
-        String method = rbBangladesh.isChecked() ? "TALLYPAY/BKASH" : "PAYONEER";
-        String requestId = db.child("admin_requests").child("upgrades").push().getKey();
-
-        HashMap<String, Object> requestMap = new HashMap<>();
-        requestMap.put("workspaceId", session.getCommunityId());
-        requestMap.put("communityName", session.getCommunityName());
-        requestMap.put("adminName", session.getUserName());
-        requestMap.put("adminEmail", session.getWorkspaceEmail());
-        requestMap.put("paymentMethod", method);
-        requestMap.put("trxId", trxId);
-        requestMap.put("status", "PENDING_VERIFICATION");
-        requestMap.put("timestamp", System.currentTimeMillis());
-
-        // We push this to a secure top-level node for YOU to verify.
-        db.child("admin_requests").child("upgrades").child(requestId).setValue(requestMap)
-            .addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    Toast.makeText(this, "Request Received! Your Premium plan will be activated within 12 hours.", Toast.LENGTH_LONG).show();
-                    finish();
-                } else {
-                    Toast.makeText(this, "Network error. Try again.", Toast.LENGTH_SHORT).show();
-                    btnSubmitUpgrade.setEnabled(true);
-                    btnSubmitUpgrade.setText("SUBMIT PAYMENT FOR VERIFICATION");
-                }
-            });
+        // Verify Payment via WhatsApp
+        btnVerifyPayment.setOnClickListener(v -> {
+            String verifyMsg = "🙏 *Namaskar! I want to upgrade to SAMRAT PRO* 🙏\n\n" +
+                               "Workspace Name: *" + session.getCommunityName() + "*\n" +
+                               "Workspace ID: *" + session.getCommunityId() + "*\n" +
+                               "Admin Name: *" + session.getUserName() + "*\n\n" +
+                               "I have completed my payment. Please verify and unlock my features!";
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse("https://wa.me/8801608533529?text=" + Uri.encode(verifyMsg)));
+                startActivity(intent);
+            } catch (Exception e) {
+                Toast.makeText(this, "WhatsApp not installed.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }
