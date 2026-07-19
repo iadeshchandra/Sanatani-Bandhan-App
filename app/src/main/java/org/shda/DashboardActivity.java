@@ -37,7 +37,6 @@ public class DashboardActivity extends AppCompatActivity {
     private Long chartStartTs = null;
     private Long chartEndTs = null;
 
-    // ✨ THE ENGINE FIX: Intercepts the context to apply your LocaleHelper language before drawing
     @Override
     protected void attachBaseContext(Context newBase) {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
@@ -57,6 +56,9 @@ public class DashboardActivity extends AppCompatActivity {
             return;
         }
 
+        // ✨ NEW: Continuously sync the user's Plan (FREE vs PREMIUM) in the background
+        syncWorkspacePlan();
+
         pieChart = findViewById(R.id.pieChart);
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
@@ -73,7 +75,15 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardExpenses).setOnClickListener(v -> startActivity(new Intent(this, ExpenseActivity.class)));
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
-        findViewById(R.id.cardComms).setOnClickListener(v -> startActivity(new Intent(this, CommsActivity.class)));
+        
+        // 🔒 THE GATEKEEPER: Lock Mass Sandesh for FREE Users
+        findViewById(R.id.cardComms).setOnClickListener(v -> {
+            if ("FREE".equalsIgnoreCase(session.getPlan())) {
+                startActivity(new Intent(this, UpgradeActivity.class));
+            } else {
+                startActivity(new Intent(this, CommsActivity.class));
+            }
+        });
 
         findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
@@ -93,27 +103,51 @@ public class DashboardActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
-
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> showGlobalPdfGeneratorDialog());
 
         if (!"ADMIN".equals(session.getRole())) {
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
         } else {
+            // 🔒 THE GATEKEEPER: Lock Security Audit for FREE Users
             findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> {
-                new AlertDialog.Builder(this)
-                    .setTitle(getString(R.string.btn_security_audit))
-                    .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
-                        if (which == 0) {
-                            pickDateRange((startTs, endTs) -> generateAuditPdf(startTs, endTs));
-                        } else {
-                            generateAuditPdf(0, Long.MAX_VALUE);
-                        }
-                    }).show();
+                if ("FREE".equalsIgnoreCase(session.getPlan())) {
+                    startActivity(new Intent(this, UpgradeActivity.class));
+                } else {
+                    new AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.btn_security_audit))
+                        .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
+                            if (which == 0) {
+                                pickDateRange((startTs, endTs) -> generateAuditPdf(startTs, endTs));
+                            } else {
+                                generateAuditPdf(0, Long.MAX_VALUE);
+                            }
+                        }).show();
+                }
             });
         }
 
         loadWorkspaceType();
         loadFinancialData();
+    }
+
+    // ✨ NEW METHOD: Keeps the user's plan securely synced with Firebase
+    private void syncWorkspacePlan() {
+        db.child("communities").child(session.getCommunityId()).child("info").child("plan")
+          .addValueEventListener(new ValueEventListener() {
+              @Override
+              public void onDataChange(@NonNull DataSnapshot snapshot) {
+                  String currentPlan = snapshot.getValue(String.class);
+                  if (currentPlan != null) {
+                      session.setPlan(currentPlan);
+                  } else {
+                      // If no plan is set yet, default them to FREE
+                      db.child("communities").child(session.getCommunityId()).child("info").child("plan").setValue("FREE");
+                      session.setPlan("FREE");
+                  }
+              }
+              @Override
+              public void onCancelled(@NonNull DatabaseError error) {}
+          });
     }
 
     private void showChartDateFilterDialog() {
@@ -172,7 +206,6 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ THE RESTART FIX: Saves the language locally, then gracefully restarts the activity!
     private void showLanguageDialog() {
         String[] languages = {"English", "Bengali (বাংলা)", "Hindi (हिन्दी)"};
         String[] langCodes = {"en", "bn", "hi"}; 
