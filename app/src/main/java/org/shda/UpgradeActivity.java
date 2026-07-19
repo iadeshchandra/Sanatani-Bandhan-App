@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -16,13 +17,15 @@ import com.google.android.material.card.MaterialCardView;
 
 public class UpgradeActivity extends AppCompatActivity {
 
+    private LinearLayout layoutPayment, layoutRestricted;
+    private Button btnGoBack;
+    
     private Button btnPayBD, btnPayIntl, btnCheckoutLink, btnVerifyPayment, btnCopyNumber, btnHowToPay;
     private MaterialCardView cardBanglaQR, cardIntlPayment;
     private SessionManager session;
 
     // Paste your Wise or Payoneer Request Link here
     private final String INTL_PAYMENT_LINK = "https://wise.com/pay/me/adeshc"; 
-    
     // Your exact TaliPay Number
     private final String MERCHANT_NUMBER = "01701987744"; 
 
@@ -38,6 +41,12 @@ public class UpgradeActivity extends AppCompatActivity {
 
         session = new SessionManager(this);
 
+        // UI Sections
+        layoutPayment = findViewById(R.id.layoutPayment);
+        layoutRestricted = findViewById(R.id.layoutRestricted);
+        btnGoBack = findViewById(R.id.btnGoBack);
+
+        // Payment Buttons
         btnPayBD = findViewById(R.id.btnPayBD);
         btnPayIntl = findViewById(R.id.btnPayIntl);
         cardBanglaQR = findViewById(R.id.cardBanglaQR);
@@ -45,7 +54,22 @@ public class UpgradeActivity extends AppCompatActivity {
         btnCheckoutLink = findViewById(R.id.btnCheckoutLink);
         btnVerifyPayment = findViewById(R.id.btnVerifyPayment);
         btnCopyNumber = findViewById(R.id.btnCopyNumber);
-        btnHowToPay = findViewById(R.id.btnHowToPay); // ✨ NEW
+        btnHowToPay = findViewById(R.id.btnHowToPay);
+
+        // ✨ ROLE-BASED ACCESS CONTROL (RBAC) ✨
+        String userRole = session.getRole();
+        if ("MEMBER".equalsIgnoreCase(userRole) || "DEVOTEE".equalsIgnoreCase(userRole)) {
+            // Hide the payment stuff from regular users to maintain transparency
+            layoutPayment.setVisibility(View.GONE);
+            layoutRestricted.setVisibility(View.VISIBLE);
+        } else {
+            // Admin or Manager can see the payment options
+            layoutPayment.setVisibility(View.VISIBLE);
+            layoutRestricted.setVisibility(View.GONE);
+        }
+
+        // Action for restricted users
+        btnGoBack.setOnClickListener(v -> finish());
 
         // Toggle to Bangladesh QR View
         btnPayBD.setOnClickListener(v -> {
@@ -73,16 +97,15 @@ public class UpgradeActivity extends AppCompatActivity {
             ClipData clip = ClipData.newPlainText("TaliPay Number", MERCHANT_NUMBER);
             if (clipboard != null) {
                 clipboard.setPrimaryClip(clip);
-                Toast.makeText(UpgradeActivity.this, "Number Copied! Paste into your Payment App", Toast.LENGTH_LONG).show();
+                Toast.makeText(UpgradeActivity.this, "Number Copied! Open your bKash or Nagad App.", Toast.LENGTH_LONG).show();
             }
         });
 
-        // ✨ NEW: Pop up the Instruction Manual Image ✨
+        // Pop up the Instruction Manual Image 
         btnHowToPay.setOnClickListener(v -> {
             ImageView instructionImage = new ImageView(this);
-            // IMPORTANT: Crop the instruction side of your PDF and save it as 'talipay_instructions.jpg' inside res/drawable/
-            // Then change this line to point to it, e.g., instructionImage.setImageResource(R.drawable.talipay_instructions);
-            instructionImage.setImageResource(R.mipmap.ic_launcher); // Placeholder
+            // Points to the second page of your PDF instructions showing supported apps[span_1](start_span)[span_1](end_span)
+            instructionImage.setImageResource(R.mipmap.ic_launcher); // Replace with R.drawable.talipay_instructions
             instructionImage.setAdjustViewBounds(true);
             instructionImage.setPadding(20, 20, 20, 20);
 
@@ -101,11 +124,11 @@ public class UpgradeActivity extends AppCompatActivity {
 
         // Verify Payment via WhatsApp
         btnVerifyPayment.setOnClickListener(v -> {
-            String verifyMsg = "🙏 *Namaskar! I want to upgrade to SAMRAT PRO* 🙏\n\n" +
-                               "Workspace Name: *" + session.getCommunityName() + "*\n" +
+            String verifyMsg = "🙏 *Namaskar! Offering Dakshina for SAMRAT PRO* 🙏\n\n" +
+                               "Mandir Workspace: *" + session.getCommunityName() + "*\n" +
                                "Workspace ID: *" + session.getCommunityId() + "*\n" +
                                "Admin Name: *" + session.getUserName() + "*\n\n" +
-                               "I have completed my payment. Please verify and unlock my features!";
+                               "I have completed my Dakshina payment. Please verify and bless our workspace with Samrat Pro!";
             try {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setData(Uri.parse("https://wa.me/8801608533529?text=" + Uri.encode(verifyMsg)));
