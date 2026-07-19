@@ -1,13 +1,14 @@
 package org.shda;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.AdapterView;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -80,7 +81,7 @@ public class TransactionActivity extends AppCompatActivity {
         if (btnExportMaster != null) {
             btnExportMaster.setOnClickListener(v -> {
                 if (fullDonationList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
-                
+
                 new AlertDialog.Builder(this)
                     .setTitle("Generate Master Report")
                     .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
@@ -103,7 +104,7 @@ public class TransactionActivity extends AppCompatActivity {
         List<Float> amounts = new ArrayList<>(); List<String> notes = new ArrayList<>();
         float exportTotal = 0f;
         SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-        
+
         for(SingleDonation sd : fullDonationList) {
             if (sd.timestamp >= startTs && sd.timestamp <= endTs) {
                 dates.add(sdf.format(new Date(sd.timestamp))); 
@@ -113,7 +114,7 @@ public class TransactionActivity extends AppCompatActivity {
                 exportTotal += sd.amount;
             }
         }
-        
+
         if (dates.isEmpty()) {
             Toast.makeText(this, "No donations found in this range.", Toast.LENGTH_SHORT).show();
             return;
@@ -195,7 +196,7 @@ public class TransactionActivity extends AppCompatActivity {
             if (matchesSearch && matchesDate) { currentlyDisplayedList.add(d); totalDonated += d.amount; }
         }
 
-        if (tvTotalDonations != null) tvTotalDonations.setText("Total Filtered: ৳" + totalDonated);
+        if (tvTotalDonations != null) tvTotalDonations.setText("Total Collected: ৳" + totalDonated);
         processAndRenderList(currentlyDisplayedList);
     }
 
@@ -238,7 +239,9 @@ public class TransactionActivity extends AppCompatActivity {
     private interface DateRangeCallback { void onSelected(long start, long end); }
 
     private void processAndRenderList(List<SingleDonation> rawList) {
-        if (donationsContainer == null) return;
+        // ✨ Null safety check
+        if (isFinishing() || isDestroyed() || donationsContainer == null) return;
+
         HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
         for (SingleDonation d : rawList) {
             String key = d.name != null ? d.name.trim().toLowerCase() : "unknown";
@@ -273,7 +276,7 @@ public class TransactionActivity extends AppCompatActivity {
                 ((TextView) view.findViewById(R.id.tvDonorLastDonation)).setText("Last Donation: ৳" + latest.amount + " on " + sdf.format(new Date(latest.timestamp)));
 
                 view.setOnClickListener(v -> {
-                    try { PdfReportService.generateDonorStatement(this, session.getCommunityName(), gd); } catch (Exception ex) { Toast.makeText(this, "Error generating statement.", Toast.LENGTH_SHORT).show(); }
+                    try { PdfReportService.generateDonorStatement(TransactionActivity.this, session.getCommunityName(), gd); } catch (Exception ex) { Toast.makeText(TransactionActivity.this, "Error generating statement.", Toast.LENGTH_SHORT).show(); }
                 });
                 donationsContainer.addView(view);
             } catch (Exception e) { e.printStackTrace(); }
@@ -293,15 +296,15 @@ public class TransactionActivity extends AppCompatActivity {
             toggleLayout.setOrientation(LinearLayout.HORIZONTAL);
             toggleLayout.setWeightSum(2);
             toggleLayout.setPadding(0, 0, 0, 20);
-            
+
             Button btnTabMember = new Button(this);
             btnTabMember.setText("MEMBER");
             btnTabMember.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-            
+
             Button btnTabGuest = new Button(this);
             btnTabGuest.setText("GUEST / NEW");
             btnTabGuest.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1));
-            
+
             toggleLayout.addView(btnTabMember);
             toggleLayout.addView(btnTabGuest);
             mainLayout.addView(toggleLayout);
@@ -311,19 +314,19 @@ public class TransactionActivity extends AppCompatActivity {
             // ==========================================
             LinearLayout memberLayout = new LinearLayout(this);
             memberLayout.setOrientation(LinearLayout.VERTICAL);
-            
+
             final AutoCompleteTextView inputMemberName = new AutoCompleteTextView(this);
             inputMemberName.setHint("Select Official Member");
             inputMemberName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteOnlyMembers));
             inputMemberName.setThreshold(1);
-            
+
             final EditText inputMemberAmt = new EditText(this); 
             inputMemberAmt.setHint("Amount (৳)"); 
             inputMemberAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            
+
             final EditText inputMemberNote = new EditText(this); 
             inputMemberNote.setHint("Note / Purpose (Optional)");
-            
+
             final AutoCompleteTextView inputMemberHandler = new AutoCompleteTextView(this);
             inputMemberHandler.setHint("Collected By");
             inputMemberHandler.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers));
@@ -336,7 +339,7 @@ public class TransactionActivity extends AppCompatActivity {
             memberLayout.addView(inputMemberHandler);
 
             // ==========================================
-            // GUEST TAB UI (SMART DYNAMIC FORM)
+            // GUEST TAB UI
             // ==========================================
             ScrollView guestScroll = new ScrollView(this);
             LinearLayout guestLayout = new LinearLayout(this);
@@ -346,7 +349,6 @@ public class TransactionActivity extends AppCompatActivity {
             final HashMap<String, Guest> smartGuestMap = new HashMap<>();
             List<String> dropdownOptions = new ArrayList<>();
 
-            // 1. Load guests from the Official Database
             for (Guest g : officialGuestList) {
                 String display = g.name + " (" + g.id + ")";
                 if (g.phone != null && !g.phone.isEmpty()) {
@@ -356,29 +358,18 @@ public class TransactionActivity extends AppCompatActivity {
                 dropdownOptions.add(display);
             }
 
-            // 2. The Deep Ledger Scanner
             for (SingleDonation d : fullDonationList) {
                 if (d.name != null && d.name.contains("(GST-")) {
                     String cleanName = d.name.replace(" [Guest]", "").trim(); 
-                    
                     boolean alreadyFound = false;
-                    for (String option : dropdownOptions) {
-                        if (option.contains(cleanName)) {
-                            alreadyFound = true; 
-                            break;
-                        }
-                    }
+                    for (String option : dropdownOptions) { if (option.contains(cleanName)) { alreadyFound = true; break; } }
 
                     if (!alreadyFound) {
                         Guest recoveredGuest = new Guest();
                         try {
                             recoveredGuest.id = cleanName.substring(cleanName.indexOf("(GST-") + 1, cleanName.indexOf(")"));
                             recoveredGuest.name = cleanName.substring(0, cleanName.indexOf(" (GST-")).trim();
-                        } catch (Exception e) {
-                            recoveredGuest.name = cleanName;
-                            recoveredGuest.id = "UNKNOWN";
-                        }
-                        
+                        } catch (Exception e) { recoveredGuest.name = cleanName; recoveredGuest.id = "UNKNOWN"; }
                         smartGuestMap.put(cleanName, recoveredGuest);
                         dropdownOptions.add(cleanName);
                     }
@@ -386,7 +377,7 @@ public class TransactionActivity extends AppCompatActivity {
             }
 
             final AutoCompleteTextView inputGuestName = new AutoCompleteTextView(this);
-            inputGuestName.setId(View.generateViewId()); // Fixes UI clipping
+            inputGuestName.setId(View.generateViewId()); 
             inputGuestName.setHint("Search Official Guest Name");
             ArrayAdapter<String> guestAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, dropdownOptions);
             inputGuestName.setAdapter(guestAdapter);
@@ -395,7 +386,7 @@ public class TransactionActivity extends AppCompatActivity {
 
             final LinearLayout detailsContainer = new LinearLayout(this);
             detailsContainer.setOrientation(LinearLayout.VERTICAL);
-            
+
             final EditText inputGuestPhone = new EditText(this); inputGuestPhone.setHint("Phone Number"); inputGuestPhone.setInputType(InputType.TYPE_CLASS_PHONE);
             final EditText inputGuestAddress = new EditText(this); inputGuestAddress.setHint("Address");
             final EditText inputGuestEmail = new EditText(this); inputGuestEmail.setHint("Email Address"); inputGuestEmail.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
@@ -419,20 +410,10 @@ public class TransactionActivity extends AppCompatActivity {
             guestLayout.addView(inputGuestAmt); guestLayout.addView(inputGuestNote);
             guestLayout.addView(inputGuestComment); guestLayout.addView(inputGuestHandler);
 
-            inputGuestName.setOnItemClickListener((parent, view, position, id) -> {
-                String selected = (String) parent.getItemAtPosition(position);
-                if (smartGuestMap.containsKey(selected)) {
-                    detailsContainer.setVisibility(View.GONE);
-                } else {
-                    detailsContainer.setVisibility(View.VISIBLE);
-                }
-            });
-
+            inputGuestName.setOnItemClickListener((parent, view, position, id) -> detailsContainer.setVisibility(View.GONE));
             inputGuestName.addTextChangedListener(new TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    detailsContainer.setVisibility(View.VISIBLE);
-                }
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) { detailsContainer.setVisibility(View.VISIBLE); }
                 @Override public void afterTextChanged(Editable s) {}
             });
 
@@ -463,6 +444,10 @@ public class TransactionActivity extends AppCompatActivity {
             dialog.show();
 
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                // Hide Keyboard
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (getCurrentFocus() != null) imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+                
                 if (isGuestMode[0]) {
                     String typedString = inputGuestName.getText().toString().trim();
                     String amtStr = inputGuestAmt.getText().toString().trim();
@@ -473,37 +458,23 @@ public class TransactionActivity extends AppCompatActivity {
                     }
 
                     float amt = Float.parseFloat(amtStr);
-                    String baseNote = inputGuestNote.getText().toString().trim();
+                    String finalNote = inputGuestNote.getText().toString().trim();
                     String adminComment = inputGuestComment.getText().toString().trim();
-                    
-                    String finalNote = baseNote;
-                    if (!adminComment.isEmpty()) {
-                        finalNote = baseNote.isEmpty() ? ("Admin Note: " + adminComment) : (baseNote + " | Admin Note: " + adminComment);
-                    }
+                    if (!adminComment.isEmpty()) finalNote = (finalNote.isEmpty() ? "" : finalNote + " | ") + "Admin Note: " + adminComment;
 
-                    // ✨ NEW SMART FALLBACK: Did they type an exact name but ignore the dropdown?
                     Guest existingGuest = smartGuestMap.get(typedString);
                     if (existingGuest == null) {
                         for (String key : smartGuestMap.keySet()) {
-                            Guest g = smartGuestMap.get(key);
-                            // If what they typed matches a known guest name exactly, auto-link it!
-                            if (g.name.equalsIgnoreCase(typedString)) {
-                                existingGuest = g;
-                                break;
-                            }
+                            if (smartGuestMap.get(key).name.equalsIgnoreCase(typedString)) { existingGuest = smartGuestMap.get(key); break; }
                         }
                     }
 
                     if (existingGuest != null) {
-                        // Use the existing or auto-linked Guest
                         logDonationToDatabase(existingGuest.name + " (" + existingGuest.id + ") [Guest]", amt, finalNote, handler);
                     } else {
-                        // Create brand new Guest
                         String guestId = "GST-" + (1000 + new Random().nextInt(9000));
                         Guest newGuest = new Guest();
-                        newGuest.id = guestId;
-                        newGuest.name = typedString;
-                        newGuest.phone = inputGuestPhone.getText().toString().trim();
+                        newGuest.id = guestId; newGuest.name = typedString; newGuest.phone = inputGuestPhone.getText().toString().trim();
                         newGuest.address = inputGuestAddress.getText().toString().trim();
                         newGuest.email = inputGuestEmail.getText().toString().trim();
                         newGuest.bloodGroup = inputGuestBloodGroup.getText().toString().trim();
@@ -526,7 +497,6 @@ public class TransactionActivity extends AppCompatActivity {
 
                     float amt = Float.parseFloat(amtStr);
                     String note = inputMemberNote.getText().toString().trim();
-
                     if (!name.contains("[")) name = name + " [Member]";
                     logDonationToDatabase(name, amt, note, handler);
                     dialog.dismiss();
@@ -538,7 +508,7 @@ public class TransactionActivity extends AppCompatActivity {
     private void logDonationToDatabase(String formattedDonorName, float amt, String note, String handler) {
         String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").push().getKey();
         SingleDonation sd = new SingleDonation(transId, formattedDonorName, amt, note, "", "", handler, System.currentTimeMillis(), session.getRole());
-        
+
         db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd)
             .addOnSuccessListener(aVoid -> {
                 new AlertDialog.Builder(TransactionActivity.this)
@@ -553,13 +523,8 @@ public class TransactionActivity extends AppCompatActivity {
                             Toast.makeText(TransactionActivity.this, "Error generating receipt", Toast.LENGTH_SHORT).show();
                         }
                     })
-                    .setNegativeButton("NO THANKS", (dialog, which) -> {
-                        Toast.makeText(TransactionActivity.this, "Saved without PDF.", Toast.LENGTH_SHORT).show();
-                    })
+                    .setNegativeButton("NO THANKS", null)
                     .show();
-            })
-            .addOnFailureListener(e -> {
-                Toast.makeText(TransactionActivity.this, "Network Error: Could not log donation.", Toast.LENGTH_SHORT).show();
             });
     }
 
