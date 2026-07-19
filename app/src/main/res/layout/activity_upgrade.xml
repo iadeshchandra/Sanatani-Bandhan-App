@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFBF2">
+    android:background="#FFFBF2"> <!-- Warm Mandir Sand Background -->
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,270 +12,288 @@
         android:padding="16dp"
         android:gravity="center_horizontal">
 
-        <!-- Header Section -->
+        <!-- 🕉️ Sanatani Header Section -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🕉️"
+            android:textSize="32sp"
+            android:layout_marginTop="8dp"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="👑 SAMRAT PRO PLAN"
-            android:textSize="24sp"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:textColor="#E65100"
-            android:layout_marginBottom="8dp"
-            android:layout_marginTop="16dp"/>
-
+            android:textColor="#E65100" 
+            android:layout_marginBottom="4dp"/>
+            
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="You have reached your free Seva limit for this month! Upgrade now to unlock unlimited Master PDFs, Mass Sandesh campaigns, and full Security Audits."
+            android:text="\"Dharmo Rakshati Rakshitah\"\nEmpower your community with unlimited digital Seva."
             android:textSize="14sp"
-            android:textColor="#424242"
-            android:textAlignment="center"
+            android:textStyle="italic|bold"
+            android:textColor="#F57C00"
+            android:gravity="center"
             android:layout_marginBottom="24dp"/>
 
-        <!-- Toggle Payment Method -->
+        <!-- ========================================== -->
+        <!-- 🚫 VIEW 1: RESTRICTED VIEW (FOR DEVOTEES)  -->
+        <!-- ========================================== -->
         <LinearLayout
+            android:id="@+id/layoutRestricted"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2"
-            android:layout_marginBottom="16dp">
-
-            <Button
-                android:id="@+id/btnPayBD"
-                android:layout_width="0dp"
-                android:layout_weight="1"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:padding="24dp"
+            android:background="@drawable/rounded_bg"
+            android:backgroundTint="#FFECB3"
+            android:gravity="center">
+            
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🇧🇩 BANGLADESH"
-                android:backgroundTint="#2E7D32"
-                android:textColor="#FFFFFF"
-                app:cornerRadius="8dp"
-                android:layout_marginEnd="4dp"/>
-
-            <Button
-                android:id="@+id/btnPayIntl"
-                android:layout_width="0dp"
-                android:layout_weight="1"
+                android:text="🙏 Namaskar Devotee 🙏"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#E65100"
+                android:layout_marginBottom="12dp"/>
+                
+            <TextView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🌍 INTERNATIONAL"
-                android:backgroundTint="#E0E0E0"
+                android:text="This feature requires the SAMRAT PRO workspace upgrade.\n\nTo maintain full financial transparency, only your Mandir's Admin or Manager can authorize payments to upgrade the community software."
+                android:textSize="15sp"
                 android:textColor="#424242"
-                app:cornerRadius="8dp"
-                android:layout_marginStart="4dp"/>
+                android:gravity="center"
+                android:layout_marginBottom="24dp"/>
+                
+            <Button
+                android:id="@+id/btnGoBack"
+                android:layout_width="match_parent"
+                android:layout_height="55dp"
+                android:text="RETURN TO DASHBOARD"
+                android:backgroundTint="#E65100"
+                android:textColor="#FFFFFF"
+                app:cornerRadius="8dp"/>
         </LinearLayout>
 
-        <!-- BANGLADESH PAYMENT UI -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardBanglaQR"
+        <!-- ========================================== -->
+        <!-- ✅ VIEW 2: PAYMENT VIEW (FOR ADMIN/MANAGER)-->
+        <!-- ========================================== -->
+        <LinearLayout
+            android:id="@+id/layoutPayment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:strokeColor="#D32F2F"
-            app:strokeWidth="2dp"
-            app:cardBackgroundColor="#FFFFFF">
+            android:orientation="vertical">
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Your free Seva quota is reached. Offer your Dakshina (Subscription) below to unlock unlimited Master PDFs, Mass Sandesh, and more!"
+                android:textSize="14sp"
+                android:textColor="#424242"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"/>
+
+            <!-- Toggle Payment Method -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center">
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="16dp">
 
-                <!-- Red Header Banner -->
+                <Button
+                    android:id="@+id/btnPayBD"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="🇧🇩 BANGLADESH"
+                    android:backgroundTint="#2E7D32"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="8dp"
+                    android:layout_marginEnd="4dp"/>
+
+                <Button
+                    android:id="@+id/btnPayIntl"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="🌍 INTERNATIONAL"
+                    android:backgroundTint="#E0E0E0"
+                    android:textColor="#424242"
+                    app:cornerRadius="8dp"
+                    android:layout_marginStart="4dp"/>
+            </LinearLayout>
+
+            <!-- BANGLADESH PAYMENT UI (TaliPay) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardBanglaQR"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                app:strokeColor="#D32F2F"
+                app:strokeWidth="2dp"
+                app:cardBackgroundColor="#FFFFFF">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="#D32F2F"
-                    android:padding="12dp"
+                    android:orientation="vertical"
                     android:gravity="center">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="#D32F2F"
+                        android:padding="12dp"
+                        android:gravity="center">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="BANGLA QR | টালিপে"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"
+                            android:textSize="18sp"/>
+                    </LinearLayout>
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="BANGLA QR | টালিপে"
+                        android:text="পেমেন্ট করুন সকল অ্যাপ দিয়ে"
+                        android:textColor="#212121"
+                        android:textStyle="bold"
+                        android:textSize="16sp"
+                        android:layout_marginTop="12dp"/>
+                        
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="অপশন ১: QR স্ক্যান করুন"
+                        android:textColor="#1976D2"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="8dp"/>
+
+                    <!-- QR Image -->
+                    <ImageView
+                        android:layout_width="160dp"
+                        android:layout_height="160dp"
+                        android:src="@mipmap/ic_launcher" 
+                        android:layout_marginBottom="16dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="অপশন ২: নম্বর কপি করুন"
+                        android:textColor="#1976D2"
+                        android:textStyle="bold"
+                        android:textSize="14sp"
+                        android:layout_marginBottom="8dp"/>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="#F5F5F5"
+                        android:padding="8dp"
+                        android:layout_marginBottom="16dp">
+                        
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="01701-987744"
+                            android:textColor="#D32F2F"
+                            android:textStyle="bold"
+                            android:textSize="22sp"
+                            android:layout_marginEnd="16dp"/>
+
+                        <Button
+                            android:id="@+id/btnCopyNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
+                            android:text="COPY"
+                            android:backgroundTint="#424242"
+                            android:textColor="#FFFFFF"/>
+                    </LinearLayout>
+
+                    <!-- Instruction Button -->
+                    <Button
+                        android:id="@+id/btnHowToPay"
+                        android:layout_width="match_parent"
+                        android:layout_height="50dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginBottom="16dp"
+                        android:text="❓ HOW TO PAY (APP LIST &amp; GUIDE)"
+                        android:backgroundTint="#F57C00"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold"
-                        android:textSize="18sp"/>
+                        app:cornerRadius="8dp"/>
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="পেমেন্ট করুন সকল অ্যাপ দিয়ে"
-                    android:textColor="#212121"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginTop="12dp"/>
-                    
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="(বিকাশ, রকেট, সেলফিন এবং অন্যান্য ব্যাংক)"
-                    android:textColor="#757575"
-                    android:textSize="12sp"
-                    android:layout_marginBottom="16dp"/>
+            <!-- INTERNATIONAL PAYMENT UI -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardIntlPayment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="#FFFFFF">
 
-                <!-- ✨ OPTION 1: THE QR CODE ✨ -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="অপশন ১: QR স্ক্যান করুন"
-                    android:textColor="#1976D2"
-                    android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="8dp"/>
-
-                <!-- Replace with your actual QR code image name in drawable -->
-                <ImageView
-                    android:layout_width="160dp"
-                    android:layout_height="160dp"
-                    android:src="@mipmap/ic_launcher" 
-                    android:layout_marginBottom="16dp"
-                    android:contentDescription="Bangla QR Code"/>
-
-                <!-- VISUAL DIVIDER -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:layout_marginBottom="16dp"
-                    android:paddingHorizontal="24dp">
-                    <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="#E0E0E0"/>
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text=" অথবা (OR) " android:textColor="#757575" android:textStyle="bold"/>
-                    <View android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" android:background="#E0E0E0"/>
-                </LinearLayout>
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:gravity="center">
 
-                <!-- ✨ OPTION 2: THE COPY NUMBER ✨ -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="অপশন ২: নম্বর কপি করুন"
-                    android:textColor="#1976D2"
-                    android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="8dp"/>
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="4dp"
-                    android:background="#F5F5F5"
-                    android:padding="8dp">
-                    
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="01701-987744"
-                        android:textColor="#D32F2F"
+                        android:text="Secure International Dakshina"
+                        android:textColor="#212121"
                         android:textStyle="bold"
-                        android:textSize="22sp"
-                        android:letterSpacing="0.1"
-                        android:layout_marginEnd="16dp"/>
+                        android:textSize="18sp"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Powered securely by Wise / Payoneer."
+                        android:textColor="#757575"
+                        android:layout_marginBottom="24dp"/>
 
                     <Button
-                        android:id="@+id/btnCopyNumber"
-                        android:layout_width="wrap_content"
-                        android:layout_height="40dp"
-                        android:text="COPY"
-                        android:textSize="12sp"
-                        android:backgroundTint="#424242"
+                        android:id="@+id/btnCheckoutLink"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:text="💳 PROCEED TO SECURE CHECKOUT"
+                        android:backgroundTint="#1976D2"
                         android:textColor="#FFFFFF"
-                        app:cornerRadius="6dp"/>
+                        app:cornerRadius="8dp"/>
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="AR ARTS AND COMPUTER"
-                    android:textColor="#212121"
-                    android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginBottom="16dp"/>
-
-                <!-- ✨ NEW: HOW TO PAY INSTRUCTION BUTTON ✨ -->
-                <Button
-                    android:id="@+id/btnHowToPay"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginHorizontal="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:text="❓ HOW TO PAY (APP LIST &amp; GUIDE)"
-                    android:backgroundTint="#F57C00"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold"
-                    app:cornerRadius="8dp"/>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="টালিপে - বাংলাদেশ ব্যাংক লাইসেন্সপ্রাপ্ত"
-                    android:gravity="center"
-                    android:textSize="10sp"
-                    android:background="#D32F2F"
-                    android:textColor="#FFFFFF"
-                    android:padding="8dp"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- INTERNATIONAL PAYMENT UI -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardIntlPayment"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            android:visibility="gone"
-            app:cardBackgroundColor="#FFFFFF">
-
-            <LinearLayout
+            <Button
+                android:id="@+id/btnVerifyPayment"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp"
-                android:gravity="center">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Pay via Credit Card or Bank Transfer"
-                    android:textColor="#212121"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
-                    android:layout_marginBottom="8dp"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Powered securely by Wise / Payoneer."
-                    android:textColor="#757575"
-                    android:textSize="14sp"
-                    android:layout_marginBottom="24dp"/>
-
-                <Button
-                    android:id="@+id/btnCheckoutLink"
-                    android:layout_width="match_parent"
-                    android:layout_height="55dp"
-                    android:text="💳 PROCEED TO SECURE CHECKOUT"
-                    android:backgroundTint="#1976D2"
-                    android:textColor="#FFFFFF"
-                    app:cornerRadius="8dp"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Proof of Payment / WhatsApp confirmation -->
-        <Button
-            android:id="@+id/btnVerifyPayment"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="24dp"
-            android:text="✅ I HAVE PAID - VERIFY MY ACCOUNT"
-            android:backgroundTint="#FF9800"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            android:layout_marginBottom="32dp"/>
-
+                android:layout_height="60dp"
+                android:layout_marginTop="24dp"
+                android:text="✅ I HAVE PAID DAKSHINA - VERIFY"
+                android:backgroundTint="#FF9800"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                app:cornerRadius="8dp"
+                android:layout_marginBottom="32dp"/>
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
