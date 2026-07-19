@@ -63,7 +63,7 @@
                 android:layout_marginStart="4dp"/>
         </LinearLayout>
 
-        <!-- BANGLADESH PAYMENT UI (Both QR and Copy Number) -->
+        <!-- BANGLADESH PAYMENT UI -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardBanglaQR"
             android:layout_width="match_parent"
@@ -194,44 +194,28 @@
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="16dp"/>
 
-                <!-- Instructions Block -->
-                <LinearLayout
+                <!-- ✨ NEW: HOW TO PAY INSTRUCTION BUTTON ✨ -->
+                <Button
+                    android:id="@+id/btnHowToPay"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginHorizontal="16dp"
+                    android:layout_marginBottom="16dp"
+                    android:text="❓ HOW TO PAY (APP LIST &amp; GUIDE)"
+                    android:backgroundTint="#F57C00"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    app:cornerRadius="8dp"/>
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:text="টালিপে - বাংলাদেশ ব্যাংক লাইসেন্সপ্রাপ্ত"
+                    android:gravity="center"
+                    android:textSize="10sp"
                     android:background="#D32F2F"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:weightSum="3">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="১. QR স্ক্যান বা\nনম্বর পেস্ট করুন"
-                            android:gravity="center"
-                            android:textSize="12sp"
-                            android:textColor="#FFFFFF"/>
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="২. টাকার পরিমাণ\nলিখুন"
-                            android:gravity="center"
-                            android:textSize="12sp"
-                            android:textColor="#FFFFFF"/>
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="৩. PIN\nদিন"
-                            android:gravity="center"
-                            android:textSize="12sp"
-                            android:textColor="#FFFFFF"/>
-                    </LinearLayout>
-                </LinearLayout>
+                    android:textColor="#FFFFFF"
+                    android:padding="8dp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
