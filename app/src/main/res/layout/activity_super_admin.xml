@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ECEFF1">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="👑 SUPER ADMIN BACKEND"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#263238"
+            android:gravity="center"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- LIVE METRICS ROW -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="3"
+            android:layout_marginBottom="20dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="#2196F3">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:gravity="center">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="TOTAL\nSPACES" android:textColor="#E3F2FD" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+                    <TextView android:id="@+id/tvTotalWorkspaces" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginHorizontal="4dp"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="#4CAF50">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:gravity="center">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="PREMIUM\nSPACES" android:textColor="#E8F5E9" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+                    <TextView android:id="@+id/tvTotalPremium" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="#FF9800">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp"
+                    android:gravity="center">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GLOBAL\nDEVOTEES" android:textColor="#FFF3E0" android:textSize="10sp" android:gravity="center" android:textStyle="bold"/>
+                    <TextView android:id="@+id/tvGlobalDevotees" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="0" android:textColor="#FFFFFF" android:textSize="24sp" android:textStyle="bold"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- WORKSPACE MANAGER -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🛠️ Workspace Plan Manager"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#37474F"
+                    android:layout_marginBottom="16dp"/>
+
+                <EditText
+                    android:id="@+id/inputWorkspaceId"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:hint="Enter Workspace ID (e.g., MND-1234)"
+                    android:background="@android:drawable/edit_text"
+                    android:paddingHorizontal="12dp"
+                    android:layout_marginBottom="12dp"/>
+
+                <Button
+                    android:id="@+id/btnSearchWorkspace"
+                    android:layout_width="match_parent"
+                    android:layout_height="55dp"
+                    android:text="🔍 SEARCH WORKSPACE"
+                    android:backgroundTint="#37474F"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="8dp"
+                    android:layout_marginBottom="24dp"/>
+
+                <!-- Search Results (Hidden initially) -->
+                <LinearLayout
+                    android:id="@+id/layoutSearchResults"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:background="#F5F5F5"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvResultName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Community Name: -"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="#000000"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView
+                        android:id="@+id/tvResultPlan"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Current Plan: FREE"
+                        android:textSize="16sp"
+                        android:textColor="#D32F2F"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="20dp"/>
+
+                    <Button
+                        android:id="@+id/btnGrantPremium"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:text="👑 UPGRADE TO PREMIUM"
+                        android:backgroundTint="#4CAF50"
+                        android:textColor="#FFFFFF"
+                        app:cornerRadius="8dp"
+                        android:layout_marginBottom="8dp"/>
+
+                    <Button
+                        android:id="@+id/btnRevokePremium"
+                        android:layout_width="match_parent"
+                        android:layout_height="55dp"
+                        android:text="🔻 DOWNGRADE TO FREE"
+                        android:backgroundTint="#D32F2F"
+                        android:textColor="#FFFFFF"
+                        app:cornerRadius="8dp"/>
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+</ScrollView>
