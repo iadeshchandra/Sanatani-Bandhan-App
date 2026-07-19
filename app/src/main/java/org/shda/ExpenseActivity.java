@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.app.DatePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -106,7 +107,6 @@ public class ExpenseActivity extends AppCompatActivity {
     }
 
     private void loadEventsForAutocomplete() {
-        // 1. Fetch Scheduled Events
         db.child("communities").child(session.getCommunityId()).child("events").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 autocompleteEvents.clear();
@@ -115,7 +115,6 @@ public class ExpenseActivity extends AppCompatActivity {
                     if (title != null && !autocompleteEvents.contains(title)) { autocompleteEvents.add(title); }
                 }
 
-                // 2. Fetch Past Logged Utsavs
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                         for (DataSnapshot data : snapshot.getChildren()) {
@@ -221,7 +220,6 @@ public class ExpenseActivity extends AppCompatActivity {
         Collections.sort(groupedList, (a, b) -> Float.compare(b.totalSpent, a.totalSpent));
 
         expensesContainer.removeAllViews();
-        // ✨ NEW: Added Date formatter for Timestamp
         SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
 
         for (GroupedExpense ge : groupedList) {
@@ -231,23 +229,19 @@ public class ExpenseActivity extends AppCompatActivity {
                 ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + ge.totalSpent);
                 ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText(ge.history.size() + " items logged in this range");
 
-                // ✨ NEW: Sort history by latest and set the timestamp text!
                 Collections.sort(ge.history, (a, b) -> Long.compare(b.timestamp, a.timestamp));
                 if (!ge.history.isEmpty()) {
                     Expense latest = ge.history.get(0);
                     ((TextView) view.findViewById(R.id.tvExpenseLastLogged)).setText("Last Logged: ৳" + latest.amount + " on " + sdf.format(new Date(latest.timestamp)));
                 }
 
+                // ✨ NEW: Click now opens the powerful ExpenseDetailActivity!
                 view.setOnClickListener(v -> {
-                    try { PdfReportService.generateUtsavStatement(this, session.getCommunityName(), ge); } catch (Exception ex) { Toast.makeText(this, "Error viewing details.", Toast.LENGTH_SHORT).show(); }
+                    Intent intent = new Intent(ExpenseActivity.this, ExpenseDetailActivity.class);
+                    intent.putExtra("EVENT_NAME", ge.eventDisplayName);
+                    startActivity(intent);
                 });
 
-                if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
-                    view.setOnLongClickListener(v -> { 
-                        try { showExpenseManagerDialog(ge); } catch (Exception ex) {}
-                        return true; 
-                    });
-                }
                 expensesContainer.addView(view);
             } catch (Exception e) {}
         }
@@ -304,46 +298,13 @@ public class ExpenseActivity extends AppCompatActivity {
         }
     }
 
-    private void showExpenseManagerDialog(GroupedExpense ge) {
-        if (ge.history.isEmpty()) return;
-        Expense latest = ge.history.get(ge.history.size() - 1);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Manage Expense").setMessage("Event: " + latest.eventName + "\nItem: " + latest.itemName + "\nCost: ৳" + latest.amount);
-
-        builder.setPositiveButton("EDIT ITEM", (d, w) -> {
-            AlertDialog.Builder editBuilder = new AlertDialog.Builder(this);
-            final EditText inputItem = new EditText(this); inputItem.setText(latest.itemName);
-            editBuilder.setView(inputItem).setPositiveButton("SAVE", (d2, w2) -> {
-                String newItem = inputItem.getText().toString();
-                db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(latest.id).child("itemName").setValue(newItem);
-                logAudit("EXPENSE_EDITED", "Updated item for " + latest.eventName + " to: " + newItem);
-                Toast.makeText(this, "Updated", Toast.LENGTH_SHORT).show();
-            }).show();
-        });
-
-        builder.setNegativeButton("DELETE", (d, w) -> {
-            new AlertDialog.Builder(this).setTitle("Confirm Deletion").setMessage("Delete ৳" + latest.amount + " expense?")
-                .setPositiveButton("YES", (d2, w2) -> {
-                    db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(latest.id).removeValue();
-                    logAudit("EXPENSE_DELETED", "Deleted ৳" + latest.amount + " expense for " + latest.eventName);
-                    Toast.makeText(this, "Deleted & Totals Recalculated", Toast.LENGTH_SHORT).show();
-                }).setNegativeButton("CANCEL", null).show();
-        });
-        builder.show();
-    }
-
-    private void logAudit(String actionType, String description) {
-        String historyId = db.child("communities").child(session.getCommunityId()).child("audit_logs").push().getKey();
-        HashMap<String, Object> auditMap = new HashMap<>();
-        auditMap.put("managerName", session.getUserName()); auditMap.put("actionType", actionType);
-        auditMap.put("description", description); auditMap.put("timestamp", System.currentTimeMillis());
-        db.child("communities").child(session.getCommunityId()).child("audit_logs").child(historyId).setValue(auditMap);
-    }
-
+    // ✨ NEW: Updated Model to track Edit History
     public static class Expense {
         public String id, eventName, itemName, involvedPerson, loggedBy;
-        public float amount; public long timestamp;
+        public float amount; 
+        public long timestamp;
+        public HashMap<String, String> editHistory; // Key: pushID, Value: Text log
+
         public Expense() {}
         public Expense(String id, String ev, String it, float a, String inv, long ts, String logBy) {
             this.id=id; this.eventName=ev; this.itemName=it; this.amount=a; this.involvedPerson=inv; this.timestamp=ts; this.loggedBy=logBy;
