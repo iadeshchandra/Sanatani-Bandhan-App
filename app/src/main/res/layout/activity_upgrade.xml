@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFBF2"> <!-- Warm Mandir Sand Background -->
+    android:background="#FFFBF2">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -12,7 +12,6 @@
         android:padding="16dp"
         android:gravity="center_horizontal">
 
-        <!-- 🕉️ Sanatani Header Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -32,16 +31,13 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="\"Dharmo Rakshati Rakshitah\"\nEmpower your community with unlimited digital Seva."
+            android:text="&quot;Dharmo Rakshati Rakshitah&quot;&#10;Empower your community with unlimited digital Seva."
             android:textSize="14sp"
             android:textStyle="italic|bold"
             android:textColor="#F57C00"
             android:gravity="center"
             android:layout_marginBottom="24dp"/>
 
-        <!-- ========================================== -->
-        <!-- 🚫 VIEW 1: RESTRICTED VIEW (FOR DEVOTEES)  -->
-        <!-- ========================================== -->
         <LinearLayout
             android:id="@+id/layoutRestricted"
             android:layout_width="match_parent"
@@ -49,8 +45,7 @@
             android:orientation="vertical"
             android:visibility="gone"
             android:padding="24dp"
-            android:background="@drawable/rounded_bg"
-            android:backgroundTint="#FFECB3"
+            android:background="#FFECB3"
             android:gravity="center">
             
             <TextView
@@ -65,7 +60,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="This feature requires the SAMRAT PRO workspace upgrade.\n\nTo maintain full financial transparency, only your Mandir's Admin or Manager can authorize payments to upgrade the community software."
+                android:text="This feature requires the SAMRAT PRO workspace upgrade. Only your Mandir's Admin or Manager can authorize payments."
                 android:textSize="15sp"
                 android:textColor="#424242"
                 android:gravity="center"
@@ -81,9 +76,6 @@
                 app:cornerRadius="8dp"/>
         </LinearLayout>
 
-        <!-- ========================================== -->
-        <!-- ✅ VIEW 2: PAYMENT VIEW (FOR ADMIN/MANAGER)-->
-        <!-- ========================================== -->
         <LinearLayout
             android:id="@+id/layoutPayment"
             android:layout_width="match_parent"
@@ -93,13 +85,12 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Your free Seva quota is reached. Offer your Dakshina (Subscription) below to unlock unlimited Master PDFs, Mass Sandesh, and more!"
+                android:text="Your free Seva quota is reached. Offer your Dakshina below to unlock unlimited Master PDFs, Mass Sandesh, and more!"
                 android:textSize="14sp"
                 android:textColor="#424242"
                 android:gravity="center"
                 android:layout_marginBottom="16dp"/>
 
-            <!-- Toggle Payment Method -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -130,7 +121,6 @@
                     android:layout_marginStart="4dp"/>
             </LinearLayout>
 
-            <!-- BANGLADESH PAYMENT UI (TaliPay) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardBanglaQR"
                 android:layout_width="match_parent"
@@ -181,12 +171,12 @@
                         android:layout_marginTop="12dp"
                         android:layout_marginBottom="8dp"/>
 
-                    <!-- QR Image -->
                     <ImageView
                         android:layout_width="160dp"
                         android:layout_height="160dp"
                         android:src="@mipmap/ic_launcher" 
-                        android:layout_marginBottom="16dp"/>
+                        android:layout_marginBottom="16dp"
+                        android:contentDescription="QR Code"/>
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -224,14 +214,13 @@
                             android:textColor="#FFFFFF"/>
                     </LinearLayout>
 
-                    <!-- Instruction Button -->
                     <Button
                         android:id="@+id/btnHowToPay"
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
                         android:layout_marginHorizontal="16dp"
                         android:layout_marginBottom="16dp"
-                        android:text="❓ HOW TO PAY (APP LIST &amp; GUIDE)"
+                        android:text="❓ HOW TO PAY"
                         android:backgroundTint="#F57C00"
                         android:textColor="#FFFFFF"
                         android:textStyle="bold"
@@ -239,7 +228,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- INTERNATIONAL PAYMENT UI -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardIntlPayment"
                 android:layout_width="match_parent"
@@ -264,13 +252,6 @@
                         android:textStyle="bold"
                         android:textSize="18sp"
                         android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Powered securely by Wise / Payoneer."
-                        android:textColor="#757575"
-                        android:layout_marginBottom="24dp"/>
 
                     <Button
                         android:id="@+id/btnCheckoutLink"
