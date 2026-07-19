@@ -1,27 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:background="#FAF9F6" android:padding="16dp">
+    android:layout_width="match_parent" 
+    android:layout_height="match_parent"
+    android:orientation="vertical" 
+    android:background="#FAF9F6" 
+    android:padding="16dp">
 
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Member Directory" android:textSize="26sp" android:textStyle="bold"
-        android:textColor="#212121" android:layout_marginBottom="4dp"/>
+    <TextView 
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:text="👥 Member Directory" 
+        android:textSize="26sp" 
+        android:textStyle="bold"
+        android:textColor="#212121" 
+        android:layout_marginBottom="4dp"/>
+
+    <TextView 
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:text="Sanatani Bandhan CRM" 
+        android:textSize="14sp" 
+        android:textColor="#757575" 
+        android:layout_marginBottom="4dp"/>
+
+    <!-- ✨ NEW: Shows the 50 Member limit dynamically -->
+    <TextView 
+        android:id="@+id/tvPlanStatus"
+        android:layout_width="wrap_content" 
+        android:layout_height="wrap_content"
+        android:text="Loading Quota..." 
+        android:textSize="14sp" 
+        android:textStyle="bold"
+        android:textColor="#E65100" 
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout 
+        android:layout_width="match_parent" 
+        android:layout_height="wrap_content" 
+        android:orientation="horizontal" 
+        android:weightSum="2" 
+        android:layout_marginBottom="16dp">
         
-    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Sanatani Bandhan CRM" android:textSize="14sp" android:textColor="#757575" android:layout_marginBottom="16dp"/>
+        <!-- This button will be hidden for regular Devotees in Java -->
+        <Button 
+            android:id="@+id/btnAddNew" 
+            android:layout_width="0dp" 
+            android:layout_weight="1" 
+            android:layout_height="55dp"
+            android:text="+ ADD NEW" 
+            android:backgroundTint="#1976D2" 
+            android:layout_marginEnd="6dp"/>
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2" android:layout_marginBottom="16dp">
-        <Button android:id="@+id/btnAddNew" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp"
-            android:text="+ ADD NEW" android:backgroundTint="#1976D2" android:layout_marginEnd="6dp"/>
-
-        <Button android:id="@+id/btnSharePdf" android:layout_width="0dp" android:layout_weight="1" android:layout_height="55dp"
-            android:text="SHARE PDF" android:backgroundTint="#388E3C" android:layout_marginStart="6dp"/>
+        <Button 
+            android:id="@+id/btnSharePdf" 
+            android:layout_width="0dp" 
+            android:layout_weight="1" 
+            android:layout_height="55dp"
+            android:text="SHARE PDF" 
+            android:backgroundTint="#388E3C" 
+            android:layout_marginStart="6dp"/>
     </LinearLayout>
 
-    <AutoCompleteTextView android:id="@+id/inputSearch" android:layout_width="match_parent" android:layout_height="55dp"
-        android:hint="Search by Name or SB-ID..." android:background="#FFFFFF" android:padding="12dp" android:layout_marginBottom="16dp" android:completionThreshold="1"/>
+    <AutoCompleteTextView 
+        android:id="@+id/inputSearch" 
+        android:layout_width="match_parent" 
+        android:layout_height="55dp"
+        android:hint="Search by Name or SB-ID..." 
+        android:background="#FFFFFF" 
+        android:padding="12dp" 
+        android:layout_marginBottom="16dp" 
+        android:completionThreshold="1"/>
 
-    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
-        <LinearLayout android:id="@+id/membersContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"/>
+    <ScrollView 
+        android:layout_width="match_parent" 
+        android:layout_height="match_parent">
+        <LinearLayout 
+            android:id="@+id/membersContainer" 
+            android:layout_width="match_parent" 
+            android:layout_height="wrap_content" 
+            android:orientation="vertical"/>
     </ScrollView>
 </LinearLayout>
