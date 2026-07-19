@@ -28,7 +28,7 @@
                 android:id="@+id/tvDashboardBranding"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sanatani Bandhan CRM"
+                android:text="@string/app_name"
                 android:textSize="14sp"
                 android:textColor="#757575"/>
         </LinearLayout>
@@ -86,7 +86,7 @@
                     android:id="@+id/btnPanjika"
                     android:layout_width="match_parent"
                     android:layout_height="55dp"
-                    android:text="🗓️ OPEN SANATANI PANJIKA"
+                    android:text="@string/btn_panjika"
                     android:backgroundTint="#FF9800"
                     app:cornerRadius="8dp"
                     android:layout_marginTop="16dp"/>
@@ -108,7 +108,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Financial Overview"
+                    android:text="@string/txt_financial_overview"
                     android:textSize="20sp"
                     android:textStyle="bold"
                     android:textColor="#212121"
@@ -118,7 +118,7 @@
                     android:id="@+id/btnFilterChartDate"
                     android:layout_width="match_parent"
                     android:layout_height="45dp"
-                    android:text="FILTER DATES"
+                    android:text="@string/txt_filter_dates"
                     android:backgroundTint="#E0E0E0"
                     android:textColor="#424242"
                     app:cornerRadius="8dp"
@@ -147,7 +147,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="70dp"
                 android:layout_margin="6dp"
-                android:text="MEMBER\nDIRECTORY"
+                android:text="@string/btn_member_directory"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 app:cornerRadius="8dp"
@@ -159,7 +159,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="70dp"
                 android:layout_margin="6dp"
-                android:text="SMART\nDONATIONS"
+                android:text="@string/btn_smart_chanda"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 app:cornerRadius="8dp"
@@ -178,7 +178,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="70dp"
                 android:layout_margin="6dp"
-                android:text="EXPENSE\nLEDGER"
+                android:text="@string/btn_utsav_expenses"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 app:cornerRadius="8dp"
@@ -190,7 +190,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="70dp"
                 android:layout_margin="6dp"
-                android:text="SANATANI\nPOLLS"
+                android:text="@string/btn_sanatani_polls"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 app:cornerRadius="8dp"
@@ -210,7 +210,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="70dp"
                 android:layout_margin="6dp"
-                android:text="EVENTS\n&amp; UTSAV"
+                android:text="@string/btn_mandir_events"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 app:cornerRadius="8dp"
@@ -222,7 +222,7 @@
                 android:layout_height="wrap_content"
                 android:minHeight="70dp"
                 android:layout_margin="6dp"
-                android:text="MASS\nSANDESH"
+                android:text="@string/btn_mass_sandesh"
                 android:textSize="13sp"
                 android:textStyle="bold"
                 app:cornerRadius="8dp"
@@ -234,29 +234,29 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="👤 MY DEVOTEE PROFILE"
+            android:text="@string/btn_my_profile"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#283593"/>
-            
+
         <Button
             android:id="@+id/btnGenerateReports"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="📄 GENERATE MASTER REPORTS"
+            android:text="@string/btn_generate_pdfs"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#546E7A"/>
-            
+
         <Button
             android:id="@+id/btnDownloadAudit"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="🛡️ SECURITY AUDIT"
+            android:text="@string/btn_security_audit"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="8dp"
@@ -267,7 +267,7 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="🏛️ WORKSPACE INFO &amp; SETTINGS"
+            android:text="@string/btn_workspace_settings"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="8dp"
@@ -278,29 +278,29 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="🌐 CHANGE LANGUAGE"
+            android:text="@string/btn_change_language"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#795548"/>
-            
+
         <Button
             android:id="@+id/btnHelpSupport"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="❓ HELP SUPPORT"
+            android:text="@string/btn_help_support"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="8dp"
             android:backgroundTint="#00695C"/>
-            
+
         <Button
             android:id="@+id/btnLogout"
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_margin="4dp"
-            android:text="LOGOUT"
+            android:text="@string/btn_logout"
             android:textSize="14sp"
             android:textStyle="bold"
             android:textColor="#212121"
