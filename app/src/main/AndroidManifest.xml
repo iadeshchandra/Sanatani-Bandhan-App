@@ -25,9 +25,9 @@
         <activity android:name=".LoginActivity" android:exported="false" />
         <activity android:name=".RegisterCommunityActivity" android:exported="false" />
         <activity android:name=".DashboardActivity" android:exported="false" />
-        
+
         <activity android:name=".CommunityInfoActivity" android:exported="false" />
-        
+
         <activity android:name=".MemberActivity" android:exported="false" />
         <activity android:name=".AddMemberActivity" android:exported="false" />
         <activity android:name=".TransactionActivity" android:exported="false" />
@@ -38,6 +38,10 @@
         <activity android:name=".PanjikaActivity" android:exported="false" />
         <activity android:name=".UserProfileActivity" android:exported="false" />
         <activity android:name=".MemberDetailActivity" android:exported="false" />
+        
+        <!-- ✨ NEW ACTIVITIES ADDED HERE ✨ -->
+        <activity android:name=".UpgradeActivity" android:exported="false" />
+        <activity android:name=".ExpenseDetailActivity" android:exported="false" />
 
         <service
             android:name=".FCMNotificationService"
