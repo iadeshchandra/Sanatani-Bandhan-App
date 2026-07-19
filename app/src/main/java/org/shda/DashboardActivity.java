@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.app.DatePickerDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -36,6 +37,12 @@ public class DashboardActivity extends AppCompatActivity {
     private Long chartStartTs = null;
     private Long chartEndTs = null;
 
+    // ✨ THE ENGINE FIX: Intercepts the context to apply your LocaleHelper language before drawing
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,7 +58,7 @@ public class DashboardActivity extends AppCompatActivity {
         }
 
         pieChart = findViewById(R.id.pieChart);
-        
+
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
         ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
@@ -60,7 +67,7 @@ public class DashboardActivity extends AppCompatActivity {
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
         findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
-        
+
         findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
         findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
         findViewById(R.id.cardExpenses).setOnClickListener(v -> startActivity(new Intent(this, ExpenseActivity.class)));
@@ -71,7 +78,7 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
-        
+
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
             try {
                 com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
@@ -85,9 +92,8 @@ public class DashboardActivity extends AppCompatActivity {
             }
         });
 
-        // ✨ FIX: Launch the new Dedicated Page instead of the old Dialog
         findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
-        
+
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> showGlobalPdfGeneratorDialog());
 
         if (!"ADMIN".equals(session.getRole())) {
@@ -95,7 +101,7 @@ public class DashboardActivity extends AppCompatActivity {
         } else {
             findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> {
                 new AlertDialog.Builder(this)
-                    .setTitle("Generate Security Audit")
+                    .setTitle(getString(R.string.btn_security_audit))
                     .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
                         if (which == 0) {
                             pickDateRange((startTs, endTs) -> generateAuditPdf(startTs, endTs));
@@ -112,7 +118,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void showChartDateFilterDialog() {
         new AlertDialog.Builder(this)
-            .setTitle("Filter Dashboard Chart")
+            .setTitle(getString(R.string.txt_filter_dates))
             .setItems(new String[]{"Select Specific Date Range", "Clear Filter (All Time)"}, (dialog, which) -> {
                 if (which == 0) {
                     pickDateRange((startTs, endTs) -> {
@@ -125,7 +131,7 @@ public class DashboardActivity extends AppCompatActivity {
                 } else {
                     chartStartTs = null;
                     chartEndTs = null;
-                    ((Button) findViewById(R.id.btnFilterChartDate)).setText("FILTER DATES");
+                    ((Button) findViewById(R.id.btnFilterChartDate)).setText(getString(R.string.txt_filter_dates));
                     loadFinancialData();
                 }
             }).show();
@@ -158,18 +164,28 @@ public class DashboardActivity extends AppCompatActivity {
                 String type = snapshot.getValue(String.class);
                 if (type != null && !type.isEmpty()) workspaceType = type;
                 Button btnWorkspace = findViewById(R.id.btnWorkspaceSettings);
-                if (btnWorkspace != null) btnWorkspace.setText("🏛️ " + workspaceType.toUpperCase() + " INFO & SETTINGS");
+                if (btnWorkspace != null) {
+                    btnWorkspace.setText("🏛️ " + workspaceType.toUpperCase() + " " + getString(R.string.txt_info_settings));
+                }
             }
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
+    // ✨ THE RESTART FIX: Saves the language locally, then gracefully restarts the activity!
     private void showLanguageDialog() {
         String[] languages = {"English", "Bengali (বাংলা)", "Hindi (हिन्दी)"};
+        String[] langCodes = {"en", "bn", "hi"}; 
+        
         new AlertDialog.Builder(this)
             .setTitle("Select Language")
             .setItems(languages, (dialog, which) -> {
+                LocaleHelper.setLocale(DashboardActivity.this, langCodes[which]);
                 Toast.makeText(this, "Language updated to " + languages[which], Toast.LENGTH_SHORT).show();
+                
+                Intent intent = getIntent();
+                finish();
+                startActivity(intent);
             }).show();
     }
 
@@ -192,7 +208,7 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     private void showGlobalPdfGeneratorDialog() {
-        new AlertDialog.Builder(this).setTitle("Generate Master Report")
+        new AlertDialog.Builder(this).setTitle(getString(R.string.btn_generate_pdfs))
             .setItems(new String[]{"Donation Ledger (Select Dates)", "Expenses Ledger (Select Dates)", "Income vs Expense Comparison (Select Dates)"}, (dialog, which) -> {
                 pickDateRange((startTs, endTs) -> {
                     if (which == 0) generateGlobalChandaPdf(startTs, endTs);
@@ -298,31 +314,31 @@ public class DashboardActivity extends AppCompatActivity {
             @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                 totalIncome = 0f; 
                 totalExpense = 0f;
-                
+
                 if (snapshot.hasChild("Donation")) { 
                     for (DataSnapshot d : snapshot.child("Donation").getChildren()) { 
                         Float amt = d.child("amount").getValue(Float.class); 
                         Long ts = d.child("timestamp").getValue(Long.class);
-                        
+
                         boolean inRange = true;
                         if (chartStartTs != null && chartEndTs != null && ts != null) {
                             inRange = (ts >= chartStartTs && ts <= chartEndTs);
                         }
-                        
+
                         if (amt != null && inRange) totalIncome += amt; 
                     } 
                 }
-                
+
                 if (snapshot.hasChild("Expense")) { 
                     for (DataSnapshot d : snapshot.child("Expense").getChildren()) { 
                         Float amt = d.child("amount").getValue(Float.class); 
                         Long ts = d.child("timestamp").getValue(Long.class);
-                        
+
                         boolean inRange = true;
                         if (chartStartTs != null && chartEndTs != null && ts != null) {
                             inRange = (ts >= chartStartTs && ts <= chartEndTs);
                         }
-                        
+
                         if (amt != null && inRange) totalExpense += amt; 
                     } 
                 }
