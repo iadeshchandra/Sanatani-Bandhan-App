@@ -1,434 +1,457 @@
 package org.shda;
 
+import android.app.DatePickerDialog;
 import android.content.Context;
-import android.os.Environment;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ServerValue;
-import com.google.firebase.database.ValueEventListener;
-import com.itextpdf.kernel.colors.ColorConstants;
-import com.itextpdf.kernel.colors.DeviceRgb;
-import com.itextpdf.kernel.geom.PageSize;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.layout.Document;
-import com.itextpdf.layout.element.Cell;
-import com.itextpdf.layout.element.Paragraph;
-import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.property.TextAlignment;
-import com.itextpdf.layout.property.UnitValue;
-import java.io.File;
-import java.io.FileOutputStream;
+import androidx.appcompat.app.AppCompatActivity;
+import com.github.mikephil.charting.charts.PieChart;
+import com.github.mikephil.charting.data.PieData;
+import com.github.mikephil.charting.data.PieDataSet;
+import com.github.mikephil.charting.data.PieEntry;
+import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
-public class PdfReportService {
+public class DashboardActivity extends AppCompatActivity {
+    private DatabaseReference db;
+    private SessionManager session;
+    private PieChart pieChart;
+    private float totalIncome = 0f;
+    private float totalExpense = 0f;
+    private String workspaceType = "Community"; 
 
-    private static final DeviceRgb SAFFRON = new DeviceRgb(230, 81, 0);
-    private static final DeviceRgb GREEN = new DeviceRgb(46, 125, 50);
-    private static final DeviceRgb BLUE = new DeviceRgb(25, 118, 210);
+    private Long chartStartTs = null;
+    private Long chartEndTs = null;
 
-    private static void sharePdf(Context context, File file) {
-        try {
-            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
-            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_SEND);
-            intent.setType("application/pdf");
-            intent.putExtra(android.content.Intent.EXTRA_STREAM, uri);
-            intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            context.startActivity(android.content.Intent.createChooser(intent, "Share PDF"));
-        } catch (Exception e) {
-            Toast.makeText(context, "PDF Saved to Documents! (View in File Manager)", Toast.LENGTH_LONG).show();
-        }
+    @Override
+    protected void attachBaseContext(Context newBase) {
+        super.attachBaseContext(LocaleHelper.onAttach(newBase));
     }
 
-    private static void checkMasterPdfLimitAndShare(Context context, File file) {
-        SessionManager session = new SessionManager(context);
-        if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
-            sharePdf(context, file);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_dashboard);
+
+        db = FirebaseDatabase.getInstance().getReference();
+        session = new SessionManager(this);
+
+        if (session.getUserId() == null || session.getCommunityId() == null) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
             return;
         }
 
-        DatabaseReference db = FirebaseDatabase.getInstance().getReference();
-        db.child("communities").child(session.getCommunityId()).child("usage_tracking")
-          .addListenerForSingleValueEvent(new ValueEventListener() {
+        syncWorkspacePlan();
+
+        pieChart = findViewById(R.id.pieChart);
+
+        ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
+        ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
+        ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
+        ((TextView) findViewById(R.id.tvTithiAlert)).setText("Today's Tithi: Loading...");
+        ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
+
+        findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
+        findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
+
+        findViewById(R.id.cardMembers).setOnClickListener(v -> startActivity(new Intent(this, MemberActivity.class)));
+        findViewById(R.id.cardDonations).setOnClickListener(v -> startActivity(new Intent(this, TransactionActivity.class)));
+        findViewById(R.id.cardExpenses).setOnClickListener(v -> startActivity(new Intent(this, ExpenseActivity.class)));
+        findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
+        findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
+        
+        // 🔒 THE GATEKEEPER: Mass Sandesh (1 Free Per Month)
+        findViewById(R.id.cardComms).setOnClickListener(v -> 
+            checkQuotaAndProceed("sandesh_sent", 1, () -> startActivity(new Intent(this, CommsActivity.class)))
+        );
+
+        // 🔒 THE GATEKEEPER: Master Reports (3 Free Per Month)
+        findViewById(R.id.btnGenerateReports).setOnClickListener(v -> 
+            checkQuotaAndProceed("pdfs_generated", 3, this::showGlobalPdfGeneratorDialog)
+        );
+
+        if (!"ADMIN".equals(session.getRole())) {
+            findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
+        } else {
+            // 🔒 THE GATEKEEPER: Security Audit (1 Free Per Month)
+            findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> 
+                checkQuotaAndProceed("audits_downloaded", 1, () -> {
+                    new AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.btn_security_audit))
+                        .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
+                            if (which == 0) {
+                                pickDateRange((startTs, endTs) -> generateAuditPdf(startTs, endTs));
+                            } else {
+                                generateAuditPdf(0, Long.MAX_VALUE);
+                            }
+                        }).show();
+                })
+            );
+        }
+
+        findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
+        findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
+        findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
+        
+        findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
+
+        findViewById(R.id.btnLogout).setOnClickListener(v -> {
+            try {
+                com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+                session.logout(); 
+                Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            } catch (Exception e) {
+                Toast.makeText(this, "Logout processed with minor errors", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        loadWorkspaceType();
+        loadFinancialData();
+    }
+
+    // ✨ THE MONTHLY CHAKRA GATEKEEPER ENGINE ✨
+    private void checkQuotaAndProceed(String feature, int freeLimit, Runnable action) {
+        if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
+            action.run(); 
+            return;
+        }
+
+        String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
+        DatabaseReference usageRef = db.child("communities").child(session.getCommunityId()).child("usage_tracking");
+
+        usageRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Usage usage = snapshot.getValue(Usage.class);
+                
+                if (usage == null || !currentMonth.equals(usage.current_month)) {
+                    usage = new Usage();
+                    usage.current_month = currentMonth;
+                }
+
+                int currentUsage = 0;
+                if (feature.equals("pdfs_generated")) currentUsage = usage.pdfs_generated;
+                else if (feature.equals("sandesh_sent")) currentUsage = usage.sandesh_sent;
+                else if (feature.equals("audits_downloaded")) currentUsage = usage.audits_downloaded;
+
+                if (currentUsage < freeLimit) {
+                    if (feature.equals("pdfs_generated")) usage.pdfs_generated++;
+                    else if (feature.equals("sandesh_sent")) usage.sandesh_sent++;
+                    else if (feature.equals("audits_downloaded")) usage.audits_downloaded++;
+
+                    usageRef.setValue(usage);
+                    
+                    int remaining = freeLimit - (currentUsage + 1);
+                    Toast.makeText(DashboardActivity.this, "Free Seva Limit: " + remaining + " remaining this month.", Toast.LENGTH_SHORT).show();
+                    
+                    action.run();
+                } else {
+                    startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class));
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Toast.makeText(DashboardActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void syncWorkspacePlan() {
+        db.child("communities").child(session.getCommunityId()).child("info").child("plan")
+          .addValueEventListener(new ValueEventListener() {
               @Override
               public void onDataChange(@NonNull DataSnapshot snapshot) {
-                  DashboardActivity.Usage usage = snapshot.getValue(DashboardActivity.Usage.class);
-                  String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
-
-                  if (usage == null || !currentMonth.equals(usage.current_month)) {
-                      sharePdf(context, file);
-                  } else if (usage.pdfs_generated >= 3) {
-                      new AlertDialog.Builder(context)
-                          .setTitle("🌟 Upgrade to Premium")
-                          .setMessage("You have reached the Free Plan limit of 3 Master PDF Reports per month.\n\nOffer Dakshina for SAMRAT PRO for unlimited professional exports.")
-                          .setPositiveButton("OK", null)
-                          .show();
-                      if(file.exists()) file.delete(); 
+                  String currentPlan = snapshot.getValue(String.class);
+                  if (currentPlan != null) {
+                      session.setPlan(currentPlan);
                   } else {
-                      sharePdf(context, file);
+                      db.child("communities").child(session.getCommunityId()).child("info").child("plan").setValue("FREE");
+                      session.setPlan("FREE");
                   }
               }
               @Override
-              public void onCancelled(@NonNull DatabaseError error) {
-                  sharePdf(context, file); 
-              }
+              public void onCancelled(@NonNull DatabaseError error) {}
           });
     }
 
-    private static File createBaseFile(Context context, String fileName) {
-        File folder = new File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "SanataniReports");
-        if (!folder.exists()) folder.mkdirs();
-        return new File(folder, fileName + "_" + System.currentTimeMillis() + ".pdf");
+    private void showChartDateFilterDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle(getString(R.string.txt_filter_dates))
+            .setItems(new String[]{"Select Specific Date Range", "Clear Filter (All Time)"}, (dialog, which) -> {
+                if (which == 0) {
+                    pickDateRange((startTs, endTs) -> {
+                        chartStartTs = startTs;
+                        chartEndTs = endTs;
+                        SimpleDateFormat sdf = new SimpleDateFormat("dd MMM", Locale.getDefault());
+                        ((Button) findViewById(R.id.btnFilterChartDate)).setText("FILTER ACTIVE: " + sdf.format(new Date(startTs)) + " - " + sdf.format(new Date(endTs)));
+                        loadFinancialData();
+                    });
+                } else {
+                    chartStartTs = null;
+                    chartEndTs = null;
+                    ((Button) findViewById(R.id.btnFilterChartDate)).setText(getString(R.string.txt_filter_dates));
+                    loadFinancialData();
+                }
+            }).show();
     }
 
-    private static void addSanataniHeader(Document document, String communityName, String reportTitle) {
-        document.add(new Paragraph(communityName != null ? communityName.toUpperCase() : "SANATANI BANDHAN MANDIR")
-                .setTextAlignment(TextAlignment.CENTER).setFontSize(22).setBold().setFontColor(SAFFRON));
-        document.add(new Paragraph("\"Ahimsa paramo dharma\" (Non-violence is the highest religion) - Mahabharata")
-                .setTextAlignment(TextAlignment.CENTER).setFontSize(10).setItalic().setFontColor(ColorConstants.GRAY));
-        document.add(new Paragraph(reportTitle.toUpperCase())
-                .setTextAlignment(TextAlignment.CENTER).setFontSize(14).setBold().setBackgroundColor(ColorConstants.LIGHT_GRAY).setMarginTop(10));
-        document.add(new Paragraph("Generated: " + new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date()))
-                .setTextAlignment(TextAlignment.CENTER).setFontSize(10).setItalic().setMarginBottom(15));
+    private void generateAuditPdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("audit_logs").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<AuditLog> logs = new ArrayList<>();
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    AuditLog log = d.getValue(AuditLog.class);
+                    if (log != null && log.timestamp >= startTs && log.timestamp <= endTs) {
+                        logs.add(log);
+                    }
+                }
+                if (logs.isEmpty()) {
+                    Toast.makeText(DashboardActivity.this, "No audit logs found for this range.", Toast.LENGTH_SHORT).show();
+                } else {
+                    String title = startTs > 0 ? "Security Audit Report (Filtered)" : "Security Audit Report (All Time)";
+                    PdfReportService.generateSecurityAudit(DashboardActivity.this, session.getCommunityName(), logs, title);
+                }
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
-    private static void addSanataniFooter(Context context, Document document) {
-        SessionManager session = new SessionManager(context);
-        String footerText = "PREMIUM".equalsIgnoreCase(session.getPlan()) ? 
-            "\nAuthorized & Generated via Sanatani Bandhan SAMRAT PRO" : 
-            "\nGenerated by Sanatani Bandhan (Free Version) - Upgrade to Pro for unlimited exports.";
+    private void loadWorkspaceType() {
+        db.child("communities").child(session.getCommunityId()).child("info").child("type").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String type = snapshot.getValue(String.class);
+                if (type != null && !type.isEmpty()) workspaceType = type;
+                Button btnWorkspace = findViewById(R.id.btnWorkspaceSettings);
+                if (btnWorkspace != null) {
+                    btnWorkspace.setText("🏛️ " + workspaceType.toUpperCase() + " " + getString(R.string.txt_info_settings));
+                }
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void showLanguageDialog() {
+        String[] languages = {"English", "Bengali (বাংলা)", "Hindi (हिन्दी)"};
+        String[] langCodes = {"en", "bn", "hi"}; 
         
-        document.add(new Paragraph(footerText)
-                .setTextAlignment(TextAlignment.RIGHT).setFontSize(9).setItalic().setFontColor(ColorConstants.GRAY));
+        new AlertDialog.Builder(this)
+            .setTitle("Select Language")
+            .setItems(languages, (dialog, which) -> {
+                LocaleHelper.setLocale(DashboardActivity.this, langCodes[which]);
+                Toast.makeText(this, "Language updated to " + languages[which], Toast.LENGTH_SHORT).show();
+                
+                Intent intent = getIntent();
+                finish();
+                startActivity(intent);
+            }).show();
     }
 
-    private static void addThankYouMessage(Document document, String communityName) {
-        String orgName = communityName != null ? communityName : "our community";
-        document.add(new Paragraph("\n🙏 Namaskar!\n\nThank you for your generous contribution to " + orgName + ". Your selfless support ensures our prosperity and the continued preservation of our Dharma. May the blessings of the divine always be with you and your family.\n\n\"Dharmo Rakshati Rakshitah\" (Dharma protects those who protect it).")
-                .setTextAlignment(TextAlignment.CENTER).setFontSize(12).setItalic().setFontColor(SAFFRON).setMarginTop(20));
-    }
-
-    // ==========================================
-    // MEMBER DIRECTORY & PROFILES
-    // ==========================================
-    
-    // ✨ FIX: Now uses exactly org.shda.Member
-    public static void generateMemberDirectory(Context context, String communityName, List<Member> members) {
+    private void contactSupport() {
+        String finalMessage = "🙏 *Namaskar / Jay Sanatan Dharma* 🙏\n\n" +
+                              "🛠️ *SYSTEM SUPPORT REQUEST*\n\n" +
+                              "Workspace: *" + session.getCommunityName() + "* (" + session.getCommunityId() + ")\n" +
+                              "User: *" + session.getUserName() + "* (" + session.getUserId() + ")\n\n" +
+                              "Please describe your issue here:\n\n\n" +
+                              "-----------------------------------\n" +
+                              "Sent via *" + session.getCommunityName() + " Portal*\n" +
+                              "Powered by Sanatani SaaS";
         try {
-            File file = createBaseFile(context, "Member_Directory");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Official Devotee Directory");
-            Table table = new Table(new float[]{3, 3, 2, 2}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Name").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("ID / Phone").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Gotra").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Total Donated").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            for (Member m : members) {
-                table.addCell(new Paragraph(m.name != null ? m.name : "")); 
-                table.addCell(new Paragraph(m.id + "\n" + (m.phone!=null?m.phone:"")));
-                table.addCell(new Paragraph(m.gotra!=null?m.gotra:"")); 
-                table.addCell(new Paragraph("BDT " + m.totalDonated).setFontColor(GREEN));
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse("https://wa.me/8801608533529?text=" + Uri.encode(finalMessage)));
+            startActivity(intent);
+        } catch (Exception e) {
+            Toast.makeText(this, "WhatsApp not installed.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void showGlobalPdfGeneratorDialog() {
+        new AlertDialog.Builder(this).setTitle(getString(R.string.btn_generate_pdfs))
+            .setItems(new String[]{"Donation Ledger (Select Dates)", "Expenses Ledger (Select Dates)", "Income vs Expense Comparison (Select Dates)"}, (dialog, which) -> {
+                pickDateRange((startTs, endTs) -> {
+                    if (which == 0) generateGlobalChandaPdf(startTs, endTs);
+                    else if (which == 1) generateGlobalExpensePdf(startTs, endTs);
+                    else generateGlobalComparisonPdf(startTs, endTs); 
+                });
+            }).show();
+    }
+
+    private void pickDateRange(DateRangeCallback callback) {
+        final Calendar startCal = Calendar.getInstance();
+        new DatePickerDialog(this, (view1, y1, m1, d1) -> {
+            startCal.set(y1, m1, d1, 0, 0, 0);
+            final Calendar endCal = Calendar.getInstance();
+            new DatePickerDialog(this, (view2, y2, m2, d2) -> {
+                endCal.set(y2, m2, d2, 23, 59, 59);
+                if (startCal.getTimeInMillis() > endCal.getTimeInMillis()) Toast.makeText(this, "Start date must be before end date", Toast.LENGTH_SHORT).show();
+                else callback.onSelected(startCal.getTimeInMillis(), endCal.getTimeInMillis());
+            }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+            Toast.makeText(this, "Now select End Date", Toast.LENGTH_SHORT).show();
+        }, startCal.get(Calendar.YEAR), startCal.get(Calendar.MONTH), startCal.get(Calendar.DAY_OF_MONTH)).show();
+    }
+    private interface DateRangeCallback { void onSelected(long start, long end); }
+
+    private void generateGlobalChandaPdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<String> dates = new ArrayList<>(); List<String> names = new ArrayList<>();
+                List<Float> amounts = new ArrayList<>(); List<String> notes = new ArrayList<>();
+                float totalExport = 0f;
+                SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    TransactionActivity.SingleDonation sd = d.getValue(TransactionActivity.SingleDonation.class);
+                    if (sd != null && sd.timestamp >= startTs && sd.timestamp <= endTs) {
+                        dates.add(sdf.format(new Date(sd.timestamp)));
+                        names.add(sd.name); amounts.add(sd.amount); notes.add(sd.note != null ? sd.note : "");
+                        totalExport += sd.amount;
+                    }
+                }
+                if (dates.isEmpty()) Toast.makeText(DashboardActivity.this, "No Donations found in this range.", Toast.LENGTH_SHORT).show();
+                else PdfReportService.generateFinancialReport(DashboardActivity.this, session.getCommunityName(), dates, names, amounts, notes, totalExport, "Custom Date Donation Ledger");
             }
-            document.add(table); addSanataniFooter(context, document); document.close();
-            checkMasterPdfLimitAndShare(context, file); 
-        } catch (Exception e) { Toast.makeText(context, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show(); }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
-    public static void generateMemberProfile(Context context, String communityName, Member m) {
-        try {
-            File file = createBaseFile(context, "Devotee_Profile_" + m.id);
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Official Devotee Record");
-            Table table = new Table(new float[]{1, 2}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addCell(new Cell().add(new Paragraph("Devotee Name").setBold())); table.addCell(new Paragraph(m.name).setBold());
-            table.addCell(new Cell().add(new Paragraph("SB-ID").setBold())); table.addCell(new Paragraph(m.id).setFontColor(BLUE));
-            table.addCell(new Cell().add(new Paragraph("Phone").setBold())); table.addCell(new Paragraph(m.phone!=null?m.phone:""));
-            table.addCell(new Cell().add(new Paragraph("Email").setBold())); table.addCell(new Paragraph(m.email!=null?m.email:"N/A"));
-            table.addCell(new Cell().add(new Paragraph("Gotra").setBold())); table.addCell(new Paragraph(m.gotra!=null?m.gotra:""));
-            table.addCell(new Cell().add(new Paragraph("Blood Group").setBold())); table.addCell(new Paragraph(m.bloodGroup!=null?m.bloodGroup:"").setFontColor(ColorConstants.RED));
-            table.addCell(new Cell().add(new Paragraph("Father's Name").setBold())); table.addCell(new Paragraph(m.fatherName!=null?m.fatherName:""));
-            table.addCell(new Cell().add(new Paragraph("Mother's Name").setBold())); table.addCell(new Paragraph(m.motherName!=null?m.motherName:""));
-            table.addCell(new Cell().add(new Paragraph("Address").setBold())); table.addCell(new Paragraph(m.address!=null?m.address:""));
-            table.addCell(new Cell().add(new Paragraph("Lifetime Donated").setBold())); table.addCell(new Paragraph("BDT " + m.totalDonated).setFontColor(GREEN).setBold());
-            document.add(table); document.add(new Paragraph("\nData Verified By: " + (m.addedBySignature!=null?m.addedBySignature:"System")).setItalic().setFontSize(10));
-            addSanataniFooter(context, document); document.close();
-            sharePdf(context, file); 
-        } catch (Exception e) {}
-    }
-
-    public static void generateLoginCredentialsPdf(Context context, String communityName, String name, String memberId, String pin, String generatedBy) {
-        try {
-            File file = createBaseFile(context, "Secure_Credentials_" + memberId);
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Confidential Login Credentials");
-
-            document.add(new Paragraph("Namaskar " + name + ",\nWelcome to the Sanatani Bandhan platform. Your profile has been created successfully. Please keep these credentials strictly confidential.")
-                    .setMarginBottom(20).setFontSize(12));
-
-            Table table = new Table(new float[]{1, 1}); table.setWidth(UnitValue.createPercentValue(100)); table.setMarginBottom(20);
-            Cell idHeader = new Cell().add(new Paragraph("YOUR OFFICIAL ID").setBold().setFontColor(ColorConstants.WHITE)).setBackgroundColor(BLUE).setTextAlignment(TextAlignment.CENTER).setPadding(8);
-            Cell pinHeader = new Cell().add(new Paragraph("SECURE LOGIN PIN").setBold().setFontColor(ColorConstants.WHITE)).setBackgroundColor(SAFFRON).setTextAlignment(TextAlignment.CENTER).setPadding(8);
-            Cell idValue = new Cell().add(new Paragraph(memberId).setBold().setFontSize(18).setFontColor(BLUE)).setTextAlignment(TextAlignment.CENTER).setPadding(12);
-            Cell pinValue = new Cell().add(new Paragraph(pin).setBold().setFontSize(26).setFontColor(SAFFRON)).setTextAlignment(TextAlignment.CENTER).setPadding(12);
-            table.addCell(idHeader); table.addCell(pinHeader); table.addCell(idValue); table.addCell(pinValue);
-            document.add(table);
-            document.add(new Paragraph("SECURITY WARNING: Mandir staff will never ask for your PIN. Do not share this document with anyone.")
-                    .setBold().setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.CENTER).setFontSize(10));
-            addSanataniFooter(context, document); document.close();
-            sharePdf(context, file); 
-        } catch (Exception e) {}
-    }
-
-    // ==========================================
-    // FINANCIAL REPORTS & STATEMENTS
-    // ==========================================
-
-    public static void generateFinancialReport(Context context, String communityName, List<String> dates, List<String> names, List<Float> amounts, List<String> notes, float totalCollected, String title) {
-        try {
-            File file = createBaseFile(context, "Master_Donation_Ledger");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
-            Table table = new Table(new float[]{2, 3, 2, 3}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Donor Name").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Amount").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Note / Purpose").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            for (int i = 0; i < names.size(); i++) {
-                table.addCell(new Paragraph(dates.get(i))); table.addCell(new Paragraph(names.get(i)));
-                table.addCell(new Paragraph("BDT " + amounts.get(i)).setFontColor(GREEN)); table.addCell(new Paragraph(notes.get(i)));
+    private void generateGlobalExpensePdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<ExpenseActivity.Expense> exps = new ArrayList<>();
+                float totalExport = 0f;
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    ExpenseActivity.Expense e = d.getValue(ExpenseActivity.Expense.class);
+                    if (e != null && e.timestamp >= startTs && e.timestamp <= endTs) {
+                        exps.add(e); totalExport += e.amount;
+                    }
+                }
+                if (exps.isEmpty()) Toast.makeText(DashboardActivity.this, "No Expenses found in this range.", Toast.LENGTH_SHORT).show();
+                else PdfReportService.generateExpenseReport(DashboardActivity.this, session.getCommunityName(), exps, totalExport, "Custom Date Expenses Ledger");
             }
-            document.add(table); document.add(new Paragraph("\nTotal Donation in this Report: BDT " + totalCollected).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
-            addSanataniFooter(context, document); document.close();
-            checkMasterPdfLimitAndShare(context, file); 
-        } catch (Exception e) {}
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
-    public static void generateDonorStatement(Context context, String communityName, TransactionActivity.GroupedDonation gd) {
-        try {
-            File file = createBaseFile(context, "Donation_Statement_" + gd.displayName.replaceAll("[^a-zA-Z0-9]", ""));
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Donor Contribution Statement");
-            document.add(new Paragraph("Devotee: " + gd.displayName).setBold().setFontSize(14).setMarginBottom(10));
-            Table table = new Table(new float[]{2, 2, 4, 2}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Amount").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Note").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Handled By").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-            for (TransactionActivity.SingleDonation sd : gd.history) {
-                table.addCell(new Paragraph(sdf.format(new Date(sd.timestamp))));
-                table.addCell(new Paragraph("BDT " + sd.amount).setFontColor(GREEN));
-                table.addCell(new Paragraph(sd.note!=null?sd.note:""));
-                table.addCell(new Paragraph(sd.collectedBy!=null?sd.collectedBy:""));
+    private void generateGlobalComparisonPdf(long startTs, long endTs) {
+        db.child("communities").child(session.getCommunityId()).child("logs").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                List<TransactionActivity.SingleDonation> donations = new ArrayList<>();
+                List<ExpenseActivity.Expense> expenses = new ArrayList<>();
+                float totalInc = 0f; float totalExp = 0f;
+
+                if (snapshot.hasChild("Donation")) {
+                    for (DataSnapshot d : snapshot.child("Donation").getChildren()) {
+                        TransactionActivity.SingleDonation sd = d.getValue(TransactionActivity.SingleDonation.class);
+                        if (sd != null && sd.timestamp >= startTs && sd.timestamp <= endTs) {
+                            donations.add(sd); totalInc += sd.amount;
+                        }
+                    }
+                }
+                if (snapshot.hasChild("Expense")) {
+                    for (DataSnapshot d : snapshot.child("Expense").getChildren()) {
+                        ExpenseActivity.Expense e = d.getValue(ExpenseActivity.Expense.class);
+                        if (e != null && e.timestamp >= startTs && e.timestamp <= endTs) {
+                            expenses.add(e); totalExp += e.amount;
+                        }
+                    }
+                }
+
+                if (donations.isEmpty() && expenses.isEmpty()) {
+                    Toast.makeText(DashboardActivity.this, "No data found for this date range.", Toast.LENGTH_SHORT).show();
+                } else {
+                    PdfReportService.generateComparisonReport(DashboardActivity.this, session.getCommunityName(), donations, expenses, startTs, endTs, totalInc, totalExp);
+                }
             }
-            document.add(table); document.add(new Paragraph("\nTotal Donated in this Statement: BDT " + gd.totalDonated).setBold().setFontSize(14).setFontColor(GREEN).setTextAlignment(TextAlignment.RIGHT));
-            addThankYouMessage(document, communityName); 
-            addSanataniFooter(context, document); document.close();
-            sharePdf(context, file); 
-        } catch (Exception e) {}
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
-    public static void generateExpenseReport(Context context, String communityName, List<ExpenseActivity.Expense> expenses, float totalSpent, String title) {
-        try {
-            File file = createBaseFile(context, "Master_Utsav_Expense");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
-            Table table = new Table(new float[]{2, 3, 2, 2}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Event & Item").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Cost").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Handled By").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-            for (ExpenseActivity.Expense e : expenses) {
-                table.addCell(new Paragraph(sdf.format(new Date(e.timestamp))));
-                table.addCell(new Paragraph(e.eventName + " - " + e.itemName));
-                table.addCell(new Paragraph("BDT " + e.amount).setFontColor(ColorConstants.RED));
-                table.addCell(new Paragraph(e.involvedPerson));
+    private void loadFinancialData() {
+        DatabaseReference logsRef = db.child("communities").child(session.getCommunityId()).child("logs");
+        logsRef.keepSynced(true);
+        logsRef.addValueEventListener(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                totalIncome = 0f; 
+                totalExpense = 0f;
+
+                if (snapshot.hasChild("Donation")) { 
+                    for (DataSnapshot d : snapshot.child("Donation").getChildren()) { 
+                        Float amt = d.child("amount").getValue(Float.class); 
+                        Long ts = d.child("timestamp").getValue(Long.class);
+
+                        boolean inRange = true;
+                        if (chartStartTs != null && chartEndTs != null && ts != null) {
+                            inRange = (ts >= chartStartTs && ts <= chartEndTs);
+                        }
+
+                        if (amt != null && inRange) totalIncome += amt; 
+                    } 
+                }
+
+                if (snapshot.hasChild("Expense")) { 
+                    for (DataSnapshot d : snapshot.child("Expense").getChildren()) { 
+                        Float amt = d.child("amount").getValue(Float.class); 
+                        Long ts = d.child("timestamp").getValue(Long.class);
+
+                        boolean inRange = true;
+                        if (chartStartTs != null && chartEndTs != null && ts != null) {
+                            inRange = (ts >= chartStartTs && ts <= chartEndTs);
+                        }
+
+                        if (amt != null && inRange) totalExpense += amt; 
+                    } 
+                }
+                updatePieChart();
             }
-            document.add(table); document.add(new Paragraph("\nTotal Expenses in this Report: BDT " + totalSpent).setBold().setFontSize(14).setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.RIGHT));
-            addSanataniFooter(context, document); document.close();
-            checkMasterPdfLimitAndShare(context, file); 
-        } catch (Exception e) {}
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
-    public static void generateUtsavStatement(Context context, String communityName, ExpenseActivity.GroupedExpense ge) {
-        try {
-            File file = createBaseFile(context, "Utsav_Statement_" + ge.eventDisplayName.replaceAll("[^a-zA-Z0-9]", ""));
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Specific Event Expense Report");
-            document.add(new Paragraph("Event / Utsav: " + ge.eventDisplayName).setBold().setFontSize(14).setMarginBottom(10));
-            Table table = new Table(new float[]{2, 4, 2, 2}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Item / Seva").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Cost").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Handled By").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-            for (ExpenseActivity.Expense e : ge.history) {
-                table.addCell(new Paragraph(sdf.format(new Date(e.timestamp))));
-                table.addCell(new Paragraph(e.itemName));
-                table.addCell(new Paragraph("BDT " + e.amount).setFontColor(ColorConstants.RED));
-                table.addCell(new Paragraph(e.involvedPerson));
-            }
-            document.add(table); document.add(new Paragraph("\nTotal Event Expense: BDT " + ge.totalSpent).setBold().setFontSize(14).setFontColor(ColorConstants.RED).setTextAlignment(TextAlignment.RIGHT));
-            addSanataniFooter(context, document); document.close();
-            sharePdf(context, file); 
-        } catch (Exception e) {}
+    private void updatePieChart() {
+        if (pieChart == null) return;
+        List<PieEntry> entries = new ArrayList<>();
+        entries.add(new PieEntry(totalIncome, "Income"));
+        entries.add(new PieEntry(totalExpense, "Expense"));
+
+        PieDataSet dataSet = new PieDataSet(entries, "");
+        dataSet.setColors(new int[]{0xFF2E7D32, 0xFFC62828}); 
+        dataSet.setValueTextColor(0xFFFFFFFF);
+        dataSet.setValueTextSize(14f);
+
+        PieData data = new PieData(dataSet);
+        pieChart.setData(data);
+        pieChart.getDescription().setEnabled(false);
+        pieChart.setCenterText("Total Analysis");
+        pieChart.animateY(1000);
+        pieChart.invalidate();
     }
 
-    public static void generateComparisonReport(Context context, String communityName, List<TransactionActivity.SingleDonation> donations, List<ExpenseActivity.Expense> expenses, long startTs, long endTs, float totalIncome, float totalExpense) {
-        try {
-            File file = createBaseFile(context, "Income_Vs_Expense_Report");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            SimpleDateFormat titleSdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
-            String dateRange = titleSdf.format(new Date(startTs)) + " to " + titleSdf.format(new Date(endTs));
-            addSanataniHeader(document, communityName, "Income vs Expense Comparison\n(" + dateRange + ")");
-
-            document.add(new Paragraph("DONATIONS (INCOME)").setBold().setFontSize(14).setFontColor(GREEN).setMarginTop(10));
-            Table incTable = new Table(new float[]{2, 4, 2}); incTable.setWidth(UnitValue.createPercentValue(100));
-            for(TransactionActivity.SingleDonation d : donations) {
-                incTable.addCell(new Paragraph(titleSdf.format(new Date(d.timestamp)))); incTable.addCell(new Paragraph(d.name)); incTable.addCell(new Paragraph("BDT " + d.amount));
-            }
-            document.add(incTable); document.add(new Paragraph("Total Income: BDT " + totalIncome).setBold().setTextAlignment(TextAlignment.RIGHT).setFontColor(GREEN).setMarginBottom(15));
-
-            document.add(new Paragraph("EXPENSES").setBold().setFontSize(14).setFontColor(ColorConstants.RED));
-            Table expTable = new Table(new float[]{2, 4, 2}); expTable.setWidth(UnitValue.createPercentValue(100));
-            for(ExpenseActivity.Expense e : expenses) {
-                expTable.addCell(new Paragraph(titleSdf.format(new Date(e.timestamp)))); expTable.addCell(new Paragraph(e.eventName + " - " + e.itemName)); expTable.addCell(new Paragraph("BDT " + e.amount));
-            }
-            document.add(expTable); document.add(new Paragraph("Total Expense: BDT " + totalExpense).setBold().setTextAlignment(TextAlignment.RIGHT).setFontColor(ColorConstants.RED).setMarginBottom(15));
-
-            float net = totalIncome - totalExpense;
-            com.itextpdf.kernel.colors.Color netColor = net >= 0 ? GREEN : ColorConstants.RED;
-            document.add(new Paragraph("\nNET BALANCE FOR PERIOD: BDT " + net).setBold().setFontSize(16).setTextAlignment(TextAlignment.RIGHT).setFontColor(netColor).setMarginTop(10));
-            addSanataniFooter(context, document); document.close();
-            checkMasterPdfLimitAndShare(context, file); 
-        } catch (Exception e) {}
+    public static class AuditLog {
+        public String managerName, actionType, description;
+        public long timestamp;
+        public AuditLog() {}
     }
 
-    // ==========================================
-    // EVENTS & POLLS
-    // ==========================================
-
-    public static void generateMasterEventReport(Context context, String communityName, List<EventActivity.Event> events, String title) {
-        try {
-            File file = createBaseFile(context, "Master_Event_Calendar");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
-            Table table = new Table(new float[]{2, 2, 2, 3}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Time").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Event Title").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Location").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            for (EventActivity.Event e : events) {
-                table.addCell(new Paragraph(e.dateStr)); table.addCell(new Paragraph(e.timeStr)); table.addCell(new Paragraph(e.title).setFontColor(SAFFRON).setBold()); table.addCell(new Paragraph(e.location));
-            }
-            document.add(table);
-            addSanataniFooter(context, document); document.close();
-            checkMasterPdfLimitAndShare(context, file); 
-        } catch (Exception e) {}
-    }
-
-    public static void generateEventItinerary(Context context, String communityName, EventActivity.Event event, String generatedBy) {
-        try {
-            File file = createBaseFile(context, "Mandir_Event_" + event.title.replaceAll("[^a-zA-Z0-9]", ""));
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Official Mandir Event Itinerary");
-            document.add(new Paragraph("Event: " + event.title).setBold().setFontSize(18).setFontColor(SAFFRON).setMarginBottom(10));
-            Table table = new Table(new float[]{1, 3}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addCell(new Cell().add(new Paragraph("Date").setBold())); table.addCell(new Paragraph(event.dateStr));
-            table.addCell(new Cell().add(new Paragraph("Time").setBold())); table.addCell(new Paragraph(event.timeStr));
-            table.addCell(new Cell().add(new Paragraph("Location").setBold())); table.addCell(new Paragraph(event.location));
-            document.add(table);
-            document.add(new Paragraph("\nEvent Details:").setBold().setMarginTop(10));
-            document.add(new Paragraph(event.description).setMarginBottom(10));
-            addSanataniFooter(context, document); document.close();
-            sharePdf(context, file); 
-        } catch (Exception e) {}
-    }
-
-    public static void generatePollReport(Context context, String communityName, Poll poll, boolean includeVoterNames) {
-        try {
-            File file = createBaseFile(context, "Panchayat_Poll_Insight");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Sanatani Panchayat Poll Insight");
-            document.add(new Paragraph("Question: " + poll.question).setBold().setFontSize(16).setMarginBottom(10));
-            int totalVotes = poll.votes != null ? poll.votes.size() : 0;
-            document.add(new Paragraph("Total Votes Cast: " + totalVotes).setBold().setMarginBottom(15));
-            Table table = new Table(new float[]{4, 1, 1}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Option").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Votes").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("%").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            int countA=0, countB=0, countC=0, countD=0;
-            if(poll.votes!=null){ for(String v : poll.votes.values()){ if(v.equals("A"))countA++; else if(v.equals("B"))countB++; else if(v.equals("C"))countC++; else if(v.equals("D"))countD++; } }
-            table.addCell(new Paragraph(poll.optionA)); table.addCell(new Paragraph(String.valueOf(countA))); table.addCell(new Paragraph(totalVotes==0?"0%":(Math.round(((float)countA/totalVotes)*100))+"%"));
-            table.addCell(new Paragraph(poll.optionB)); table.addCell(new Paragraph(String.valueOf(countB))); table.addCell(new Paragraph(totalVotes==0?"0%":(Math.round(((float)countB/totalVotes)*100))+"%"));
-            if(poll.optionC!=null&&!poll.optionC.isEmpty()){ table.addCell(new Paragraph(poll.optionC)); table.addCell(new Paragraph(String.valueOf(countC))); table.addCell(new Paragraph(totalVotes==0?"0%":(Math.round(((float)countC/totalVotes)*100))+"%")); }
-            if(poll.optionD!=null&&!poll.optionD.isEmpty()){ table.addCell(new Paragraph(poll.optionD)); table.addCell(new Paragraph(String.valueOf(countD))); table.addCell(new Paragraph(totalVotes==0?"0%":(Math.round(((float)countD/totalVotes)*100))+"%")); }
-            document.add(table);
-            if (includeVoterNames && poll.votes != null) {
-                document.add(new Paragraph("\nDetailed Voter Log:").setBold().setFontColor(ColorConstants.RED).setMarginTop(15));
-                for(Map.Entry<String, String> entry : poll.votes.entrySet()){ document.add(new Paragraph(entry.getKey() + " -> Option " + entry.getValue()).setFontSize(10)); }
-            }
-            addSanataniFooter(context, document); document.close();
-            sharePdf(context, file); 
-        } catch (Exception e) {}
-    }
-
-    public static void generateMultiplePollsReport(Context context, String communityName, List<Poll> polls, String title, boolean includeVoterNames) {
-        try {
-            File file = createBaseFile(context, "Master_Polls_Report");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
-            for (Poll poll : polls) {
-                document.add(new Paragraph("Q: " + poll.question).setBold().setFontSize(14).setMarginTop(15));
-                int totalVotes = poll.votes != null ? poll.votes.size() : 0;
-                int countA=0, countB=0, countC=0, countD=0;
-                if(poll.votes!=null){ for(String v : poll.votes.values()){ if(v.equals("A"))countA++; else if(v.equals("B"))countB++; else if(v.equals("C"))countC++; else if(v.equals("D"))countD++; } }
-                document.add(new Paragraph("- " + poll.optionA + " : " + countA + " votes"));
-                document.add(new Paragraph("- " + poll.optionB + " : " + countB + " votes"));
-                if(poll.optionC!=null&&!poll.optionC.isEmpty()) document.add(new Paragraph("- " + poll.optionC + " : " + countC + " votes"));
-                if(poll.optionD!=null&&!poll.optionD.isEmpty()) document.add(new Paragraph("- " + poll.optionD + " : " + countD + " votes"));
-                if (includeVoterNames && poll.votes != null) { document.add(new Paragraph("Voter IDs: " + poll.votes.keySet().toString()).setFontSize(9).setFontColor(ColorConstants.GRAY)); }
-                document.add(new Paragraph("--------------------------------------------------").setFontColor(ColorConstants.LIGHT_GRAY));
-            }
-            addSanataniFooter(context, document); document.close();
-            checkMasterPdfLimitAndShare(context, file); 
-        } catch (Exception e) {}
-    }
-
-    // ==========================================
-    // SECURITY AUDITS
-    // ==========================================
-
-    public static void generateSecurityAudit(Context context, String communityName, List<DashboardActivity.AuditLog> logs, String title) {
-        try {
-            File file = createBaseFile(context, "Security_Audit_Report");
-            Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
-            Table table = new Table(new float[]{2, 2, 2, 4}); table.setWidth(UnitValue.createPercentValue(100));
-            table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("User").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Action").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            table.addHeaderCell(new Cell().add(new Paragraph("Description").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
-            SimpleDateFormat sdf = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
-            for (DashboardActivity.AuditLog log : logs) {
-                table.addCell(new Paragraph(sdf.format(new Date(log.timestamp))).setFontSize(9));
-                table.addCell(new Paragraph(log.managerName != null ? log.managerName : "System").setFontSize(9));
-                table.addCell(new Paragraph(log.actionType != null ? log.actionType : "").setFontColor(ColorConstants.RED).setBold().setFontSize(9));
-                table.addCell(new Paragraph(log.description != null ? log.description : "").setFontSize(9));
-            }
-            document.add(table);
-            addSanataniFooter(context, document); document.close();
-            checkMasterPdfLimitAndShare(context, file); 
-        } catch (Exception e) {}
+    public static class Usage {
+        public String current_month = "";
+        public int pdfs_generated = 0;
+        public int sandesh_sent = 0;
+        public int audits_downloaded = 0;
+        public Usage() {}
     }
 }
