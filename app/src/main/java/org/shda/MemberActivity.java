@@ -1,6 +1,7 @@
 package org.shda;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -9,8 +10,10 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -29,7 +32,7 @@ public class MemberActivity extends AppCompatActivity {
     private AutoCompleteTextView inputSearch;
     private TextView tvPlanStatus;
     private Button btnAddNew;
-    
+
     private List<Member> fullMemberList = new ArrayList<>();
     private HashMap<String, String> lastDonationTracker = new HashMap<>();
 
@@ -51,14 +54,11 @@ public class MemberActivity extends AppCompatActivity {
         tvPlanStatus = findViewById(R.id.tvPlanStatus);
         btnAddNew = findViewById(R.id.btnAddNew);
 
-        // ✨ ROLE-BASED ACCESS CONTROL (RBAC) ✨
-        // Only Admins or Managers can add new devotees to the Mandir
         String role = session.getRole();
         if ("MEMBER".equalsIgnoreCase(role) || "DEVOTEE".equalsIgnoreCase(role)) {
             btnAddNew.setVisibility(View.GONE);
         }
 
-        // ✨ THE GATEKEEPER ✨
         btnAddNew.setOnClickListener(v -> {
             if ("FREE".equalsIgnoreCase(session.getPlan()) && currentMemberCount >= FREE_PLAN_LIMIT) {
                 new AlertDialog.Builder(this)
@@ -96,13 +96,12 @@ public class MemberActivity extends AppCompatActivity {
                         suggestions.add(m.name + " (" + m.id + ")");
                     }
                 }
-                
+
                 currentMemberCount = fullMemberList.size();
-                
-                // Update UI Quota Tracker
+
                 if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
                     tvPlanStatus.setText("Total Devotees: " + currentMemberCount + " (Samrat Pro: Unlimited)");
-                    tvPlanStatus.setTextColor(0xFF4CAF50); // Green
+                    tvPlanStatus.setTextColor(0xFF4CAF50);
                 } else {
                     tvPlanStatus.setText("Total Devotees: " + currentMemberCount + "/" + FREE_PLAN_LIMIT + " (Seva Free Plan)");
                 }
@@ -167,10 +166,9 @@ public class MemberActivity extends AppCompatActivity {
 
             ((TextView) view.findViewById(R.id.tvMemberName)).setText(member.name);
             ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Lifetime: ৳" + member.totalDonated);
-
             ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id);
             ((TextView) view.findViewById(R.id.tvMemberPhone)).setText("📞 " + (member.phone != null && !member.phone.isEmpty() ? member.phone : "N/A"));
-
+            ((TextView) view.findViewById(R.id.tvMemberGotra)).setText("Gotra: " + (member.gotra != null && !member.gotra.isEmpty() ? member.gotra : "Not specified"));
             ((TextView) view.findViewById(R.id.tvMemberJoined)).setText("Joined: " + (member.timestamp > 0 ? sdfJoined.format(new Date(member.timestamp)) : "N/A"));
 
             TextView tvLast = view.findViewById(R.id.tvLastDonation);
@@ -178,6 +176,44 @@ public class MemberActivity extends AppCompatActivity {
                 tvLast.setText(lastDonationTracker.get(member.name + " [Member]"));
             } else {
                 tvLast.setText("No donations recorded yet.");
+            }
+
+            // ✨ THE RESTORED WHATSAPP FEATURE ✨
+            ImageButton btnWhatsApp = view.findViewById(R.id.btnMemberWhatsApp);
+            btnWhatsApp.setOnClickListener(v -> {
+                try {
+                    String phoneStr = member.phone;
+                    if (phoneStr != null && !phoneStr.isEmpty()) {
+                        if (!phoneStr.startsWith("+88")) phoneStr = "+88" + phoneStr;
+                        Intent intent = new Intent(Intent.ACTION_VIEW);
+                        intent.setData(Uri.parse("https://wa.me/" + phoneStr));
+                        startActivity(intent);
+                    } else {
+                        Toast.makeText(this, "No phone number available", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(this, "WhatsApp not installed", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            // ✨ THE RESTORED DELETE FEATURE ✨
+            ImageButton btnDelete = view.findViewById(R.id.btnMemberDelete);
+            if ("ADMIN".equals(session.getRole())) {
+                btnDelete.setVisibility(View.VISIBLE);
+                btnDelete.setOnClickListener(v -> {
+                    new AlertDialog.Builder(this)
+                        .setTitle("Remove Devotee")
+                        .setMessage("Are you sure you want to remove " + member.name + "?")
+                        .setPositiveButton("Remove", (dialog, which) -> {
+                            db.child("communities").child(session.getCommunityId())
+                              .child("members").child(member.id).removeValue();
+                            Toast.makeText(this, "Devotee removed", Toast.LENGTH_SHORT).show();
+                        })
+                        .setNegativeButton("Cancel", null)
+                        .show();
+                });
+            } else {
+                btnDelete.setVisibility(View.GONE);
             }
 
             view.setOnClickListener(v -> {
