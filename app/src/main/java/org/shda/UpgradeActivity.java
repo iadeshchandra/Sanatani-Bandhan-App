@@ -141,7 +141,8 @@ public class UpgradeActivity extends AppCompatActivity {
         tvTitle.setText("Verify Dakshina");
         tvTitle.setTextSize(20f);
         tvTitle.setTextColor(Color.parseColor("#E65100"));
-        tvTitle.setTextStyle(android.graphics.Typeface.BOLD);
+        // ✨ FIXED: Correct Android method to set bold text programmatically
+        tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
         tvTitle.setPadding(0, 0, 0, 20);
         layout.addView(tvTitle);
 
