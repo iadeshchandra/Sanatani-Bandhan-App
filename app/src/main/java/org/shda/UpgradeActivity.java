@@ -4,16 +4,23 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.card.MaterialCardView;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ServerValue;
+import java.util.HashMap;
 
 public class UpgradeActivity extends AppCompatActivity {
 
@@ -59,16 +66,13 @@ public class UpgradeActivity extends AppCompatActivity {
         // ✨ ROLE-BASED ACCESS CONTROL (RBAC) ✨
         String userRole = session.getRole();
         if ("MEMBER".equalsIgnoreCase(userRole) || "DEVOTEE".equalsIgnoreCase(userRole)) {
-            // Hide the payment stuff from regular users to maintain transparency
             layoutPayment.setVisibility(View.GONE);
             layoutRestricted.setVisibility(View.VISIBLE);
         } else {
-            // Admin or Manager can see the payment options
             layoutPayment.setVisibility(View.VISIBLE);
             layoutRestricted.setVisibility(View.GONE);
         }
 
-        // Action for restricted users
         btnGoBack.setOnClickListener(v -> finish());
 
         // Toggle to Bangladesh QR View
@@ -97,15 +101,14 @@ public class UpgradeActivity extends AppCompatActivity {
             ClipData clip = ClipData.newPlainText("TaliPay Number", MERCHANT_NUMBER);
             if (clipboard != null) {
                 clipboard.setPrimaryClip(clip);
-                Toast.makeText(UpgradeActivity.this, "Number Copied! Open your bKash or Nagad App.", Toast.LENGTH_LONG).show();
+                Toast.makeText(UpgradeActivity.this, "Number Copied! Open your payment App.", Toast.LENGTH_LONG).show();
             }
         });
 
         // Pop up the Instruction Manual Image 
         btnHowToPay.setOnClickListener(v -> {
             ImageView instructionImage = new ImageView(this);
-            // Points to the second page of your PDF instructions showing supported apps[span_1](start_span)[span_1](end_span)
-            instructionImage.setImageResource(R.mipmap.ic_launcher); // Replace with R.drawable.talipay_instructions
+            instructionImage.setImageResource(R.mipmap.ic_launcher); // Replace with your Talipay instructions drawable
             instructionImage.setAdjustViewBounds(true);
             instructionImage.setPadding(20, 20, 20, 20);
 
@@ -122,19 +125,106 @@ public class UpgradeActivity extends AppCompatActivity {
             startActivity(browserIntent);
         });
 
-        // Verify Payment via WhatsApp
-        btnVerifyPayment.setOnClickListener(v -> {
-            String verifyMsg = "🙏 *Namaskar! Offering Dakshina for SAMRAT PRO* 🙏\n\n" +
-                               "Mandir Workspace: *" + session.getCommunityName() + "*\n" +
-                               "Workspace ID: *" + session.getCommunityId() + "*\n" +
-                               "Admin Name: *" + session.getUserName() + "*\n\n" +
-                               "I have completed my Dakshina payment. Please verify and bless our workspace with Samrat Pro!";
-            try {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse("https://wa.me/8801608533529?text=" + Uri.encode(verifyMsg)));
-                startActivity(intent);
-            } catch (Exception e) {
-                Toast.makeText(this, "WhatsApp not installed.", Toast.LENGTH_SHORT).show();
+        // ✨ THE NEW SAAS BACKEND VERIFICATION BRIDGE ✨
+        btnVerifyPayment.setOnClickListener(v -> showVerificationDialog());
+    }
+
+    private void showVerificationDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        
+        // Programmatic UI for a clean, secure input form
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 20);
+
+        TextView tvTitle = new TextView(this);
+        tvTitle.setText("Verify Dakshina");
+        tvTitle.setTextSize(20f);
+        tvTitle.setTextColor(Color.parseColor("#E65100"));
+        tvTitle.setTextStyle(android.graphics.Typeface.BOLD);
+        tvTitle.setPadding(0, 0, 0, 20);
+        layout.addView(tvTitle);
+
+        TextView tvDesc = new TextView(this);
+        tvDesc.setText("Please enter your payment details below. Our backend team will verify your transaction and activate SAMRAT PRO.");
+        tvDesc.setTextColor(Color.parseColor("#424242"));
+        tvDesc.setPadding(0, 0, 0, 30);
+        layout.addView(tvDesc);
+
+        final EditText inputContact = new EditText(this);
+        inputContact.setHint("Your Phone Number or Email");
+        inputContact.setBackgroundResource(android.R.drawable.edit_text);
+        inputContact.setPadding(30, 30, 30, 30);
+        layout.addView(inputContact);
+        
+        // Add a little margin between inputs
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 20));
+        layout.addView(spacer);
+
+        final EditText inputTrxId = new EditText(this);
+        inputTrxId.setHint("Transaction ID (bKash / Nagad / TaliPay)");
+        inputTrxId.setBackgroundResource(android.R.drawable.edit_text);
+        inputTrxId.setPadding(30, 30, 30, 30);
+        layout.addView(inputTrxId);
+
+        builder.setView(layout);
+        builder.setPositiveButton("SUBMIT", null); 
+        builder.setNegativeButton("CANCEL", null);
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+        // Override Positive Button to prevent closing on empty fields
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String contact = inputContact.getText().toString().trim();
+            String trxId = inputTrxId.getText().toString().trim();
+
+            if (contact.isEmpty() || trxId.isEmpty()) {
+                Toast.makeText(UpgradeActivity.this, "Both fields are required for verification.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Hide keyboard
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (getCurrentFocus() != null) {
+                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            }
+
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Verifying...");
+
+            // Push to the Global SaaS Node
+            String pushKey = FirebaseDatabase.getInstance().getReference().child("upgrade_requests").push().getKey();
+            
+            HashMap<String, Object> requestData = new HashMap<>();
+            requestData.put("requestId", pushKey);
+            requestData.put("communityId", session.getCommunityId());
+            requestData.put("communityName", session.getCommunityName());
+            requestData.put("adminName", session.getUserName());
+            requestData.put("contactInfo", contact);
+            requestData.put("transactionId", trxId);
+            requestData.put("timestamp", ServerValue.TIMESTAMP);
+            requestData.put("status", "PENDING"); // Backend will change this to APPROVED/REJECTED
+
+            if (pushKey != null) {
+                FirebaseDatabase.getInstance().getReference()
+                    .child("upgrade_requests")
+                    .child(pushKey)
+                    .setValue(requestData)
+                    .addOnSuccessListener(aVoid -> {
+                        dialog.dismiss();
+                        new AlertDialog.Builder(UpgradeActivity.this)
+                            .setTitle("✅ Request Submitted")
+                            .setMessage("Thank you! Your Dakshina details have been securely sent to our backend.\n\nYour workspace will be upgraded to SAMRAT PRO upon verification.")
+                            .setPositiveButton("OK", (d, w) -> finish())
+                            .show();
+                    })
+                    .addOnFailureListener(e -> {
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("SUBMIT");
+                        Toast.makeText(UpgradeActivity.this, "Network error. Please try again.", Toast.LENGTH_SHORT).show();
+                    });
             }
         });
     }
