@@ -32,6 +32,7 @@ public class MemberActivity extends AppCompatActivity {
     private AutoCompleteTextView inputSearch;
     private TextView tvPlanStatus;
     private Button btnAddNew;
+    private Button btnProactiveUpgrade;
 
     private List<Member> fullMemberList = new ArrayList<>();
     private HashMap<String, String> lastDonationTracker = new HashMap<>();
@@ -53,10 +54,17 @@ public class MemberActivity extends AppCompatActivity {
         inputSearch = findViewById(R.id.inputSearch);
         tvPlanStatus = findViewById(R.id.tvPlanStatus);
         btnAddNew = findViewById(R.id.btnAddNew);
+        btnProactiveUpgrade = findViewById(R.id.btnProactiveUpgrade);
 
         String role = session.getRole();
         if ("MEMBER".equalsIgnoreCase(role) || "DEVOTEE".equalsIgnoreCase(role)) {
             btnAddNew.setVisibility(View.GONE);
+            btnProactiveUpgrade.setVisibility(View.GONE); // Devotees can't upgrade the workspace
+        } else {
+            // Admin or Manager clicks proactive upgrade
+            btnProactiveUpgrade.setOnClickListener(v -> {
+                startActivity(new Intent(MemberActivity.this, UpgradeActivity.class));
+            });
         }
 
         btnAddNew.setOnClickListener(v -> {
@@ -99,11 +107,17 @@ public class MemberActivity extends AppCompatActivity {
 
                 currentMemberCount = fullMemberList.size();
 
+                // ✨ UI LOGIC: Hide button if they are already Premium
                 if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
                     tvPlanStatus.setText("Total Devotees: " + currentMemberCount + " (Samrat Pro: Unlimited)");
                     tvPlanStatus.setTextColor(0xFF4CAF50);
+                    btnProactiveUpgrade.setVisibility(View.GONE);
                 } else {
                     tvPlanStatus.setText("Total Devotees: " + currentMemberCount + "/" + FREE_PLAN_LIMIT + " (Seva Free Plan)");
+                    // Show upgrade button only if Admin/Manager
+                    if (!"MEMBER".equalsIgnoreCase(session.getRole()) && !"DEVOTEE".equalsIgnoreCase(session.getRole())) {
+                        btnProactiveUpgrade.setVisibility(View.VISIBLE);
+                    }
                 }
 
                 ArrayAdapter<String> adapter = new ArrayAdapter<>(MemberActivity.this, android.R.layout.simple_dropdown_item_1line, suggestions);
@@ -178,7 +192,6 @@ public class MemberActivity extends AppCompatActivity {
                 tvLast.setText("No donations recorded yet.");
             }
 
-            // ✨ THE RESTORED WHATSAPP FEATURE ✨
             ImageButton btnWhatsApp = view.findViewById(R.id.btnMemberWhatsApp);
             btnWhatsApp.setOnClickListener(v -> {
                 try {
@@ -196,7 +209,6 @@ public class MemberActivity extends AppCompatActivity {
                 }
             });
 
-            // ✨ THE RESTORED DELETE FEATURE ✨
             ImageButton btnDelete = view.findViewById(R.id.btnMemberDelete);
             if ("ADMIN".equals(session.getRole())) {
                 btnDelete.setVisibility(View.VISIBLE);
