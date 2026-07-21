@@ -3,6 +3,7 @@ package org.shda;
 import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -32,6 +33,9 @@ public class DashboardActivity extends AppCompatActivity {
     private float totalExpense = 0f;
     private String workspaceType = "Community"; 
 
+    private Button btnUpgradeBadge;
+    private TextView tvDashboardBranding;
+
     private Long chartStartTs = null;
     private Long chartEndTs = null;
 
@@ -54,8 +58,8 @@ public class DashboardActivity extends AppCompatActivity {
             return;
         }
 
-        syncWorkspacePlan();
-
+        btnUpgradeBadge = findViewById(R.id.btnUpgradeBadge);
+        tvDashboardBranding = findViewById(R.id.tvDashboardBranding);
         pieChart = findViewById(R.id.pieChart);
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
@@ -63,6 +67,8 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
         ((TextView) findViewById(R.id.tvTithiAlert)).setText("Today's Tithi: Loading...");
         ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
+
+        syncWorkspacePlan();
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
         findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
@@ -105,7 +111,6 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btnMyProfile).setOnClickListener(v -> startActivity(new Intent(this, UserProfileActivity.class)));
         findViewById(R.id.btnChangeLanguage).setOnClickListener(v -> showLanguageDialog());
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
-        
         findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
 
         findViewById(R.id.btnLogout).setOnClickListener(v -> {
@@ -123,6 +128,55 @@ public class DashboardActivity extends AppCompatActivity {
 
         loadWorkspaceType();
         loadFinancialData();
+    }
+
+    private void syncWorkspacePlan() {
+        db.child("communities").child(session.getCommunityId()).child("info").child("plan")
+          .addValueEventListener(new ValueEventListener() {
+              @Override
+              public void onDataChange(@NonNull DataSnapshot snapshot) {
+                  String currentPlan = snapshot.getValue(String.class);
+                  if (currentPlan != null) {
+                      session.setPlan(currentPlan);
+                  } else {
+                      db.child("communities").child(session.getCommunityId()).child("info").child("plan").setValue("FREE");
+                      session.setPlan("FREE");
+                  }
+                  updatePlanBadgeUI();
+              }
+              @Override
+              public void onCancelled(@NonNull DatabaseError error) {}
+          });
+    }
+
+    // ✨ THE NEW DYNAMIC BADGE ENGINE
+    private void updatePlanBadgeUI() {
+        String role = session.getRole();
+        
+        // Hide badge for regular members to keep their UI peaceful and simple
+        if ("MEMBER".equalsIgnoreCase(role) || "DEVOTEE".equalsIgnoreCase(role)) {
+            btnUpgradeBadge.setVisibility(View.GONE);
+            tvDashboardBranding.setVisibility(View.VISIBLE);
+            tvDashboardBranding.setText("Sanatani Bandhan Community");
+        } else {
+            // Admin and Manager View
+            tvDashboardBranding.setVisibility(View.GONE);
+            btnUpgradeBadge.setVisibility(View.VISIBLE);
+
+            if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
+                btnUpgradeBadge.setText("👑 SAMRAT PRO ACTIVE");
+                btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFF388E3C)); // Rich Green
+                btnUpgradeBadge.setOnClickListener(v -> 
+                    Toast.makeText(DashboardActivity.this, "Your Mandir is fully upgraded!", Toast.LENGTH_SHORT).show()
+                );
+            } else {
+                btnUpgradeBadge.setText("⭐ SEVA FREE PLAN - TAP TO UPGRADE");
+                btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); // Alert Orange
+                btnUpgradeBadge.setOnClickListener(v -> 
+                    startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class))
+                );
+            }
+        }
     }
 
     // ✨ THE MONTHLY CHAKRA GATEKEEPER ENGINE ✨
@@ -171,24 +225,6 @@ public class DashboardActivity extends AppCompatActivity {
                 Toast.makeText(DashboardActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
             }
         });
-    }
-
-    private void syncWorkspacePlan() {
-        db.child("communities").child(session.getCommunityId()).child("info").child("plan")
-          .addValueEventListener(new ValueEventListener() {
-              @Override
-              public void onDataChange(@NonNull DataSnapshot snapshot) {
-                  String currentPlan = snapshot.getValue(String.class);
-                  if (currentPlan != null) {
-                      session.setPlan(currentPlan);
-                  } else {
-                      db.child("communities").child(session.getCommunityId()).child("info").child("plan").setValue("FREE");
-                      session.setPlan("FREE");
-                  }
-              }
-              @Override
-              public void onCancelled(@NonNull DatabaseError error) {}
-          });
     }
 
     private void showChartDateFilterDialog() {
