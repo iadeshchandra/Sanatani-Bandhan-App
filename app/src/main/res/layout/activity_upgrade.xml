@@ -36,7 +36,62 @@
             android:textStyle="italic|bold"
             android:textColor="#F57C00"
             android:gravity="center"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="16dp"/>
+
+        <!-- ✨ NEW: The Auspicious Pricing & Feature Comparison Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp"
+            app:strokeColor="#FFB74D"
+            app:strokeWidth="1dp"
+            app:cardBackgroundColor="#FFF3E0"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Why Upgrade to Samrat Pro?"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#E65100"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp"/>
+
+                <!-- Feature 1 -->
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Unlimited Devotees (Free: Max 50)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
+                <!-- Feature 2 -->
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Unlimited Master PDFs (Free: 3/mo)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
+                <!-- Feature 3 -->
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Unlimited Mass Sandesh (Free: 1/mo)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
+                <!-- Feature 4 -->
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Security Audit Logs (Free: 1/mo)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
+                <!-- Feature 5 -->
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Priority Developer Support" android:textColor="#212121" android:textSize="13sp" android:textStyle="bold" android:layout_marginBottom="16dp"/>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#FFCC80" android:layout_marginBottom="12dp"/>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
+                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bangladesh" android:textSize="12sp" android:textColor="#757575"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="৳1,001 / Year" android:textSize="16sp" android:textStyle="bold" android:textColor="#2E7D32"/>
+                    </LinearLayout>
+                    <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#FFCC80"/>
+                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="International" android:textSize="12sp" android:textColor="#757575"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="$51.00 / Year" android:textSize="16sp" android:textStyle="bold" android:textColor="#1976D2"/>
+                    </LinearLayout>
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:id="@+id/layoutRestricted"
@@ -81,15 +136,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Your free Seva quota is reached. Offer your Dakshina below to unlock unlimited Master PDFs, Mass Sandesh, and more!"
-                android:textSize="14sp"
-                android:textColor="#424242"
-                android:gravity="center"
-                android:layout_marginBottom="16dp"/>
 
             <LinearLayout
                 android:layout_width="match_parent"
