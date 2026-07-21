@@ -17,6 +17,7 @@
             android:orientation="vertical"
             android:gravity="center"
             android:layout_marginBottom="16dp">
+            
             <TextView
                 android:id="@+id/tvDashboardTitle"
                 android:layout_width="wrap_content"
@@ -24,6 +25,8 @@
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="#E65100"/>
+                
+            <!-- Devotee Default Branding -->
             <TextView
                 android:id="@+id/tvDashboardBranding"
                 android:layout_width="wrap_content"
@@ -31,6 +34,25 @@
                 android:text="@string/app_name"
                 android:textSize="14sp"
                 android:textColor="#757575"/>
+
+            <!-- ✨ NEW: Dynamic Admin Upgrade Badge -->
+            <Button
+                android:id="@+id/btnUpgradeBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginTop="4dp"
+                android:text="⭐ SEVA FREE PLAN - TAP TO UPGRADE"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#E65100"
+                app:cornerRadius="16dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="16dp"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:visibility="gone"/>
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
