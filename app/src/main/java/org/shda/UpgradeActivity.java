@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -21,6 +22,7 @@ import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
 import java.util.HashMap;
+import java.util.Locale;
 
 public class UpgradeActivity extends AppCompatActivity {
 
@@ -125,14 +127,46 @@ public class UpgradeActivity extends AppCompatActivity {
             startActivity(browserIntent);
         });
 
-        // ✨ THE NEW SAAS BACKEND VERIFICATION BRIDGE ✨
+        // The Backend Verification Bridge
         btnVerifyPayment.setOnClickListener(v -> showVerificationDialog());
+
+        // ✨ FIRE THE SMART AUTO-SELECTION ENGINE
+        autoSelectPaymentTab();
+    }
+
+    // ✨ THE NEW GEOLOCATION DETECTOR ENGINE
+    private void autoSelectPaymentTab() {
+        String countryCode = "";
+        try {
+            TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+            if (tm != null) {
+                // Attempt 1: Get the ISO country code from the connected mobile network
+                countryCode = tm.getNetworkCountryIso();
+                
+                // Attempt 2: If network fails, check the physical SIM card's country
+                if (countryCode == null || countryCode.isEmpty()) {
+                    countryCode = tm.getSimCountryIso();
+                }
+            }
+            // Attempt 3: Ultimate fallback for tablets or devices on Wi-Fi without SIM cards
+            if (countryCode == null || countryCode.isEmpty()) {
+                countryCode = Locale.getDefault().getCountry();
+            }
+        } catch (Exception e) {
+            countryCode = Locale.getDefault().getCountry();
+        }
+
+        // Programmatically tap the correct tab based on the detected country
+        if (countryCode != null && countryCode.equalsIgnoreCase("bd")) {
+            btnPayBD.performClick();
+        } else {
+            btnPayIntl.performClick();
+        }
     }
 
     private void showVerificationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         
-        // Programmatic UI for a clean, secure input form
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 20);
@@ -141,7 +175,6 @@ public class UpgradeActivity extends AppCompatActivity {
         tvTitle.setText("Verify Dakshina");
         tvTitle.setTextSize(20f);
         tvTitle.setTextColor(Color.parseColor("#E65100"));
-        // ✨ FIXED: Correct Android method to set bold text programmatically
         tvTitle.setTypeface(null, android.graphics.Typeface.BOLD);
         tvTitle.setPadding(0, 0, 0, 20);
         layout.addView(tvTitle);
@@ -158,7 +191,6 @@ public class UpgradeActivity extends AppCompatActivity {
         inputContact.setPadding(30, 30, 30, 30);
         layout.addView(inputContact);
         
-        // Add a little margin between inputs
         View spacer = new View(this);
         spacer.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 20));
         layout.addView(spacer);
@@ -176,7 +208,6 @@ public class UpgradeActivity extends AppCompatActivity {
         AlertDialog dialog = builder.create();
         dialog.show();
 
-        // Override Positive Button to prevent closing on empty fields
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             String contact = inputContact.getText().toString().trim();
             String trxId = inputTrxId.getText().toString().trim();
@@ -186,7 +217,6 @@ public class UpgradeActivity extends AppCompatActivity {
                 return;
             }
 
-            // Hide keyboard
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             if (getCurrentFocus() != null) {
                 imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
@@ -195,7 +225,6 @@ public class UpgradeActivity extends AppCompatActivity {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Verifying...");
 
-            // Push to the Global SaaS Node
             String pushKey = FirebaseDatabase.getInstance().getReference().child("upgrade_requests").push().getKey();
             
             HashMap<String, Object> requestData = new HashMap<>();
@@ -206,7 +235,7 @@ public class UpgradeActivity extends AppCompatActivity {
             requestData.put("contactInfo", contact);
             requestData.put("transactionId", trxId);
             requestData.put("timestamp", ServerValue.TIMESTAMP);
-            requestData.put("status", "PENDING"); // Backend will change this to APPROVED/REJECTED
+            requestData.put("status", "PENDING"); 
 
             if (pushKey != null) {
                 FirebaseDatabase.getInstance().getReference()
