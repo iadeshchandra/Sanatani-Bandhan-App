@@ -18,7 +18,9 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            // ✨ ENABLE R8 OBFUSCATION & SHRINKING
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -32,14 +34,14 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    
+
     // Firebase Enterprise Stack
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-messaging")
     implementation("com.google.firebase:firebase-crashlytics") // ✨ Crashlytics Dependency
-    
+
     // Visual Analytics & PDF Engine
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("com.itextpdf:itext7-core:7.1.15")
