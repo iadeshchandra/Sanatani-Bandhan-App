@@ -1,11 +1,16 @@
 package org.shda;
 
 import android.app.DatePickerDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -15,6 +20,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 
 import com.bumptech.glide.Glide;
 import com.github.mikephil.charting.charts.PieChart;
@@ -39,7 +45,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     private Button btnUpgradeBadge;
     private TextView tvDashboardBranding;
-    
+
     // ✨ NEW: Dynamic UI Elements
     private ImageView bannerImageView;
     private View mainLayout;
@@ -70,7 +76,7 @@ public class DashboardActivity extends AppCompatActivity {
         btnUpgradeBadge = findViewById(R.id.btnUpgradeBadge);
         tvDashboardBranding = findViewById(R.id.tvDashboardBranding);
         pieChart = findViewById(R.id.pieChart);
-        
+
         // ✨ NEW: Initialize Dynamic Banners (ensure IDs match your XML)
         bannerImageView = findViewById(R.id.bannerImageView);
         mainLayout = findViewById(R.id.mainLayout); // Ensure your root layout has this ID
@@ -83,9 +89,12 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
 
         syncWorkspacePlan();
-        
+
         // ✨ NEW: Fetch Banners from React Dashboard
         fetchDynamicUI();
+        
+        // ✨ NEW: Listen for Global Broadcasts (Push Notifications)
+        listenForGlobalBroadcasts();
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
         findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
@@ -146,6 +155,80 @@ public class DashboardActivity extends AppCompatActivity {
         loadWorkspaceType();
         loadFinancialData();
     }
+    
+    // ✨ THE GLOBAL BROADCAST LISTENER ✨
+    private void listenForGlobalBroadcasts() {
+        DatabaseReference notificationsRef = FirebaseDatabase.getInstance().getReference("global_notifications");
+        
+        // We only want to listen for NEW notifications. We limit to the last 1 item added.
+        notificationsRef.limitToLast(1).addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot snapshot, String previousChildName) {
+                if (snapshot.exists()) {
+                    String title = snapshot.child("title").getValue(String.class);
+                    String message = snapshot.child("message").getValue(String.class);
+                    Long timestamp = snapshot.child("timestamp").getValue(Long.class);
+
+                    // Only show the notification if it was sent in the last 60 seconds
+                    // This prevents old notifications from ringing every time the user opens the app
+                    long currentTime = System.currentTimeMillis();
+                    if (timestamp != null && (currentTime - timestamp) < 60000) {
+                        triggerAndroidSystemNotification(title, message);
+                    }
+                }
+            }
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot snapshot, String previousChildName) {}
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {}
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, String previousChildName) {}
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    // ✨ THE ANDROID NOTIFICATION BUILDER ✨
+    private void triggerAndroidSystemNotification(String title, String message) {
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        String channelId = "sanatani_global_alerts";
+
+        // Required for Android 8.0 (Oreo) and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    channelId,
+                    "Mandir Global Alerts",
+                    NotificationManager.IMPORTANCE_HIGH
+            );
+            channel.setDescription("Important broadcasts from the Sanatani network.");
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+
+        // What happens when they click the notification
+        Intent intent = new Intent(this, DashboardActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, intent, 
+                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        // Build the actual visual notification
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
+                .setSmallIcon(R.mipmap.ic_launcher) // Assuming default icon exists
+                .setContentTitle(title != null ? title : "New Mandir Broadcast")
+                .setContentText(message)
+                .setAutoCancel(true)
+                .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(pendingIntent);
+
+        // Show the notification
+        if (notificationManager != null) {
+            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+        }
+    }
 
     // ✨ THE NEW DYNAMIC MARKETING ENGINE ✨
     private void fetchDynamicUI() {
@@ -192,7 +275,7 @@ public class DashboardActivity extends AppCompatActivity {
                             }
                         });
                     }
-                    
+
                     // 4. Dynamic Welcome Message
                     String welcomeMessage = snapshot.child("welcome_message").getValue(String.class);
                     if (welcomeMessage != null && !welcomeMessage.isEmpty() && tvDashboardBranding != null) {
