@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainLayout" 
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFBF2">
@@ -11,13 +12,26 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- ✨ NEW: Dynamic Marketing Banner (Controlled via React Web Dashboard) -->
+        <ImageView
+            android:id="@+id/bannerImageView"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:layout_marginBottom="16dp"
+            android:contentDescription="Global Marketing Banner" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:gravity="center"
             android:layout_marginBottom="16dp">
-            
+
             <TextView
                 android:id="@+id/tvDashboardTitle"
                 android:layout_width="wrap_content"
@@ -25,8 +39,8 @@
                 android:textSize="26sp"
                 android:textStyle="bold"
                 android:textColor="#E65100"/>
-                
-            <!-- Devotee Default Branding -->
+
+            <!-- Devotee Default Branding & Dynamic Welcome Message -->
             <TextView
                 android:id="@+id/tvDashboardBranding"
                 android:layout_width="wrap_content"
@@ -35,7 +49,7 @@
                 android:textSize="14sp"
                 android:textColor="#757575"/>
 
-            <!-- ✨ NEW: Dynamic Admin Upgrade Badge -->
+            <!-- ✨ Dynamic Admin Upgrade Badge -->
             <Button
                 android:id="@+id/btnUpgradeBadge"
                 android:layout_width="wrap_content"
