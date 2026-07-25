@@ -45,4 +45,7 @@ dependencies {
     // Visual Analytics & PDF Engine
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("com.itextpdf:itext7-core:7.1.15")
+
+    // 🖼️ GLIDE (Required for Dynamic Dashboard Banners)
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }
