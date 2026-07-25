@@ -4,15 +4,19 @@ import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.bumptech.glide.Glide;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -35,6 +39,11 @@ public class DashboardActivity extends AppCompatActivity {
 
     private Button btnUpgradeBadge;
     private TextView tvDashboardBranding;
+    
+    // ✨ NEW: Dynamic UI Elements
+    private ImageView bannerImageView;
+    private View mainLayout;
+    private DatabaseReference uiRef;
 
     private Long chartStartTs = null;
     private Long chartEndTs = null;
@@ -61,6 +70,11 @@ public class DashboardActivity extends AppCompatActivity {
         btnUpgradeBadge = findViewById(R.id.btnUpgradeBadge);
         tvDashboardBranding = findViewById(R.id.tvDashboardBranding);
         pieChart = findViewById(R.id.pieChart);
+        
+        // ✨ NEW: Initialize Dynamic Banners (ensure IDs match your XML)
+        bannerImageView = findViewById(R.id.bannerImageView);
+        mainLayout = findViewById(R.id.mainLayout); // Ensure your root layout has this ID
+        uiRef = FirebaseDatabase.getInstance().getReference("app_ui_settings/home_screen");
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
@@ -69,6 +83,9 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
 
         syncWorkspacePlan();
+        
+        // ✨ NEW: Fetch Banners from React Dashboard
+        fetchDynamicUI();
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
         findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
@@ -78,7 +95,7 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardExpenses).setOnClickListener(v -> startActivity(new Intent(this, ExpenseActivity.class)));
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
-        
+
         // 🔒 THE GATEKEEPER: Mass Sandesh (1 Free Per Month)
         findViewById(R.id.cardComms).setOnClickListener(v -> 
             checkQuotaAndProceed("sandesh_sent", 1, () -> startActivity(new Intent(this, CommsActivity.class)))
@@ -130,6 +147,69 @@ public class DashboardActivity extends AppCompatActivity {
         loadFinancialData();
     }
 
+    // ✨ THE NEW DYNAMIC MARKETING ENGINE ✨
+    private void fetchDynamicUI() {
+        uiRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    // 1. Festival Mode Theme
+                    Boolean isFestivalMode = snapshot.child("festival_mode").getValue(Boolean.class);
+                    if (mainLayout != null) {
+                        if (isFestivalMode != null && isFestivalMode) {
+                            mainLayout.setBackgroundColor(Color.parseColor("#FFF3E0")); 
+                            if (tvDashboardBranding != null) tvDashboardBranding.setTextColor(Color.parseColor("#E65100"));
+                        } else {
+                            mainLayout.setBackgroundColor(Color.parseColor("#F3F4F6")); 
+                            if (tvDashboardBranding != null) tvDashboardBranding.setTextColor(Color.parseColor("#333333"));
+                        }
+                    }
+
+                    // 2. Dynamic Banner Image
+                    String bannerUrl = snapshot.child("banner_url").getValue(String.class);
+                    if (bannerImageView != null) {
+                        if (bannerUrl != null && !bannerUrl.trim().isEmpty()) {
+                            bannerImageView.setVisibility(View.VISIBLE);
+                            Glide.with(DashboardActivity.this)
+                                    .load(bannerUrl)
+                                    .placeholder(android.R.color.darker_gray)
+                                    .into(bannerImageView);
+                        } else {
+                            bannerImageView.setVisibility(View.GONE);
+                        }
+                    }
+
+                    // 3. Banner Click Routing
+                    final String actionLink = snapshot.child("action_link").getValue(String.class);
+                    if (bannerImageView != null) {
+                        bannerImageView.setOnClickListener(v -> {
+                            if (actionLink != null && !actionLink.isEmpty()) {
+                                if (actionLink.equals("UPGRADE_SCREEN")) {
+                                    startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class));
+                                } else if (actionLink.startsWith("http")) {
+                                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(actionLink)));
+                                }
+                            }
+                        });
+                    }
+                    
+                    // 4. Dynamic Welcome Message
+                    String welcomeMessage = snapshot.child("welcome_message").getValue(String.class);
+                    if (welcomeMessage != null && !welcomeMessage.isEmpty() && tvDashboardBranding != null) {
+                        if (tvDashboardBranding.getVisibility() == View.VISIBLE) {
+                            tvDashboardBranding.setText(welcomeMessage);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // Silent fail for non-critical UI updates
+            }
+        });
+    }
+
     private void syncWorkspacePlan() {
         db.child("communities").child(session.getCommunityId()).child("info").child("plan")
           .addValueEventListener(new ValueEventListener() {
@@ -152,12 +232,11 @@ public class DashboardActivity extends AppCompatActivity {
     // ✨ THE NEW DYNAMIC BADGE ENGINE
     private void updatePlanBadgeUI() {
         String role = session.getRole();
-        
+
         // Hide badge for regular members to keep their UI peaceful and simple
         if ("MEMBER".equalsIgnoreCase(role) || "DEVOTEE".equalsIgnoreCase(role)) {
             btnUpgradeBadge.setVisibility(View.GONE);
             tvDashboardBranding.setVisibility(View.VISIBLE);
-            tvDashboardBranding.setText("Sanatani Bandhan Community");
         } else {
             // Admin and Manager View
             tvDashboardBranding.setVisibility(View.GONE);
@@ -193,7 +272,7 @@ public class DashboardActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Usage usage = snapshot.getValue(Usage.class);
-                
+
                 if (usage == null || !currentMonth.equals(usage.current_month)) {
                     usage = new Usage();
                     usage.current_month = currentMonth;
@@ -210,10 +289,10 @@ public class DashboardActivity extends AppCompatActivity {
                     else if (feature.equals("audits_downloaded")) usage.audits_downloaded++;
 
                     usageRef.setValue(usage);
-                    
+
                     int remaining = freeLimit - (currentUsage + 1);
                     Toast.makeText(DashboardActivity.this, "Free Seva Limit: " + remaining + " remaining this month.", Toast.LENGTH_SHORT).show();
-                    
+
                     action.run();
                 } else {
                     startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class));
@@ -286,13 +365,13 @@ public class DashboardActivity extends AppCompatActivity {
     private void showLanguageDialog() {
         String[] languages = {"English", "Bengali (বাংলা)", "Hindi (हिन्दी)"};
         String[] langCodes = {"en", "bn", "hi"}; 
-        
+
         new AlertDialog.Builder(this)
             .setTitle("Select Language")
             .setItems(languages, (dialog, which) -> {
                 LocaleHelper.setLocale(DashboardActivity.this, langCodes[which]);
                 Toast.makeText(this, "Language updated to " + languages[which], Toast.LENGTH_SHORT).show();
-                
+
                 Intent intent = getIntent();
                 finish();
                 startActivity(intent);
