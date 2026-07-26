@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.media.RingtoneManager;
@@ -14,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -46,10 +48,15 @@ public class DashboardActivity extends AppCompatActivity {
     private Button btnUpgradeBadge;
     private TextView tvDashboardBranding;
 
-    // ✨ NEW: Dynamic UI Elements
+    // ✨ Dynamic UI Elements
     private ImageView bannerImageView;
     private View mainLayout;
     private DatabaseReference uiRef;
+
+    // ✨ NEW: Notification Center Elements
+    private FrameLayout btnNotificationCenter;
+    private TextView tvNotificationBadge;
+    private View badgeContainer;
 
     private Long chartStartTs = null;
     private Long chartEndTs = null;
@@ -60,9 +67,23 @@ public class DashboardActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh unread count every time user returns to dashboard
+        if (session != null && session.getCommunityId() != null) {
+            calculateUnreadNotifications();
+        }
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
+
+        // 🚀 SMART OFFLINE ENABLEMENT (Wrapped in try-catch as it can only be set once globally)
+        try {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        } catch (Exception ignored) {}
 
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
@@ -77,10 +98,19 @@ public class DashboardActivity extends AppCompatActivity {
         tvDashboardBranding = findViewById(R.id.tvDashboardBranding);
         pieChart = findViewById(R.id.pieChart);
 
-        // ✨ NEW: Initialize Dynamic Banners (ensure IDs match your XML)
+        // Initialize Dynamic Banners
         bannerImageView = findViewById(R.id.bannerImageView);
-        mainLayout = findViewById(R.id.mainLayout); // Ensure your root layout has this ID
+        mainLayout = findViewById(R.id.mainLayout);
         uiRef = FirebaseDatabase.getInstance().getReference("app_ui_settings/home_screen");
+
+        // ✨ NEW: Initialize Notification Center Views
+        btnNotificationCenter = findViewById(R.id.btnNotificationCenter);
+        tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
+        badgeContainer = findViewById(R.id.badgeContainer);
+
+        btnNotificationCenter.setOnClickListener(v -> 
+            startActivity(new Intent(DashboardActivity.this, NotificationCenterActivity.class))
+        );
 
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
@@ -89,11 +119,7 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
 
         syncWorkspacePlan();
-
-        // ✨ NEW: Fetch Banners from React Dashboard
         fetchDynamicUI();
-        
-        // ✨ NEW: Listen for Global Broadcasts (Push Notifications)
         listenForGlobalBroadcasts();
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
@@ -105,12 +131,10 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
 
-        // 🔒 THE GATEKEEPER: Mass Sandesh (1 Free Per Month)
         findViewById(R.id.cardComms).setOnClickListener(v -> 
             checkQuotaAndProceed("sandesh_sent", 1, () -> startActivity(new Intent(this, CommsActivity.class)))
         );
 
-        // 🔒 THE GATEKEEPER: Master Reports (3 Free Per Month)
         findViewById(R.id.btnGenerateReports).setOnClickListener(v -> 
             checkQuotaAndProceed("pdfs_generated", 3, this::showGlobalPdfGeneratorDialog)
         );
@@ -118,7 +142,6 @@ public class DashboardActivity extends AppCompatActivity {
         if (!"ADMIN".equals(session.getRole())) {
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
         } else {
-            // 🔒 THE GATEKEEPER: Security Audit (1 Free Per Month)
             findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> 
                 checkQuotaAndProceed("audits_downloaded", 1, () -> {
                     new AlertDialog.Builder(this)
@@ -155,12 +178,51 @@ public class DashboardActivity extends AppCompatActivity {
         loadWorkspaceType();
         loadFinancialData();
     }
+
+    // ✨ THE SMART UNREAD NOTIFICATION COUNTER ✨
+    private void calculateUnreadNotifications() {
+        SharedPreferences prefs = getSharedPreferences("NotificationPrefs", MODE_PRIVATE);
+        long lastReadTs = prefs.getLong("last_read_ts", 0);
+        
+        DatabaseReference globalRef = db.child("global_notifications");
+        DatabaseReference communityRef = db.child("communities").child(session.getCommunityId()).child("notifications");
+        
+        final int[] unreadCount = {0};
+
+        globalRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    Long ts = d.child("timestamp").getValue(Long.class);
+                    if (ts != null && ts > lastReadTs) unreadCount[0]++;
+                }
+                updateBadgeUI(unreadCount[0]);
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+
+        communityRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot d : snapshot.getChildren()) {
+                    Long ts = d.child("timestamp").getValue(Long.class);
+                    if (ts != null && ts > lastReadTs) unreadCount[0]++;
+                }
+                updateBadgeUI(unreadCount[0]);
+            }
+            @Override public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
     
-    // ✨ THE GLOBAL BROADCAST LISTENER ✨
+    private void updateBadgeUI(int count) {
+        if (count > 0) {
+            badgeContainer.setVisibility(View.VISIBLE);
+            tvNotificationBadge.setText(count > 99 ? "99+" : String.valueOf(count));
+        } else {
+            badgeContainer.setVisibility(View.GONE);
+        }
+    }
+
     private void listenForGlobalBroadcasts() {
         DatabaseReference notificationsRef = FirebaseDatabase.getInstance().getReference("global_notifications");
-        
-        // We only want to listen for NEW notifications. We limit to the last 1 item added.
         notificationsRef.limitToLast(1).addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, String previousChildName) {
@@ -169,11 +231,10 @@ public class DashboardActivity extends AppCompatActivity {
                     String message = snapshot.child("message").getValue(String.class);
                     Long timestamp = snapshot.child("timestamp").getValue(Long.class);
 
-                    // Only show the notification if it was sent in the last 60 seconds
-                    // This prevents old notifications from ringing every time the user opens the app
                     long currentTime = System.currentTimeMillis();
                     if (timestamp != null && (currentTime - timestamp) < 60000) {
                         triggerAndroidSystemNotification(title, message);
+                        calculateUnreadNotifications(); // Refresh badge instantly on new alert
                     }
                 }
             }
@@ -188,12 +249,10 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
-    // ✨ THE ANDROID NOTIFICATION BUILDER ✨
     private void triggerAndroidSystemNotification(String title, String message) {
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         String channelId = "sanatani_global_alerts";
 
-        // Required for Android 8.0 (Oreo) and above
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     channelId,
@@ -206,17 +265,15 @@ public class DashboardActivity extends AppCompatActivity {
             }
         }
 
-        // What happens when they click the notification
-        Intent intent = new Intent(this, DashboardActivity.class);
+        Intent intent = new Intent(this, NotificationCenterActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, 
                 PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        // Build the actual visual notification
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId)
-                .setSmallIcon(R.mipmap.ic_launcher) // Assuming default icon exists
+                .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentTitle(title != null ? title : "New Mandir Broadcast")
                 .setContentText(message)
                 .setAutoCancel(true)
@@ -224,19 +281,16 @@ public class DashboardActivity extends AppCompatActivity {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent);
 
-        // Show the notification
         if (notificationManager != null) {
             notificationManager.notify((int) System.currentTimeMillis(), builder.build());
         }
     }
 
-    // ✨ THE NEW DYNAMIC MARKETING ENGINE ✨
     private void fetchDynamicUI() {
         uiRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
-                    // 1. Festival Mode Theme
                     Boolean isFestivalMode = snapshot.child("festival_mode").getValue(Boolean.class);
                     if (mainLayout != null) {
                         if (isFestivalMode != null && isFestivalMode) {
@@ -248,7 +302,6 @@ public class DashboardActivity extends AppCompatActivity {
                         }
                     }
 
-                    // 2. Dynamic Banner Image
                     String bannerUrl = snapshot.child("banner_url").getValue(String.class);
                     if (bannerImageView != null) {
                         if (bannerUrl != null && !bannerUrl.trim().isEmpty()) {
@@ -262,7 +315,6 @@ public class DashboardActivity extends AppCompatActivity {
                         }
                     }
 
-                    // 3. Banner Click Routing
                     final String actionLink = snapshot.child("action_link").getValue(String.class);
                     if (bannerImageView != null) {
                         bannerImageView.setOnClickListener(v -> {
@@ -276,7 +328,6 @@ public class DashboardActivity extends AppCompatActivity {
                         });
                     }
 
-                    // 4. Dynamic Welcome Message
                     String welcomeMessage = snapshot.child("welcome_message").getValue(String.class);
                     if (welcomeMessage != null && !welcomeMessage.isEmpty() && tvDashboardBranding != null) {
                         if (tvDashboardBranding.getVisibility() == View.VISIBLE) {
@@ -285,11 +336,8 @@ public class DashboardActivity extends AppCompatActivity {
                     }
                 }
             }
-
             @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                // Silent fail for non-critical UI updates
-            }
+            public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
 
@@ -312,28 +360,23 @@ public class DashboardActivity extends AppCompatActivity {
           });
     }
 
-    // ✨ THE NEW DYNAMIC BADGE ENGINE
     private void updatePlanBadgeUI() {
         String role = session.getRole();
-
-        // Hide badge for regular members to keep their UI peaceful and simple
         if ("MEMBER".equalsIgnoreCase(role) || "DEVOTEE".equalsIgnoreCase(role)) {
             btnUpgradeBadge.setVisibility(View.GONE);
             tvDashboardBranding.setVisibility(View.VISIBLE);
         } else {
-            // Admin and Manager View
             tvDashboardBranding.setVisibility(View.GONE);
             btnUpgradeBadge.setVisibility(View.VISIBLE);
-
             if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
                 btnUpgradeBadge.setText("👑 SAMRAT PRO ACTIVE");
-                btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFF388E3C)); // Rich Green
+                btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFF388E3C)); 
                 btnUpgradeBadge.setOnClickListener(v -> 
                     Toast.makeText(DashboardActivity.this, "Your Mandir is fully upgraded!", Toast.LENGTH_SHORT).show()
                 );
             } else {
                 btnUpgradeBadge.setText("⭐ SEVA FREE PLAN - TAP TO UPGRADE");
-                btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); // Alert Orange
+                btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); 
                 btnUpgradeBadge.setOnClickListener(v -> 
                     startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class))
                 );
@@ -341,7 +384,6 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ THE MONTHLY CHAKRA GATEKEEPER ENGINE ✨
     private void checkQuotaAndProceed(String feature, int freeLimit, Runnable action) {
         if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
             action.run(); 
@@ -355,7 +397,6 @@ public class DashboardActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 Usage usage = snapshot.getValue(Usage.class);
-
                 if (usage == null || !currentMonth.equals(usage.current_month)) {
                     usage = new Usage();
                     usage.current_month = currentMonth;
@@ -372,16 +413,13 @@ public class DashboardActivity extends AppCompatActivity {
                     else if (feature.equals("audits_downloaded")) usage.audits_downloaded++;
 
                     usageRef.setValue(usage);
-
                     int remaining = freeLimit - (currentUsage + 1);
                     Toast.makeText(DashboardActivity.this, "Free Seva Limit: " + remaining + " remaining this month.", Toast.LENGTH_SHORT).show();
-
                     action.run();
                 } else {
                     startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class));
                 }
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 Toast.makeText(DashboardActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
@@ -448,13 +486,11 @@ public class DashboardActivity extends AppCompatActivity {
     private void showLanguageDialog() {
         String[] languages = {"English", "Bengali (বাংলা)", "Hindi (हिन्दी)"};
         String[] langCodes = {"en", "bn", "hi"}; 
-
         new AlertDialog.Builder(this)
             .setTitle("Select Language")
             .setItems(languages, (dialog, which) -> {
                 LocaleHelper.setLocale(DashboardActivity.this, langCodes[which]);
                 Toast.makeText(this, "Language updated to " + languages[which], Toast.LENGTH_SHORT).show();
-
                 Intent intent = getIntent();
                 finish();
                 startActivity(intent);
@@ -591,12 +627,10 @@ public class DashboardActivity extends AppCompatActivity {
                     for (DataSnapshot d : snapshot.child("Donation").getChildren()) { 
                         Float amt = d.child("amount").getValue(Float.class); 
                         Long ts = d.child("timestamp").getValue(Long.class);
-
                         boolean inRange = true;
                         if (chartStartTs != null && chartEndTs != null && ts != null) {
                             inRange = (ts >= chartStartTs && ts <= chartEndTs);
                         }
-
                         if (amt != null && inRange) totalIncome += amt; 
                     } 
                 }
@@ -605,12 +639,10 @@ public class DashboardActivity extends AppCompatActivity {
                     for (DataSnapshot d : snapshot.child("Expense").getChildren()) { 
                         Float amt = d.child("amount").getValue(Float.class); 
                         Long ts = d.child("timestamp").getValue(Long.class);
-
                         boolean inRange = true;
                         if (chartStartTs != null && chartEndTs != null && ts != null) {
                             inRange = (ts >= chartStartTs && ts <= chartEndTs);
                         }
-
                         if (amt != null && inRange) totalExpense += amt; 
                     } 
                 }
