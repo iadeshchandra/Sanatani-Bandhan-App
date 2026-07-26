@@ -12,7 +12,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- ✨ NEW: Dynamic Marketing Banner (Controlled via React Web Dashboard) -->
+        <!-- Dynamic Marketing Banner -->
         <ImageView
             android:id="@+id/bannerImageView"
             android:layout_width="match_parent"
@@ -25,49 +25,96 @@
             android:layout_marginBottom="16dp"
             android:contentDescription="Global Marketing Banner" />
 
-        <LinearLayout
+        <!-- ✨ NEW: Header Row with Notification Bell ✨ -->
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
             android:layout_marginBottom="16dp">
 
-            <TextView
-                android:id="@+id/tvDashboardTitle"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:textColor="#E65100"/>
+                android:orientation="vertical"
+                android:layout_centerInParent="true"
+                android:gravity="center">
 
-            <!-- Devotee Default Branding & Dynamic Welcome Message -->
-            <TextView
-                android:id="@+id/tvDashboardBranding"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/app_name"
-                android:textSize="14sp"
-                android:textColor="#757575"/>
+                <TextView
+                    android:id="@+id/tvDashboardTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:textColor="#E65100"/>
 
-            <!-- ✨ Dynamic Admin Upgrade Badge -->
-            <Button
-                android:id="@+id/btnUpgradeBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginTop="4dp"
-                android:text="⭐ SEVA FREE PLAN - TAP TO UPGRADE"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:backgroundTint="#E65100"
-                app:cornerRadius="16dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:paddingHorizontal="16dp"
-                android:minHeight="0dp"
-                android:minWidth="0dp"
-                android:visibility="gone"/>
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/tvDashboardBranding"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/app_name"
+                    android:textSize="14sp"
+                    android:textColor="#757575"/>
+
+                <Button
+                    android:id="@+id/btnUpgradeBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginTop="4dp"
+                    android:text="⭐ SEVA FREE PLAN - TAP TO UPGRADE"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:backgroundTint="#E65100"
+                    app:cornerRadius="16dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:paddingHorizontal="16dp"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <!-- Notification Bell Icon -->
+            <FrameLayout
+                android:id="@+id/btnNotificationCenter"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="🔔"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+                
+                <!-- Unread Counter Badge (Perfect Circle using MaterialCardView) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/badgeContainer"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="4dp"
+                    app:cardBackgroundColor="#D32F2F"
+                    app:cardCornerRadius="10dp"
+                    app:strokeWidth="0dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:id="@+id/tvNotificationBadge"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="0"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:gravity="center" />
+                </com.google.android.material.card.MaterialCardView>
+            </FrameLayout>
+        </RelativeLayout>
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
