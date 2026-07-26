@@ -38,10 +38,13 @@
         <activity android:name=".PanjikaActivity" android:exported="false" />
         <activity android:name=".UserProfileActivity" android:exported="false" />
         <activity android:name=".MemberDetailActivity" android:exported="false" />
-        
+
         <!-- ✨ NEW ACTIVITIES ADDED HERE ✨ -->
         <activity android:name=".UpgradeActivity" android:exported="false" />
         <activity android:name=".ExpenseDetailActivity" android:exported="false" />
+        
+        <!-- 🔔 NOTIFICATION CENTER REGISTERED HERE -->
+        <activity android:name=".NotificationCenterActivity" android:exported="false" />
 
         <service
             android:name=".FCMNotificationService"
