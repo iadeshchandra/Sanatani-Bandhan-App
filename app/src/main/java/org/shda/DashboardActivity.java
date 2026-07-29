@@ -47,16 +47,20 @@ public class DashboardActivity extends AppCompatActivity {
 
     private Button btnUpgradeBadge;
     private TextView tvDashboardBranding;
+    private Button btnGenerateReports; // Added for Feature Flag control
 
     // ✨ Dynamic UI Elements
     private ImageView bannerImageView;
     private View mainLayout;
     private DatabaseReference uiRef;
 
-    // ✨ NEW: Notification Center Elements
+    // ✨ Notification Center Elements
     private FrameLayout btnNotificationCenter;
     private TextView tvNotificationBadge;
     private View badgeContainer;
+    
+    // ✨ System Control Elements
+    private AlertDialog maintenanceDialog;
 
     private Long chartStartTs = null;
     private Long chartEndTs = null;
@@ -80,7 +84,7 @@ public class DashboardActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
 
-        // 🚀 SMART OFFLINE ENABLEMENT (Wrapped in try-catch as it can only be set once globally)
+        // 🚀 SMART OFFLINE ENABLEMENT
         try {
             FirebaseDatabase.getInstance().setPersistenceEnabled(true);
         } catch (Exception ignored) {}
@@ -97,13 +101,14 @@ public class DashboardActivity extends AppCompatActivity {
         btnUpgradeBadge = findViewById(R.id.btnUpgradeBadge);
         tvDashboardBranding = findViewById(R.id.tvDashboardBranding);
         pieChart = findViewById(R.id.pieChart);
+        btnGenerateReports = findViewById(R.id.btnGenerateReports);
 
         // Initialize Dynamic Banners
         bannerImageView = findViewById(R.id.bannerImageView);
         mainLayout = findViewById(R.id.mainLayout);
         uiRef = FirebaseDatabase.getInstance().getReference("app_ui_settings/home_screen");
 
-        // ✨ NEW: Initialize Notification Center Views
+        // Initialize Notification Center Views
         btnNotificationCenter = findViewById(R.id.btnNotificationCenter);
         tvNotificationBadge = findViewById(R.id.tvNotificationBadge);
         badgeContainer = findViewById(R.id.badgeContainer);
@@ -118,9 +123,11 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvTithiAlert)).setText("Today's Tithi: Loading...");
         ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
 
+        // ✨ INITIALIZE ALL REMOTE DATA SYNC ✨
         syncWorkspacePlan();
         fetchDynamicUI();
         listenForGlobalBroadcasts();
+        fetchGlobalConfig(); // Listen to the React Web Dashboard Kill Switches!
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
         findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
@@ -135,7 +142,7 @@ public class DashboardActivity extends AppCompatActivity {
             checkQuotaAndProceed("sandesh_sent", 1, () -> startActivity(new Intent(this, CommsActivity.class)))
         );
 
-        findViewById(R.id.btnGenerateReports).setOnClickListener(v -> 
+        btnGenerateReports.setOnClickListener(v -> 
             checkQuotaAndProceed("pdfs_generated", 3, this::showGlobalPdfGeneratorDialog)
         );
 
@@ -179,14 +186,72 @@ public class DashboardActivity extends AppCompatActivity {
         loadFinancialData();
     }
 
+    // ✨ THE NEW SYSTEM CONTROL DESK LISTENER ✨
+    private void fetchGlobalConfig() {
+        DatabaseReference configRef = db.child("app_config").child("global_settings");
+        configRef.keepSynced(true);
+        configRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    
+                    // 1. App Kill Switch (Maintenance)
+                    Boolean isMaintenance = snapshot.child("maintenance_mode").getValue(Boolean.class);
+                    if (isMaintenance != null && isMaintenance) showMaintenanceLock();
+                    else hideMaintenanceLock();
+
+                    // 2. Feature Toggle: PDF Engine
+                    Boolean isPdfEnabled = snapshot.child("pdf_engine_enabled").getValue(Boolean.class);
+                    if (btnGenerateReports != null) {
+                        btnGenerateReports.setVisibility(isPdfEnabled != null && !isPdfEnabled ? View.GONE : View.VISIBLE);
+                    }
+
+                    // 3. Dynamic Festival Paywall Engine
+                    Boolean isDiscountActive = snapshot.child("is_discount_active").getValue(Boolean.class);
+                    String festivalName = snapshot.child("festival_name").getValue(String.class);
+                    String localPrice = snapshot.child("local_price").getValue(String.class);
+                    String intlPrice = snapshot.child("intl_price").getValue(String.class);
+
+                    if (!"PREMIUM".equalsIgnoreCase(session.getPlan()) && btnUpgradeBadge != null && btnUpgradeBadge.getVisibility() == View.VISIBLE) {
+                        if (isDiscountActive != null && isDiscountActive && festivalName != null) {
+                            btnUpgradeBadge.setText("⭐ " + festivalName.toUpperCase() + " OFFER: " + localPrice + " ৳ / $" + intlPrice);
+                            btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFD32F2F)); // Festival Red Alert
+                        } else {
+                            btnUpgradeBadge.setText("⭐ SEVA FREE PLAN - TAP TO UPGRADE");
+                            btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); // Default Orange
+                        }
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void showMaintenanceLock() {
+        if (maintenanceDialog != null && maintenanceDialog.isShowing()) return;
+        maintenanceDialog = new AlertDialog.Builder(this)
+            .setTitle("🙏 System Maintenance")
+            .setMessage("The Sanatani Bandhan network is undergoing sacred structural upgrades. Please check back shortly.")
+            .setCancelable(false)
+            .create();
+        maintenanceDialog.show();
+    }
+
+    private void hideMaintenanceLock() {
+        if (maintenanceDialog != null && maintenanceDialog.isShowing()) {
+            maintenanceDialog.dismiss();
+        }
+    }
+
     // ✨ THE SMART UNREAD NOTIFICATION COUNTER ✨
     private void calculateUnreadNotifications() {
         SharedPreferences prefs = getSharedPreferences("NotificationPrefs", MODE_PRIVATE);
         long lastReadTs = prefs.getLong("last_read_ts", 0);
-        
+
         DatabaseReference globalRef = db.child("global_notifications");
         DatabaseReference communityRef = db.child("communities").child(session.getCommunityId()).child("notifications");
-        
+
         final int[] unreadCount = {0};
 
         globalRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -211,7 +276,7 @@ public class DashboardActivity extends AppCompatActivity {
             @Override public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
-    
+
     private void updateBadgeUI(int count) {
         if (count > 0) {
             badgeContainer.setVisibility(View.VISIBLE);
@@ -375,6 +440,7 @@ public class DashboardActivity extends AppCompatActivity {
                     Toast.makeText(DashboardActivity.this, "Your Mandir is fully upgraded!", Toast.LENGTH_SHORT).show()
                 );
             } else {
+                // If a discount is NOT active, this runs as fallback.
                 btnUpgradeBadge.setText("⭐ SEVA FREE PLAN - TAP TO UPGRADE");
                 btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); 
                 btnUpgradeBadge.setOnClickListener(v -> 
