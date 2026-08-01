@@ -1,109 +1,125 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/mainLayout" 
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFBF2">
+    android:background="#FFFDF8"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="40dp">
 
-        <!-- Dynamic Marketing Banner -->
-        <ImageView
-            android:id="@+id/bannerImageView"
+        <!-- 🌟 Dynamic Marketing Banner (Transparent Card Wrapper Failsafe) -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:visibility="gone"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="Global Marketing Banner" />
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@android:color/transparent"
+            android:layout_marginBottom="24dp">
 
-        <!-- Professional Weighted Header Row -->
+            <ImageView
+                android:id="@+id/bannerImageView"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                android:contentDescription="Global Marketing Banner" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 🛕 Professional Weighted Header Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="28dp">
 
-            <!-- Left Side: Titles and Badges (Takes up available space) -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center_vertical|start"
-                android:layout_marginEnd="12dp">
+                android:layout_marginEnd="16dp">
 
                 <TextView
                     android:id="@+id/tvDashboardTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="24sp"
+                    android:textSize="28sp"
                     android:textStyle="bold"
-                    android:textColor="#E65100"/>
+                    android:textColor="#E65100"
+                    android:fontFamily="sans-serif-black"
+                    android:letterSpacing="-0.02"/>
 
                 <TextView
                     android:id="@+id/tvDashboardBranding"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/app_name"
-                    android:textSize="14sp"
-                    android:textColor="#757575"/>
+                    android:textSize="15sp"
+                    android:textColor="#757575"
+                    android:layout_marginTop="2dp"
+                    android:fontFamily="sans-serif-medium"/>
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnUpgradeBadge"
                     android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginTop="6dp"
-                    android:text="⭐ SEVA FREE PLAN - TAP TO UPGRADE"
-                    android:textSize="10sp"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="10dp"
+                    android:text="⭐ SEVA FREE - UPGRADE"
+                    android:textSize="11sp"
                     android:textStyle="bold"
                     android:textColor="#FFFFFF"
-                    android:backgroundTint="#E65100"
-                    app:cornerRadius="16dp"
+                    android:backgroundTint="#F26522"
+                    app:cornerRadius="18dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
                     android:paddingHorizontal="16dp"
                     android:minHeight="0dp"
                     android:minWidth="0dp"
+                    app:elevation="2dp"
                     android:visibility="gone"/>
             </LinearLayout>
 
-            <!-- Right Side: Notification Bell with Material Vector Icon -->
             <FrameLayout
                 android:id="@+id/btnNotificationCenter"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true">
-                
-                <!-- ✨ NEW: Professional Vector ImageView instead of Text Emoji ✨ -->
+
                 <ImageView
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_bell"
+                    app:tint="#D95319"
                     android:contentDescription="Notification Center" />
-                
+
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/badgeContainer"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
                     android:layout_gravity="top|end"
                     android:layout_marginTop="4dp"
                     android:layout_marginEnd="4dp"
                     app:cardBackgroundColor="#D32F2F"
-                    app:cardCornerRadius="10dp"
-                    app:strokeWidth="0dp"
+                    app:cardCornerRadius="11dp"
+                    app:strokeWidth="2dp"
+                    app:strokeColor="#FFFDF8"
                     android:visibility="gone">
                     <TextView
                         android:id="@+id/tvNotificationBadge"
@@ -118,47 +134,57 @@
             </FrameLayout>
         </LinearLayout>
 
+        <!-- 📜 Spiritual & Panjika Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="3dp"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="#FFF3E0">
+            android:layout_marginBottom="24dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeWidth="1dp"
+            app:strokeColor="#FBE9D0">
+            
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
+                
                 <TextView
                     android:id="@+id/shlokaText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:textStyle="bold|italic"
                     android:textColor="#E65100"
                     android:gravity="center"
-                    android:layout_marginBottom="12dp"/>
+                    android:layout_marginBottom="16dp"
+                    android:lineSpacingExtra="4dp"/>
+                    
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#FFCC80"
-                    android:layout_marginBottom="12dp"/>
+                    android:background="#FFF3E0"
+                    android:layout_marginBottom="16dp"/>
+                    
                 <TextView
                     android:id="@+id/tvDateEnglish"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="15sp"
-                    android:textColor="#424242"
+                    android:textSize="16sp"
+                    android:textColor="#212121"
                     android:textStyle="bold"/>
+                    
                 <TextView
                     android:id="@+id/tvDateBengali"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:textColor="#424242"
                     android:textStyle="bold"
-                    android:layout_marginTop="4dp"/>
+                    android:layout_marginTop="6dp"/>
+                    
                 <TextView
                     android:id="@+id/tvTithiAlert"
                     android:layout_width="match_parent"
@@ -166,48 +192,61 @@
                     android:textSize="15sp"
                     android:textColor="#D32F2F"
                     android:textStyle="bold"
-                    android:layout_marginTop="4dp"/>
-                <Button
+                    android:layout_marginTop="8dp"/>
+                    
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnPanjika"
                     android:layout_width="match_parent"
-                    android:layout_height="55dp"
+                    android:layout_height="60dp"
                     android:text="@string/btn_panjika"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
                     android:backgroundTint="#FF9800"
-                    app:cornerRadius="8dp"
-                    android:layout_marginTop="16dp"/>
+                    app:cornerRadius="14dp"
+                    app:elevation="2dp"
+                    android:layout_marginTop="20dp"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- 💰 Financial Overview Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="12dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="3dp"
-            android:layout_marginBottom="24dp"
-            app:cardBackgroundColor="#FFFFFF">
+            android:layout_marginBottom="32dp"
+            app:cardBackgroundColor="#FFFFFF"
+            app:strokeWidth="1dp"
+            app:strokeColor="#F0F0F0">
+            
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
+                
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/txt_financial_overview"
-                    android:textSize="20sp"
+                    android:textSize="22sp"
                     android:textStyle="bold"
                     android:textColor="#212121"
                     android:gravity="center"
-                    android:layout_marginBottom="12dp"/>
-                <Button
+                    android:layout_marginBottom="16dp"/>
+                    
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnFilterChartDate"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
-                    android:layout_height="45dp"
+                    android:layout_height="55dp"
                     android:text="@string/txt_filter_dates"
-                    android:backgroundTint="#E0E0E0"
-                    android:textColor="#424242"
-                    app:cornerRadius="8dp"
-                    android:layout_marginBottom="12dp"/>
+                    android:textColor="#616161"
+                    app:strokeColor="#E0E0E0"
+                    app:cornerRadius="14dp"
+                    android:layout_marginBottom="16dp"/>
+                    
                 <FrameLayout
                     android:id="@+id/pieChartContainer"
                     android:layout_width="match_parent"
@@ -220,66 +259,47 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mandir Operations"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#212121"
+            android:layout_marginBottom="16dp"
+            android:layout_marginLeft="6dp"/>
+
+        <!-- 🚀 Core Operations Grid -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:weightSum="2">
-            <Button
+            android:weightSum="2"
+            android:layout_marginBottom="6dp">
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/cardMembers"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:minHeight="70dp"
+                android:layout_height="90dp"
                 android:layout_margin="6dp"
                 android:text="@string/btn_member_directory"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#1976D2"/>
-            <Button
+                app:cornerRadius="16dp"
+                app:elevation="2dp"
+                android:backgroundTint="#1E88E5"/>
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/cardDonations"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:minHeight="70dp"
+                android:layout_height="90dp"
                 android:layout_margin="6dp"
                 android:text="@string/btn_smart_chanda"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#2E7D32"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="2">
-            <Button
-                android:id="@+id/cardExpenses"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:minHeight="70dp"
-                android:layout_margin="6dp"
-                android:text="@string/btn_utsav_expenses"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#D32F2F"/>
-            <Button
-                android:id="@+id/cardPolls"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:minHeight="70dp"
-                android:layout_margin="6dp"
-                android:text="@string/btn_sanatani_polls"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#F57C00"/>
+                app:cornerRadius="16dp"
+                app:elevation="2dp"
+                android:backgroundTint="#43A047"/>
         </LinearLayout>
 
         <LinearLayout
@@ -287,111 +307,163 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:weightSum="2"
-            android:layout_marginBottom="16dp">
-            <Button
+            android:layout_marginBottom="6dp">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cardExpenses"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="90dp"
+                android:layout_margin="6dp"
+                android:text="@string/btn_utsav_expenses"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="16dp"
+                app:elevation="2dp"
+                android:backgroundTint="#E53935"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cardPolls"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="90dp"
+                android:layout_margin="6dp"
+                android:text="@string/btn_sanatani_polls"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                app:cornerRadius="16dp"
+                app:elevation="2dp"
+                android:backgroundTint="#FB8C00"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:weightSum="2"
+            android:layout_marginBottom="32dp">
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/cardEvents"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:minHeight="70dp"
+                android:layout_height="90dp"
                 android:layout_margin="6dp"
                 android:text="@string/btn_mandir_events"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#7B1FA2"/>
-            <Button
+                app:cornerRadius="16dp"
+                app:elevation="2dp"
+                android:backgroundTint="#8E24AA"/>
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/cardComms"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:minHeight="70dp"
+                android:layout_height="90dp"
                 android:layout_margin="6dp"
                 android:text="@string/btn_mass_sandesh"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                app:cornerRadius="8dp"
-                android:backgroundTint="#00838F"/>
+                app:cornerRadius="16dp"
+                app:elevation="2dp"
+                android:backgroundTint="#00ACC1"/>
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnMyProfile"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="4dp"
-            android:text="@string/btn_my_profile"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            android:backgroundTint="#283593"/>
-
-        <Button
-            android:id="@+id/btnGenerateReports"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="4dp"
-            android:text="@string/btn_generate_pdfs"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            android:backgroundTint="#546E7A"/>
-
-        <Button
-            android:id="@+id/btnDownloadAudit"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="4dp"
-            android:text="@string/btn_security_audit"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            android:backgroundTint="#607D8B"/>
-
-        <Button
-            android:id="@+id/btnWorkspaceSettings"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="4dp"
-            android:text="@string/btn_workspace_settings"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            android:backgroundTint="#78909C"/>
-
-        <Button
-            android:id="@+id/btnChangeLanguage"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="4dp"
-            android:text="@string/btn_change_language"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            android:backgroundTint="#795548"/>
-
-        <Button
-            android:id="@+id/btnHelpSupport"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="4dp"
-            android:text="@string/btn_help_support"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            app:cornerRadius="8dp"
-            android:backgroundTint="#00695C"/>
-
-        <Button
-            android:id="@+id/btnLogout"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_margin="4dp"
-            android:text="@string/btn_logout"
-            android:textSize="14sp"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="System &amp; Utilities"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="#212121"
-            app:cornerRadius="8dp"
-            android:backgroundTint="#E0E0E0"
-            android:layout_marginBottom="24dp"/>
+            android:layout_marginBottom="12dp"
+            android:layout_marginLeft="6dp"/>
+
+        <!-- 🛠 Utility Action Buttons -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMyProfile"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/btn_my_profile"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            android:backgroundTint="#3949AB"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGenerateReports"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/btn_generate_pdfs"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            android:backgroundTint="#546E7A"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDownloadAudit"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/btn_security_audit"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            android:backgroundTint="#607D8B"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnWorkspaceSettings"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/btn_workspace_settings"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            android:backgroundTint="#78909C"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnChangeLanguage"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/btn_change_language"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            android:backgroundTint="#8D6E63"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnHelpSupport"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="24dp"
+            android:text="@string/btn_help_support"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:cornerRadius="14dp"
+            android:backgroundTint="#00897B"/>
+
+        <!-- 🚪 Logout Button (Outlined for subtle UI) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLogout"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginHorizontal="6dp"
+            android:layout_marginBottom="24dp"
+            android:text="@string/btn_logout"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#D32F2F"
+            app:strokeColor="#FFCDD2"
+            app:strokeWidth="2dp"
+            app:cornerRadius="14dp"/>
 
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>
