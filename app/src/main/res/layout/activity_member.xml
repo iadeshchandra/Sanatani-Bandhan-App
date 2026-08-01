@@ -1,106 +1,203 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent" 
     android:layout_height="match_parent"
     android:orientation="vertical" 
-    android:background="#FAF9F6" 
-    android:padding="16dp">
+    android:background="#FFFDF8" 
+    android:paddingTop="24dp">
 
-    <TextView 
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:text="👥 Member Directory" 
-        android:textSize="26sp" 
-        android:textStyle="bold"
-        android:textColor="#212121" 
-        android:layout_marginBottom="4dp"/>
-
-    <TextView 
-        android:layout_width="wrap_content" 
-        android:layout_height="wrap_content"
-        android:text="Sanatani Bandhan CRM" 
-        android:textSize="14sp" 
-        android:textColor="#757575" 
-        android:layout_marginBottom="4dp"/>
-
-    <!-- ✨ NEW: Proactive Upgrade UI Header -->
+    <!-- 🛕 Header Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:paddingHorizontal="20dp"
         android:layout_marginBottom="16dp">
-
-        <TextView 
-            android:id="@+id/tvPlanStatus"
-            android:layout_width="0dp" 
+        
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="Loading Quota..." 
-            android:textSize="14sp" 
-            android:textStyle="bold"
-            android:textColor="#E65100"/>
+            android:orientation="vertical">
+            
+            <TextView 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content"
+                android:text="Member Directory" 
+                android:textSize="26sp" 
+                android:textStyle="bold"
+                android:textColor="#212121" 
+                android:fontFamily="sans-serif-black"
+                android:letterSpacing="-0.02"/>
 
-        <Button
-            android:id="@+id/btnProactiveUpgrade"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="⭐ UPGRADE"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:backgroundTint="#FF9800"
-            android:textColor="#FFFFFF"
-            app:cornerRadius="6dp"
-            android:paddingHorizontal="12dp"
-            android:minWidth="0dp"
-            android:minHeight="0dp"
-            android:visibility="gone"/> <!-- Hidden by default, shown only for free users -->
+            <TextView 
+                android:layout_width="wrap_content" 
+                android:layout_height="wrap_content"
+                android:text="Sanatani Bandhan CRM" 
+                android:textSize="13sp" 
+                android:textStyle="bold"
+                android:textColor="#757575" 
+                android:layout_marginTop="2dp"
+                android:fontFamily="sans-serif-medium"/>
+        </LinearLayout>
+
+        <!-- Subtle community icon -->
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_group" 
+            app:tint="#1976D2"
+            tools:ignore="MissingPrefix" />
     </LinearLayout>
 
+    <!-- ✨ PROACTIVE UPGRADE & QUOTA UI HEADER -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="20dp"
+        app:cardBackgroundColor="#FFF3E0"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#FFE0B2">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp">
+
+            <TextView 
+                android:id="@+id/tvPlanStatus"
+                android:layout_width="0dp" 
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:text="Loading Quota..." 
+                android:textSize="13sp" 
+                android:textStyle="bold"
+                android:textColor="#E65100"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnProactiveUpgrade"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="⭐ UPGRADE"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:backgroundTint="#F26522"
+                android:textColor="#FFFFFF"
+                app:cornerRadius="18dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="16dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
+                app:elevation="2dp"
+                android:visibility="gone"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 🔒 RBAC SECURE ACTION ROW (For Admins Only) -->
     <LinearLayout 
+        android:id="@+id/adminControlsLayout"
         android:layout_width="match_parent" 
         android:layout_height="wrap_content" 
         android:orientation="horizontal" 
         android:weightSum="2" 
+        android:paddingHorizontal="14dp"
         android:layout_marginBottom="16dp">
-        
-        <Button 
+
+        <com.google.android.material.button.MaterialButton 
             android:id="@+id/btnAddNew" 
             android:layout_width="0dp" 
             android:layout_weight="1" 
-            android:layout_height="55dp"
-            android:text="+ ADD NEW" 
+            android:layout_height="60dp"
+            android:text="+ ADD MEMBER" 
+            android:textSize="13sp"
+            android:textStyle="bold"
             android:backgroundTint="#1976D2" 
-            android:layout_marginEnd="6dp"/>
+            app:cornerRadius="14dp"
+            app:elevation="2dp"
+            android:layout_marginHorizontal="6dp"/>
 
-        <Button 
+        <com.google.android.material.button.MaterialButton 
             android:id="@+id/btnSharePdf" 
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="0dp" 
             android:layout_weight="1" 
-            android:layout_height="55dp"
+            android:layout_height="60dp"
             android:text="SHARE PDF" 
-            android:backgroundTint="#388E3C" 
-            android:layout_marginStart="6dp"/>
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#388E3C" 
+            app:strokeColor="#A5D6A7"
+            app:strokeWidth="2dp"
+            app:cornerRadius="14dp"
+            android:layout_marginHorizontal="6dp"/>
     </LinearLayout>
 
-    <AutoCompleteTextView 
-        android:id="@+id/inputSearch" 
-        android:layout_width="match_parent" 
-        android:layout_height="55dp"
-        android:hint="Search by Name or SB-ID..." 
-        android:background="#FFFFFF" 
-        android:padding="12dp" 
-        android:layout_marginBottom="16dp" 
-        android:completionThreshold="1"/>
+    <!-- 🔍 Premium Search Bar -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="#E0E0E0"
+        app:cardBackgroundColor="#FFFFFF">
+        
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp">
+            
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_search"
+                app:tint="#9E9E9E"
+                android:layout_marginEnd="12dp"
+                tools:ignore="MissingPrefix" />
 
-    <ScrollView 
+            <AutoCompleteTextView 
+                android:id="@+id/inputSearch" 
+                android:layout_width="match_parent" 
+                android:layout_height="match_parent"
+                android:hint="Search by Name or SB-ID..." 
+                android:textColorHint="#9E9E9E"
+                android:textColor="#212121"
+                android:textSize="15sp"
+                android:background="@null" 
+                android:singleLine="true"
+                android:completionThreshold="1"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- 📜 The CRM List (Offline Ready Scroll) -->
+    <androidx.core.widget.NestedScrollView 
         android:layout_width="match_parent" 
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="40dp">
+        
+        <!-- Java injects item_member.xml rows in here -->
         <LinearLayout 
             android:id="@+id/membersContainer" 
             android:layout_width="match_parent" 
             android:layout_height="wrap_content" 
-            android:orientation="vertical"/>
-    </ScrollView>
+            android:orientation="vertical"
+            android:paddingHorizontal="20dp"/>
+            
+    </androidx.core.widget.NestedScrollView>
+    
 </LinearLayout>
