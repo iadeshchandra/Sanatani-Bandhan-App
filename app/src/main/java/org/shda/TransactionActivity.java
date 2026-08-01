@@ -20,6 +20,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -73,7 +74,7 @@ public class TransactionActivity extends AppCompatActivity {
         // ✨ RBAC TRANSPARENCY ENGINE ✨
         View adminControlsLayout = findViewById(R.id.adminControlsLayout);
         String role = session.getRole();
-        
+
         if ("DEVOTEE".equalsIgnoreCase(role) || "MEMBER".equalsIgnoreCase(role)) {
             // Transparent Viewing: Read-only access for members
             if (adminControlsLayout != null) adminControlsLayout.setVisibility(View.GONE);
@@ -81,13 +82,14 @@ public class TransactionActivity extends AppCompatActivity {
             // Admin / Cashier Authority: Full access to add and export records
             if (adminControlsLayout != null) {
                 adminControlsLayout.setVisibility(View.VISIBLE);
-                
+
                 findViewById(R.id.btnAddDonation).setOnClickListener(v -> showAddDonationDialog());
-                
+
                 findViewById(R.id.btnExportMaster).setOnClickListener(v -> {
                     if (fullDonationList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
 
-                    new AlertDialog.Builder(this)
+                    // ✨ UPGRADE: Material 3 Dialog
+                    new MaterialAlertDialogBuilder(this)
                         .setTitle("Generate Master Report")
                         .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
                             if (which == 0) {
@@ -221,7 +223,8 @@ public class TransactionActivity extends AppCompatActivity {
     }
 
     private void showGlobalDateFilterDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // ✨ UPGRADE: Material 3 Dialog
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         builder.setTitle("Filter Donations by Date");
         builder.setItems(new String[]{"Select Specific Date Range", "Clear Filters (Show All Time)"}, (dialog, which) -> {
             if (which == 0) {
@@ -271,7 +274,7 @@ public class TransactionActivity extends AppCompatActivity {
             try {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_transaction, donationsContainer, false);
                 ((TextView) view.findViewById(R.id.tvDonorName)).setText(gd.displayName);
-                ((TextView) view.findViewById(R.id.tvDonorTotal)).setText("Total: ৳" + gd.totalDonated);
+                ((TextView) view.findViewById(R.id.tvDonorTotal)).setText("Total: ৳" + new java.text.DecimalFormat("#,##0.00").format(gd.totalDonated));
                 ((TextView) view.findViewById(R.id.tvDonorContributions)).setText(gd.history.size() + " Contributions in this range");
 
                 String phoneStr = "Phone: N/A";
@@ -283,7 +286,7 @@ public class TransactionActivity extends AppCompatActivity {
 
                 Collections.sort(gd.history, (a, b) -> Long.compare(b.timestamp, a.timestamp));
                 SingleDonation latest = gd.history.get(0);
-                ((TextView) view.findViewById(R.id.tvDonorLastDonation)).setText("Last Donation: ৳" + latest.amount + " on " + sdf.format(new Date(latest.timestamp)));
+                ((TextView) view.findViewById(R.id.tvDonorLastDonation)).setText("Last Donation: ৳" + new java.text.DecimalFormat("#,##0.00").format(latest.amount) + " on " + sdf.format(new Date(latest.timestamp)));
 
                 view.setOnClickListener(v -> {
                     try { PdfReportService.generateDonorStatement(TransactionActivity.this, session.getCommunityName(), gd); } 
@@ -294,19 +297,27 @@ public class TransactionActivity extends AppCompatActivity {
         }
     }
 
+    // Helper to beautifully pad dynamic EditTexts
+    private void applyPremiumPadding(EditText et) {
+        et.setPadding(24, 32, 24, 32);
+        et.setTextSize(15f);
+        et.setHintTextColor(0xFF9E9E9E);
+    }
+
     private void showAddDonationDialog() {
         try {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("Log New Donation");
+            // ✨ UPGRADE: Material 3 Dialog
+            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
+            builder.setTitle("Log New Chanda");
 
             LinearLayout mainLayout = new LinearLayout(this);
             mainLayout.setOrientation(LinearLayout.VERTICAL);
-            mainLayout.setPadding(40, 20, 40, 0);
+            mainLayout.setPadding(48, 32, 48, 16); // Premium spacing
 
             LinearLayout toggleLayout = new LinearLayout(this);
             toggleLayout.setOrientation(LinearLayout.HORIZONTAL);
             toggleLayout.setWeightSum(2);
-            toggleLayout.setPadding(0, 0, 0, 20);
+            toggleLayout.setPadding(0, 0, 0, 32);
 
             Button btnTabMember = new Button(this);
             btnTabMember.setText("MEMBER");
@@ -330,19 +341,23 @@ public class TransactionActivity extends AppCompatActivity {
             inputMemberName.setHint("Select Official Member");
             inputMemberName.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteOnlyMembers));
             inputMemberName.setThreshold(1);
+            applyPremiumPadding(inputMemberName);
 
             final EditText inputMemberAmt = new EditText(this); 
             inputMemberAmt.setHint("Amount (৳)"); 
             inputMemberAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            applyPremiumPadding(inputMemberAmt);
 
             final EditText inputMemberNote = new EditText(this); 
             inputMemberNote.setHint("Note / Purpose (Optional)");
+            applyPremiumPadding(inputMemberNote);
 
             final AutoCompleteTextView inputMemberHandler = new AutoCompleteTextView(this);
             inputMemberHandler.setHint("Collected By");
             inputMemberHandler.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers));
             inputMemberHandler.setThreshold(1); 
             inputMemberHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
+            applyPremiumPadding(inputMemberHandler);
 
             memberLayout.addView(inputMemberName); 
             memberLayout.addView(inputMemberAmt); 
@@ -393,30 +408,32 @@ public class TransactionActivity extends AppCompatActivity {
             ArrayAdapter<String> guestAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, dropdownOptions);
             inputGuestName.setAdapter(guestAdapter);
             inputGuestName.setThreshold(1);
+            applyPremiumPadding(inputGuestName);
             guestLayout.addView(inputGuestName);
 
             final LinearLayout detailsContainer = new LinearLayout(this);
             detailsContainer.setOrientation(LinearLayout.VERTICAL);
 
-            final EditText inputGuestPhone = new EditText(this); inputGuestPhone.setHint("Phone Number"); inputGuestPhone.setInputType(InputType.TYPE_CLASS_PHONE);
-            final EditText inputGuestAddress = new EditText(this); inputGuestAddress.setHint("Address");
-            final EditText inputGuestEmail = new EditText(this); inputGuestEmail.setHint("Email Address"); inputGuestEmail.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-            final EditText inputGuestBloodGroup = new EditText(this); inputGuestBloodGroup.setHint("Blood Group (Optional)");
-            final EditText inputGuestFather = new EditText(this); inputGuestFather.setHint("Father's Name (Optional)");
-            final EditText inputGuestMother = new EditText(this); inputGuestMother.setHint("Mother's Name (Optional)");
+            final EditText inputGuestPhone = new EditText(this); inputGuestPhone.setHint("Phone Number"); inputGuestPhone.setInputType(InputType.TYPE_CLASS_PHONE); applyPremiumPadding(inputGuestPhone);
+            final EditText inputGuestAddress = new EditText(this); inputGuestAddress.setHint("Address"); applyPremiumPadding(inputGuestAddress);
+            final EditText inputGuestEmail = new EditText(this); inputGuestEmail.setHint("Email Address"); inputGuestEmail.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS); applyPremiumPadding(inputGuestEmail);
+            final EditText inputGuestBloodGroup = new EditText(this); inputGuestBloodGroup.setHint("Blood Group (Optional)"); applyPremiumPadding(inputGuestBloodGroup);
+            final EditText inputGuestFather = new EditText(this); inputGuestFather.setHint("Father's Name (Optional)"); applyPremiumPadding(inputGuestFather);
+            final EditText inputGuestMother = new EditText(this); inputGuestMother.setHint("Mother's Name (Optional)"); applyPremiumPadding(inputGuestMother);
 
             detailsContainer.addView(inputGuestPhone); detailsContainer.addView(inputGuestAddress);
             detailsContainer.addView(inputGuestEmail); detailsContainer.addView(inputGuestBloodGroup);
             detailsContainer.addView(inputGuestFather); detailsContainer.addView(inputGuestMother);
             guestLayout.addView(detailsContainer);
 
-            final EditText inputGuestAmt = new EditText(this); inputGuestAmt.setHint("Amount (৳)"); inputGuestAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-            final EditText inputGuestNote = new EditText(this); inputGuestNote.setHint("Note / Purpose");
-            final EditText inputGuestComment = new EditText(this); inputGuestComment.setHint("Admin Comment (Optional)");
+            final EditText inputGuestAmt = new EditText(this); inputGuestAmt.setHint("Amount (৳)"); inputGuestAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL); applyPremiumPadding(inputGuestAmt);
+            final EditText inputGuestNote = new EditText(this); inputGuestNote.setHint("Note / Purpose"); applyPremiumPadding(inputGuestNote);
+            final EditText inputGuestComment = new EditText(this); inputGuestComment.setHint("Admin Comment (Optional)"); applyPremiumPadding(inputGuestComment);
             final AutoCompleteTextView inputGuestHandler = new AutoCompleteTextView(this);
             inputGuestHandler.setHint("Collected By");
             inputGuestHandler.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers));
             inputGuestHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
+            applyPremiumPadding(inputGuestHandler);
 
             guestLayout.addView(inputGuestAmt); guestLayout.addView(inputGuestNote);
             guestLayout.addView(inputGuestComment); guestLayout.addView(inputGuestHandler);
@@ -434,12 +451,12 @@ public class TransactionActivity extends AppCompatActivity {
             final boolean[] isGuestMode = {false};
             Runnable updateUI = () -> {
                 if (isGuestMode[0]) {
-                    btnTabGuest.setBackgroundColor(0xFFE65100); btnTabGuest.setTextColor(0xFFFFFFFF);
-                    btnTabMember.setBackgroundColor(0xFFE0E0E0); btnTabMember.setTextColor(0xFF000000);
+                    btnTabGuest.setBackgroundColor(0xFFE65100); btnTabGuest.setTextColor(0xFFFFFFFF); // Sanatani Orange
+                    btnTabMember.setBackgroundColor(0xFFF5F5F5); btnTabMember.setTextColor(0xFF757575);
                     memberLayout.setVisibility(View.GONE); guestScroll.setVisibility(View.VISIBLE);
                 } else {
-                    btnTabMember.setBackgroundColor(0xFF1976D2); btnTabMember.setTextColor(0xFFFFFFFF);
-                    btnTabGuest.setBackgroundColor(0xFFE0E0E0); btnTabGuest.setTextColor(0xFF000000);
+                    btnTabMember.setBackgroundColor(0xFF2E7D32); btnTabMember.setTextColor(0xFFFFFFFF); // Forest Green
+                    btnTabGuest.setBackgroundColor(0xFFF5F5F5); btnTabGuest.setTextColor(0xFF757575);
                     memberLayout.setVisibility(View.VISIBLE); guestScroll.setVisibility(View.GONE);
                 }
             };
@@ -451,10 +468,10 @@ public class TransactionActivity extends AppCompatActivity {
             builder.setPositiveButton("RECORD", null); 
             builder.setNegativeButton("CANCEL", null);
 
-            AlertDialog dialog = builder.create(); 
+            androidx.appcompat.app.AlertDialog dialog = builder.create(); 
             dialog.show();
 
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 // Hide Keyboard
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (getCurrentFocus() != null) imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
@@ -522,7 +539,8 @@ public class TransactionActivity extends AppCompatActivity {
 
         db.child("communities").child(session.getCommunityId()).child("logs").child("Donation").child(transId).setValue(sd)
             .addOnSuccessListener(aVoid -> {
-                new AlertDialog.Builder(TransactionActivity.this)
+                // ✨ UPGRADE: Material 3 Dialog
+                new MaterialAlertDialogBuilder(TransactionActivity.this)
                     .setTitle("✅ Donation Logged")
                     .setMessage("Do you want to generate a formal PDF receipt for " + formattedDonorName + "?")
                     .setPositiveButton("GENERATE PDF", (dialog, which) -> {
