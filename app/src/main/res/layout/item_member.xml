@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent" 
     android:layout_height="wrap_content"
-    app:cardCornerRadius="12dp" 
-    app:cardElevation="2dp" 
     android:layout_marginBottom="12dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardCornerRadius="16dp" 
+    app:cardElevation="0dp"
     app:strokeWidth="1dp" 
-    app:strokeColor="#E0E0E0" 
-    app:cardBackgroundColor="#FFFFFF">
+    app:strokeColor="#E5E7EB">
 
     <LinearLayout 
         android:layout_width="match_parent" 
@@ -16,72 +20,97 @@
         android:orientation="vertical" 
         android:padding="16dp">
 
+        <!-- Top Row: Avatar, Name, Gotra & Financials -->
         <LinearLayout 
             android:layout_width="match_parent" 
             android:layout_height="wrap_content" 
-            android:orientation="horizontal" 
-            android:layout_marginBottom="4dp">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            
+            <!-- Sanatani Devotee Avatar -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:cardBackgroundColor="#E3F2FD"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+                
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="🙏"
+                    android:textSize="20sp"
+                    android:gravity="center" />
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView 
-                android:id="@+id/tvMemberName" 
+            <!-- Name & Gotra -->
+            <LinearLayout 
                 android:layout_width="0dp" 
                 android:layout_weight="1" 
                 android:layout_height="wrap_content" 
-                android:textSize="18sp" 
-                android:textStyle="bold" 
-                android:textColor="#212121"
-                android:singleLine="true"
-                android:ellipsize="end"/>
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
 
-            <TextView 
-                android:id="@+id/tvMemberDonation" 
+                <TextView 
+                    android:id="@+id/tvMemberName" 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:textSize="17sp" 
+                    android:textStyle="bold" 
+                    android:textColor="#212121"
+                    android:fontFamily="sans-serif-medium"
+                    android:singleLine="true"
+                    android:ellipsize="end"/>
+
+                <TextView 
+                    android:id="@+id/tvMemberGotra" 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:textSize="12sp" 
+                    android:textColor="#E65100" 
+                    android:textStyle="bold"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <!-- Financials & ID Badge -->
+            <LinearLayout 
                 android:layout_width="wrap_content" 
                 android:layout_height="wrap_content" 
-                android:textSize="16sp" 
-                android:textStyle="bold" 
-                android:textColor="#2E7D32"/>
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView 
+                    android:id="@+id/tvMemberDonation" 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:textSize="15sp" 
+                    android:textStyle="bold" 
+                    android:fontFamily="sans-serif-black"
+                    android:textColor="#2E7D32"/>
+
+                <TextView 
+                    android:id="@+id/tvMemberId" 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:textSize="10sp" 
+                    android:textStyle="bold"
+                    android:textColor="#757575" 
+                    android:layout_marginTop="4dp"
+                    android:background="#F3F4F6"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="2dp"
+                    android:singleLine="true"/>
+            </LinearLayout>
         </LinearLayout>
-
-        <LinearLayout 
-            android:layout_width="match_parent" 
-            android:layout_height="wrap_content" 
-            android:orientation="horizontal" 
-            android:layout_marginBottom="4dp">
-
-            <TextView 
-                android:id="@+id/tvMemberId" 
-                android:layout_width="0dp" 
-                android:layout_weight="1" 
-                android:layout_height="wrap_content" 
-                android:textSize="14sp" 
-                android:textColor="#424242" 
-                android:singleLine="true"/>
-
-            <TextView 
-                android:id="@+id/tvMemberPhone" 
-                android:layout_width="wrap_content" 
-                android:layout_height="wrap_content" 
-                android:textSize="14sp" 
-                android:textColor="#424242" 
-                android:singleLine="true" 
-                android:gravity="end"/>
-        </LinearLayout>
-        
-        <TextView 
-            android:id="@+id/tvMemberGotra" 
-            android:layout_width="match_parent" 
-            android:layout_height="wrap_content" 
-            android:textSize="12sp" 
-            android:textColor="#E65100" 
-            android:textStyle="italic"
-            android:layout_marginBottom="8dp"/>
 
         <View 
             android:layout_width="match_parent" 
             android:layout_height="1dp" 
-            android:background="#EEEEEE" 
-            android:layout_marginBottom="8dp"/>
+            android:background="#F3F4F6" 
+            android:layout_marginVertical="12dp"/>
 
+        <!-- Bottom Row: History & Actions -->
         <LinearLayout 
             android:layout_width="match_parent" 
             android:layout_height="wrap_content" 
@@ -93,42 +122,64 @@
                 android:layout_weight="1"
                 android:layout_height="wrap_content" 
                 android:orientation="vertical">
+                
+                <TextView 
+                    android:id="@+id/tvMemberPhone" 
+                    android:layout_width="wrap_content" 
+                    android:layout_height="wrap_content" 
+                    android:textSize="13sp" 
+                    android:textColor="#212121" 
+                    android:textStyle="bold"
+                    android:singleLine="true"/>
 
                 <TextView 
                     android:id="@+id/tvMemberJoined" 
-                    android:layout_width="match_parent" 
+                    android:layout_width="wrap_content" 
                     android:layout_height="wrap_content" 
-                    android:textSize="12sp" 
-                    android:textColor="#757575" 
-                    android:layout_marginBottom="4dp"/>
+                    android:textSize="11sp" 
+                    android:textColor="#9E9E9E" 
+                    android:layout_marginTop="4dp"/>
 
                 <TextView 
                     android:id="@+id/tvLastDonation" 
-                    android:layout_width="match_parent" 
+                    android:layout_width="wrap_content" 
                     android:layout_height="wrap_content" 
-                    android:textSize="12sp" 
+                    android:textSize="11sp" 
                     android:textStyle="italic" 
-                    android:textColor="#757575"/>
+                    android:textColor="#757575"
+                    android:layout_marginTop="2dp"/>
             </LinearLayout>
 
-            <!-- ✨ THE RESTORED BUTTONS -->
-            <ImageButton 
-                android:id="@+id/btnMemberWhatsApp" 
-                android:layout_width="40dp" 
-                android:layout_height="40dp" 
-                android:src="@android:drawable/ic_menu_call" 
-                android:background="?attr/selectableItemBackgroundBorderless" 
-                android:tint="#4CAF50"
-                android:layout_marginEnd="8dp"/>
+            <!-- Unified Action Cluster -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
                 
-            <ImageButton 
-                android:id="@+id/btnMemberDelete" 
-                android:layout_width="40dp" 
-                android:layout_height="40dp" 
-                android:src="@android:drawable/ic_menu_delete" 
-                android:background="?attr/selectableItemBackgroundBorderless" 
-                android:tint="#D32F2F"/>
+                <ImageButton 
+                    android:id="@+id/btnMemberWhatsApp" 
+                    android:layout_width="44dp" 
+                    android:layout_height="44dp" 
+                    android:src="@android:drawable/ic_menu_call" 
+                    android:background="?attr/selectableItemBackgroundBorderless" 
+                    app:tint="#4CAF50"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"
+                    android:layout_marginEnd="4dp"
+                    android:contentDescription="WhatsApp Contact"/>
 
+                <ImageButton 
+                    android:id="@+id/btnMemberDelete" 
+                    android:layout_width="44dp" 
+                    android:layout_height="44dp" 
+                    android:src="@android:drawable/ic_menu_delete" 
+                    android:background="?attr/selectableItemBackgroundBorderless" 
+                    app:tint="#D32F2F"
+                    android:scaleType="centerInside"
+                    android:padding="10dp"
+                    android:contentDescription="Remove Devotee"/>
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
