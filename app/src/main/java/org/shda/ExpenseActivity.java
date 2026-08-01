@@ -18,8 +18,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -51,6 +51,11 @@ public class ExpenseActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_expense);
 
+        // 🚀 SMART OFFLINE ENABLEMENT
+        try {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        } catch (Exception ignored) {}
+
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
@@ -60,31 +65,36 @@ public class ExpenseActivity extends AppCompatActivity {
         tvTotalExpenses = findViewById(R.id.tvTotalExpenses);
         inputSearch = findViewById(R.id.inputSearch);
 
-        View btnAdd = findViewById(R.id.btnAddExpense);
-        View btnExportMaster = findViewById(R.id.btnExportMaster);
-        View btnFilterDates = findViewById(R.id.btnFilterDates);
+        // ✨ RBAC TRANSPARENCY ENGINE ✨
+        View adminControlsLayout = findViewById(R.id.adminControlsLayout);
+        String role = session.getRole();
 
-        if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
-            btnAdd.setVisibility(View.VISIBLE);
-            btnAdd.setOnClickListener(v -> showAddExpenseDialog());
+        if ("DEVOTEE".equalsIgnoreCase(role) || "MEMBER".equalsIgnoreCase(role)) {
+            // Transparent Viewing: Read-only access for members
+            if (adminControlsLayout != null) adminControlsLayout.setVisibility(View.GONE);
         } else {
-            btnAdd.setVisibility(View.GONE);
+            // Admin / Manager Authority: Full access to log and export records
+            if (adminControlsLayout != null) {
+                adminControlsLayout.setVisibility(View.VISIBLE);
+
+                findViewById(R.id.btnAddExpense).setOnClickListener(v -> showAddExpenseDialog());
+
+                findViewById(R.id.btnExportMaster).setOnClickListener(v -> {
+                    if (currentlyDisplayedList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
+                    
+                    String title = filterStartTs != null ? "Filtered Expenses Ledger" : "All Time Expenses Ledger";
+                    try {
+                        PdfReportService.generateExpenseReport(this, session.getCommunityName(), currentlyDisplayedList, totalSpent, title);
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Error generating Master PDF", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
         }
 
+        View btnFilterDates = findViewById(R.id.btnFilterDates);
         if (btnFilterDates != null) {
             btnFilterDates.setOnClickListener(v -> showGlobalDateFilterDialog());
-        }
-
-        if (btnExportMaster != null) {
-            btnExportMaster.setOnClickListener(v -> {
-                if (currentlyDisplayedList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
-                String title = filterStartTs != null ? "Filtered Expenses Ledger" : "All Time Expenses Ledger";
-                try {
-                    PdfReportService.generateExpenseReport(this, session.getCommunityName(), currentlyDisplayedList, totalSpent, title);
-                } catch (Exception e) {
-                    Toast.makeText(this, "Error generating Master PDF", Toast.LENGTH_SHORT).show();
-                }
-            });
         }
 
         setupSearch();
@@ -166,7 +176,7 @@ public class ExpenseActivity extends AppCompatActivity {
             }
         }
 
-        tvTotalExpenses.setText("Total Filtered Spent: ৳" + totalSpent);
+        if (tvTotalExpenses != null) tvTotalExpenses.setText("৳ " + new java.text.DecimalFormat("#,##0.00").format(totalSpent));
         processAndRenderList(currentlyDisplayedList);
     }
 
@@ -180,7 +190,8 @@ public class ExpenseActivity extends AppCompatActivity {
     }
 
     private void showGlobalDateFilterDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // ✨ UPGRADE: Material 3 Dialog
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
         builder.setTitle("Filter Expenses by Date");
         builder.setItems(new String[]{"Select Specific Date Range", "Clear Filters (Show All Time)"}, (dialog, which) -> {
             if (which == 0) {
@@ -211,9 +222,8 @@ public class ExpenseActivity extends AppCompatActivity {
     private interface DateRangeCallback { void onSelected(long start, long end); }
 
     private void processAndRenderList(List<Expense> rawList) {
-        // ✨ Null safety check
         if (isFinishing() || isDestroyed() || expensesContainer == null) return;
-        
+
         HashMap<String, GroupedExpense> groupedMap = new HashMap<>();
         for (Expense e : rawList) {
             String key = e.eventName != null ? e.eventName.trim().toLowerCase() : "unknown";
@@ -231,13 +241,13 @@ public class ExpenseActivity extends AppCompatActivity {
             try {
                 View view = LayoutInflater.from(this).inflate(R.layout.item_expense, expensesContainer, false);
                 ((TextView) view.findViewById(R.id.tvExpenseEvent)).setText("🪔 " + ge.eventDisplayName);
-                ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + ge.totalSpent);
+                ((TextView) view.findViewById(R.id.tvExpenseAmount)).setText("Total: ৳" + new java.text.DecimalFormat("#,##0.00").format(ge.totalSpent));
                 ((TextView) view.findViewById(R.id.tvExpenseDetails)).setText("Seva Items: " + ge.history.size());
 
                 Collections.sort(ge.history, (a, b) -> Long.compare(b.timestamp, a.timestamp));
                 if (!ge.history.isEmpty()) {
                     Expense latest = ge.history.get(0);
-                    ((TextView) view.findViewById(R.id.tvExpenseLastLogged)).setText("Last Logged: ৳" + latest.amount + " on " + sdf.format(new Date(latest.timestamp)));
+                    ((TextView) view.findViewById(R.id.tvExpenseLastLogged)).setText("Last Logged: ৳" + new java.text.DecimalFormat("#,##0.00").format(latest.amount) + " on " + sdf.format(new Date(latest.timestamp)));
                 }
 
                 view.setOnClickListener(v -> {
@@ -251,31 +261,55 @@ public class ExpenseActivity extends AppCompatActivity {
         }
     }
 
+    // Helper to beautifully pad dynamic EditTexts
+    private void applyPremiumPadding(EditText et) {
+        et.setPadding(24, 32, 24, 32);
+        et.setTextSize(15f);
+        et.setHintTextColor(0xFF9E9E9E);
+    }
+
     private void showAddExpenseDialog() {
         try {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            // ✨ UPGRADE: Material 3 Dialog
+            MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this);
             builder.setTitle("Log Community Expense");
-            LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL); layout.setPadding(50, 20, 50, 0);
+            
+            LinearLayout layout = new LinearLayout(this); 
+            layout.setOrientation(LinearLayout.VERTICAL); 
+            layout.setPadding(48, 32, 48, 16); // Premium spacing
 
             final AutoCompleteTextView inputEvent = new AutoCompleteTextView(this);
             inputEvent.setHint("Type Event/Utsav Name...");
             ArrayAdapter<String> eventAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteEvents);
             inputEvent.setAdapter(eventAdapter); inputEvent.setThreshold(1);
+            applyPremiumPadding(inputEvent);
 
-            final EditText inputItem = new EditText(this); inputItem.setHint("Item Purchased / Service");
-            final EditText inputAmt = new EditText(this); inputAmt.setHint("Cost (৳)"); inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            final EditText inputItem = new EditText(this); 
+            inputItem.setHint("Item Purchased / Service");
+            applyPremiumPadding(inputItem);
+
+            final EditText inputAmt = new EditText(this); 
+            inputAmt.setHint("Cost (৳)"); 
+            inputAmt.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            applyPremiumPadding(inputAmt);
 
             final AutoCompleteTextView inputHandler = new AutoCompleteTextView(this);
             inputHandler.setHint("Handled By");
             ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, autocompleteManagers);
-            inputHandler.setAdapter(adapter); inputHandler.setThreshold(1); inputHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
+            inputHandler.setAdapter(adapter); inputHandler.setThreshold(1); 
+            inputHandler.setText(session.getUserName() + " (" + session.getUserId() + ")");
+            applyPremiumPadding(inputHandler);
 
             layout.addView(inputEvent); layout.addView(inputItem); layout.addView(inputAmt); layout.addView(inputHandler);
             builder.setView(layout);
-            builder.setPositiveButton("RECORD", null); builder.setNegativeButton("CANCEL", null);
+            
+            builder.setPositiveButton("RECORD", null); 
+            builder.setNegativeButton("CANCEL", null);
 
-            AlertDialog dialog = builder.create(); dialog.show();
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            androidx.appcompat.app.AlertDialog dialog = builder.create(); 
+            dialog.show();
+            
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 String event = inputEvent.getText().toString().trim();
                 String item = inputItem.getText().toString().trim();
                 String amtStr = inputAmt.getText().toString().trim();
@@ -287,7 +321,8 @@ public class ExpenseActivity extends AppCompatActivity {
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (getCurrentFocus() != null) imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
 
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Saving...");
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setEnabled(false); 
+                dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setText("Saving...");
 
                 float amt = Float.parseFloat(amtStr);
                 String transId = db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").push().getKey();
@@ -297,7 +332,8 @@ public class ExpenseActivity extends AppCompatActivity {
                 expMap.put("involvedPerson", handler); expMap.put("timestamp", System.currentTimeMillis()); expMap.put("loggedBy", session.getUserName());
 
                 db.child("communities").child(session.getCommunityId()).child("logs").child("Expense").child(transId).setValue(expMap);
-                Toast.makeText(this, "Expense Logged!", Toast.LENGTH_SHORT).show(); dialog.dismiss();
+                Toast.makeText(this, "Expense Logged!", Toast.LENGTH_SHORT).show(); 
+                dialog.dismiss();
 
                 if (!autocompleteEvents.contains(event)) autocompleteEvents.add(event);
             });
