@@ -56,6 +56,11 @@ public class DashboardActivity extends AppCompatActivity {
     private View mainLayout;
     private DatabaseReference uiRef;
 
+    // ✨ Server-Driven Dashboard Elements
+    private TextView shlokaText;
+    private TextView tvShlokaSource;
+    private TextView tvTithiAlert;
+
     // ✨ Notification Center Elements
     private FrameLayout btnNotificationCenter;
     private TextView tvNotificationBadge;
@@ -104,11 +109,16 @@ public class DashboardActivity extends AppCompatActivity {
         pieChart = findViewById(R.id.pieChart);
         btnGenerateReports = findViewById(R.id.btnGenerateReports);
 
-        // Initialize Dynamic Banners
+        // Initialize Dynamic Banners & UI
         bannerImageView = findViewById(R.id.bannerImageView);
         bannerCardContainer = findViewById(R.id.bannerCardContainer); 
         mainLayout = findViewById(R.id.mainLayout);
         uiRef = FirebaseDatabase.getInstance().getReference("app_ui_settings/home_screen");
+
+        // ✨ Initialize Server-Driven Spiritual Card UI
+        shlokaText = findViewById(R.id.shlokaText);
+        tvShlokaSource = findViewById(R.id.tvShlokaSource);
+        tvTithiAlert = findViewById(R.id.tvTithiAlert);
 
         // Initialize Notification Center Views
         btnNotificationCenter = findViewById(R.id.btnNotificationCenter);
@@ -122,8 +132,11 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
         ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
-        ((TextView) findViewById(R.id.tvTithiAlert)).setText("Today's Tithi: Loading...");
-        ((TextView) findViewById(R.id.shlokaText)).setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"\n- Bhagavad Gita");
+        
+        // These will be overridden by fetchDynamicUI() if data exists, but we set safe fallbacks here.
+        tvTithiAlert.setText("Today's Tithi: Loading...");
+        shlokaText.setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"");
+        tvShlokaSource.setText("- Bhagavad Gita");
 
         // ✨ INITIALIZE ALL REMOTE DATA SYNC ✨
         syncWorkspacePlan();
@@ -366,14 +379,13 @@ public class DashboardActivity extends AppCompatActivity {
                     Boolean isActive = snapshot.child("is_active").getValue(Boolean.class);
                     String targetAudience = snapshot.child("target_audience").getValue(String.class);
                     String bannerUrl = snapshot.child("banner_url").getValue(String.class);
-                    
+
                     boolean shouldShowBanner = false;
 
-                    // Intelligent Targeting Logic
                     if (isActive == null || isActive) {
                         if (bannerUrl != null && !bannerUrl.trim().isEmpty()) {
                             if ("PREMIUM".equalsIgnoreCase(session.getPlan()) && "FREE_ONLY".equalsIgnoreCase(targetAudience)) {
-                                shouldShowBanner = false; // Hide campaign from fully upgraded Mandirs
+                                shouldShowBanner = false; 
                             } else {
                                 shouldShowBanner = true;
                             }
@@ -384,10 +396,10 @@ public class DashboardActivity extends AppCompatActivity {
                         if (shouldShowBanner) {
                             bannerCardContainer.setVisibility(View.VISIBLE);
                             bannerImageView.setVisibility(View.VISIBLE);
-                            
+
                             Glide.with(DashboardActivity.this)
                                     .load(bannerUrl)
-                                    .diskCacheStrategy(DiskCacheStrategy.ALL) // ✨ SEAMLESS OFFLINE CACHING
+                                    .diskCacheStrategy(DiskCacheStrategy.ALL)
                                     .placeholder(android.R.color.darker_gray)
                                     .into(bannerImageView);
                         } else {
@@ -420,6 +432,32 @@ public class DashboardActivity extends AppCompatActivity {
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
+
+        // ✨ SERVER-DRIVEN SPIRITUAL DASHBOARD LISTENER ✨
+        DatabaseReference dashboardConfigRef = db.child("communities").child(session.getCommunityId()).child("dashboard_config");
+        dashboardConfigRef.keepSynced(true);
+        dashboardConfigRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String quoteText = snapshot.child("daily_quote_text").getValue(String.class);
+                    String quoteSource = snapshot.child("daily_quote_source").getValue(String.class);
+                    String tithiOverride = snapshot.child("tithi_override_text").getValue(String.class);
+
+                    if (quoteText != null && !quoteText.isEmpty() && shlokaText != null) {
+                        shlokaText.setText(quoteText);
+                    }
+                    if (quoteSource != null && !quoteSource.isEmpty() && tvShlokaSource != null) {
+                        tvShlokaSource.setText(quoteSource);
+                    }
+                    if (tithiOverride != null && !tithiOverride.isEmpty() && tvTithiAlert != null) {
+                        tvTithiAlert.setText(tithiOverride);
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
     private void syncWorkspacePlan() {
@@ -435,7 +473,7 @@ public class DashboardActivity extends AppCompatActivity {
                       session.setPlan("FREE");
                   }
                   updatePlanBadgeUI();
-                  fetchDynamicUI(); // Re-trigger UI check in case they just upgraded!
+                  fetchDynamicUI(); 
               }
               @Override
               public void onCancelled(@NonNull DatabaseError error) {}
