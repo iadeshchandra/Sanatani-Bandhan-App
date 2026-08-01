@@ -56,6 +56,11 @@ public class TransactionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_transaction);
 
+        // 🚀 SMART OFFLINE ENABLEMENT
+        try {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        } catch (Exception ignored) {}
+
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
@@ -65,33 +70,39 @@ public class TransactionActivity extends AppCompatActivity {
         tvTotalDonations = findViewById(R.id.tvTotalDonations);
         inputSearch = findViewById(R.id.inputSearch);
 
-        View btnAdd = findViewById(R.id.btnAddDonation);
-        View btnExportMaster = findViewById(R.id.btnExportMaster);
-        View btnFilterDates = findViewById(R.id.btnFilterDates);
+        // ✨ RBAC TRANSPARENCY ENGINE ✨
+        View adminControlsLayout = findViewById(R.id.adminControlsLayout);
+        String role = session.getRole();
+        
+        if ("DEVOTEE".equalsIgnoreCase(role) || "MEMBER".equalsIgnoreCase(role)) {
+            // Transparent Viewing: Read-only access for members
+            if (adminControlsLayout != null) adminControlsLayout.setVisibility(View.GONE);
+        } else {
+            // Admin / Cashier Authority: Full access to add and export records
+            if (adminControlsLayout != null) {
+                adminControlsLayout.setVisibility(View.VISIBLE);
+                
+                findViewById(R.id.btnAddDonation).setOnClickListener(v -> showAddDonationDialog());
+                
+                findViewById(R.id.btnExportMaster).setOnClickListener(v -> {
+                    if (fullDonationList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
 
-        if ("ADMIN".equals(session.getRole()) || "MANAGER".equals(session.getRole())) {
-            if (btnAdd != null) {
-                btnAdd.setVisibility(View.VISIBLE);
-                btnAdd.setOnClickListener(v -> showAddDonationDialog());
+                    new AlertDialog.Builder(this)
+                        .setTitle("Generate Master Report")
+                        .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
+                            if (which == 0) {
+                                pickDateRange((startTs, endTs) -> exportMasterPdf(startTs, endTs));
+                            } else {
+                                exportMasterPdf(0, Long.MAX_VALUE);
+                            }
+                        }).show();
+                });
             }
-        } else { if (btnAdd != null) btnAdd.setVisibility(View.GONE); }
+        }
 
-        if (btnFilterDates != null) { btnFilterDates.setOnClickListener(v -> showGlobalDateFilterDialog()); }
-
-        if (btnExportMaster != null) {
-            btnExportMaster.setOnClickListener(v -> {
-                if (fullDonationList.isEmpty()) { Toast.makeText(this, "No data to export", Toast.LENGTH_SHORT).show(); return; }
-
-                new AlertDialog.Builder(this)
-                    .setTitle("Generate Master Report")
-                    .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
-                        if (which == 0) {
-                            pickDateRange((startTs, endTs) -> exportMasterPdf(startTs, endTs));
-                        } else {
-                            exportMasterPdf(0, Long.MAX_VALUE);
-                        }
-                    }).show();
-            });
+        View btnFilterDates = findViewById(R.id.btnFilterDates);
+        if (btnFilterDates != null) { 
+            btnFilterDates.setOnClickListener(v -> showGlobalDateFilterDialog()); 
         }
 
         setupSearch();
@@ -196,7 +207,7 @@ public class TransactionActivity extends AppCompatActivity {
             if (matchesSearch && matchesDate) { currentlyDisplayedList.add(d); totalDonated += d.amount; }
         }
 
-        if (tvTotalDonations != null) tvTotalDonations.setText("Total Collected: ৳" + totalDonated);
+        if (tvTotalDonations != null) tvTotalDonations.setText("৳ " + new java.text.DecimalFormat("#,##0.00").format(totalDonated));
         processAndRenderList(currentlyDisplayedList);
     }
 
@@ -239,7 +250,6 @@ public class TransactionActivity extends AppCompatActivity {
     private interface DateRangeCallback { void onSelected(long start, long end); }
 
     private void processAndRenderList(List<SingleDonation> rawList) {
-        // ✨ Null safety check
         if (isFinishing() || isDestroyed() || donationsContainer == null) return;
 
         HashMap<String, GroupedDonation> groupedMap = new HashMap<>();
@@ -276,7 +286,8 @@ public class TransactionActivity extends AppCompatActivity {
                 ((TextView) view.findViewById(R.id.tvDonorLastDonation)).setText("Last Donation: ৳" + latest.amount + " on " + sdf.format(new Date(latest.timestamp)));
 
                 view.setOnClickListener(v -> {
-                    try { PdfReportService.generateDonorStatement(TransactionActivity.this, session.getCommunityName(), gd); } catch (Exception ex) { Toast.makeText(TransactionActivity.this, "Error generating statement.", Toast.LENGTH_SHORT).show(); }
+                    try { PdfReportService.generateDonorStatement(TransactionActivity.this, session.getCommunityName(), gd); } 
+                    catch (Exception ex) { Toast.makeText(TransactionActivity.this, "Error generating statement.", Toast.LENGTH_SHORT).show(); }
                 });
                 donationsContainer.addView(view);
             } catch (Exception e) { e.printStackTrace(); }
@@ -447,7 +458,7 @@ public class TransactionActivity extends AppCompatActivity {
                 // Hide Keyboard
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 if (getCurrentFocus() != null) imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
-                
+
                 if (isGuestMode[0]) {
                     String typedString = inputGuestName.getText().toString().trim();
                     String amtStr = inputGuestAmt.getText().toString().trim();
