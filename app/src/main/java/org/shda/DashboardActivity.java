@@ -25,6 +25,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationCompat;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.github.mikephil.charting.charts.PieChart;
 import com.github.mikephil.charting.data.PieData;
 import com.github.mikephil.charting.data.PieDataSet;
@@ -47,10 +48,11 @@ public class DashboardActivity extends AppCompatActivity {
 
     private Button btnUpgradeBadge;
     private TextView tvDashboardBranding;
-    private Button btnGenerateReports; // Added for Feature Flag control
+    private Button btnGenerateReports;
 
     // ✨ Dynamic UI Elements
     private ImageView bannerImageView;
+    private View bannerCardContainer; 
     private View mainLayout;
     private DatabaseReference uiRef;
 
@@ -58,7 +60,7 @@ public class DashboardActivity extends AppCompatActivity {
     private FrameLayout btnNotificationCenter;
     private TextView tvNotificationBadge;
     private View badgeContainer;
-    
+
     // ✨ System Control Elements
     private AlertDialog maintenanceDialog;
 
@@ -73,7 +75,6 @@ public class DashboardActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh unread count every time user returns to dashboard
         if (session != null && session.getCommunityId() != null) {
             calculateUnreadNotifications();
         }
@@ -105,6 +106,7 @@ public class DashboardActivity extends AppCompatActivity {
 
         // Initialize Dynamic Banners
         bannerImageView = findViewById(R.id.bannerImageView);
+        bannerCardContainer = findViewById(R.id.bannerCardContainer); 
         mainLayout = findViewById(R.id.mainLayout);
         uiRef = FirebaseDatabase.getInstance().getReference("app_ui_settings/home_screen");
 
@@ -127,7 +129,7 @@ public class DashboardActivity extends AppCompatActivity {
         syncWorkspacePlan();
         fetchDynamicUI();
         listenForGlobalBroadcasts();
-        fetchGlobalConfig(); // Listen to the React Web Dashboard Kill Switches!
+        fetchGlobalConfig(); 
 
         findViewById(R.id.btnPanjika).setOnClickListener(v -> startActivity(new Intent(this, PanjikaActivity.class)));
         findViewById(R.id.btnFilterChartDate).setOnClickListener(v -> showChartDateFilterDialog());
@@ -186,7 +188,6 @@ public class DashboardActivity extends AppCompatActivity {
         loadFinancialData();
     }
 
-    // ✨ THE NEW SYSTEM CONTROL DESK LISTENER ✨
     private void fetchGlobalConfig() {
         DatabaseReference configRef = db.child("app_config").child("global_settings");
         configRef.keepSynced(true);
@@ -194,19 +195,15 @@ public class DashboardActivity extends AppCompatActivity {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists()) {
-                    
-                    // 1. App Kill Switch (Maintenance)
                     Boolean isMaintenance = snapshot.child("maintenance_mode").getValue(Boolean.class);
                     if (isMaintenance != null && isMaintenance) showMaintenanceLock();
                     else hideMaintenanceLock();
 
-                    // 2. Feature Toggle: PDF Engine
                     Boolean isPdfEnabled = snapshot.child("pdf_engine_enabled").getValue(Boolean.class);
                     if (btnGenerateReports != null) {
                         btnGenerateReports.setVisibility(isPdfEnabled != null && !isPdfEnabled ? View.GONE : View.VISIBLE);
                     }
 
-                    // 3. Dynamic Festival Paywall Engine
                     Boolean isDiscountActive = snapshot.child("is_discount_active").getValue(Boolean.class);
                     String festivalName = snapshot.child("festival_name").getValue(String.class);
                     String localPrice = snapshot.child("local_price").getValue(String.class);
@@ -215,10 +212,10 @@ public class DashboardActivity extends AppCompatActivity {
                     if (!"PREMIUM".equalsIgnoreCase(session.getPlan()) && btnUpgradeBadge != null && btnUpgradeBadge.getVisibility() == View.VISIBLE) {
                         if (isDiscountActive != null && isDiscountActive && festivalName != null) {
                             btnUpgradeBadge.setText("⭐ " + festivalName.toUpperCase() + " OFFER: " + localPrice + " ৳ / $" + intlPrice);
-                            btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFD32F2F)); // Festival Red Alert
+                            btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFD32F2F)); 
                         } else {
                             btnUpgradeBadge.setText("⭐ SEVA FREE PLAN - TAP TO UPGRADE");
-                            btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); // Default Orange
+                            btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); 
                         }
                     }
                 }
@@ -244,7 +241,6 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ THE SMART UNREAD NOTIFICATION COUNTER ✨
     private void calculateUnreadNotifications() {
         SharedPreferences prefs = getSharedPreferences("NotificationPrefs", MODE_PRIVATE);
         long lastReadTs = prefs.getLong("last_read_ts", 0);
@@ -299,7 +295,7 @@ public class DashboardActivity extends AppCompatActivity {
                     long currentTime = System.currentTimeMillis();
                     if (timestamp != null && (currentTime - timestamp) < 60000) {
                         triggerAndroidSystemNotification(title, message);
-                        calculateUnreadNotifications(); // Refresh badge instantly on new alert
+                        calculateUnreadNotifications(); 
                     }
                 }
             }
@@ -362,20 +358,40 @@ public class DashboardActivity extends AppCompatActivity {
                             mainLayout.setBackgroundColor(Color.parseColor("#FFF3E0")); 
                             if (tvDashboardBranding != null) tvDashboardBranding.setTextColor(Color.parseColor("#E65100"));
                         } else {
-                            mainLayout.setBackgroundColor(Color.parseColor("#F3F4F6")); 
-                            if (tvDashboardBranding != null) tvDashboardBranding.setTextColor(Color.parseColor("#333333"));
+                            mainLayout.setBackgroundColor(Color.parseColor("#FFFDF8")); 
+                            if (tvDashboardBranding != null) tvDashboardBranding.setTextColor(Color.parseColor("#757575"));
                         }
                     }
 
+                    Boolean isActive = snapshot.child("is_active").getValue(Boolean.class);
+                    String targetAudience = snapshot.child("target_audience").getValue(String.class);
                     String bannerUrl = snapshot.child("banner_url").getValue(String.class);
-                    if (bannerImageView != null) {
+                    
+                    boolean shouldShowBanner = false;
+
+                    // Intelligent Targeting Logic
+                    if (isActive == null || isActive) {
                         if (bannerUrl != null && !bannerUrl.trim().isEmpty()) {
+                            if ("PREMIUM".equalsIgnoreCase(session.getPlan()) && "FREE_ONLY".equalsIgnoreCase(targetAudience)) {
+                                shouldShowBanner = false; // Hide campaign from fully upgraded Mandirs
+                            } else {
+                                shouldShowBanner = true;
+                            }
+                        }
+                    }
+
+                    if (bannerCardContainer != null && bannerImageView != null) {
+                        if (shouldShowBanner) {
+                            bannerCardContainer.setVisibility(View.VISIBLE);
                             bannerImageView.setVisibility(View.VISIBLE);
+                            
                             Glide.with(DashboardActivity.this)
                                     .load(bannerUrl)
+                                    .diskCacheStrategy(DiskCacheStrategy.ALL) // ✨ SEAMLESS OFFLINE CACHING
                                     .placeholder(android.R.color.darker_gray)
                                     .into(bannerImageView);
                         } else {
+                            bannerCardContainer.setVisibility(View.GONE);
                             bannerImageView.setVisibility(View.GONE);
                         }
                     }
@@ -419,6 +435,7 @@ public class DashboardActivity extends AppCompatActivity {
                       session.setPlan("FREE");
                   }
                   updatePlanBadgeUI();
+                  fetchDynamicUI(); // Re-trigger UI check in case they just upgraded!
               }
               @Override
               public void onCancelled(@NonNull DatabaseError error) {}
@@ -440,7 +457,6 @@ public class DashboardActivity extends AppCompatActivity {
                     Toast.makeText(DashboardActivity.this, "Your Mandir is fully upgraded!", Toast.LENGTH_SHORT).show()
                 );
             } else {
-                // If a discount is NOT active, this runs as fallback.
                 btnUpgradeBadge.setText("⭐ SEVA FREE PLAN - TAP TO UPGRADE");
                 btnUpgradeBadge.setBackgroundTintList(ColorStateList.valueOf(0xFFE65100)); 
                 btnUpgradeBadge.setOnClickListener(v -> 
