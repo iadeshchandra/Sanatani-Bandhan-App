@@ -15,8 +15,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.firebase.database.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -45,6 +45,11 @@ public class MemberActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_member); 
 
+        // 🚀 SMART OFFLINE ENABLEMENT
+        try {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+        } catch (Exception ignored) {}
+
         db = FirebaseDatabase.getInstance().getReference();
         session = new SessionManager(this);
 
@@ -56,35 +61,49 @@ public class MemberActivity extends AppCompatActivity {
         btnAddNew = findViewById(R.id.btnAddNew);
         btnProactiveUpgrade = findViewById(R.id.btnProactiveUpgrade);
 
+        // ✨ RBAC TRANSPARENCY ENGINE ✨
+        View adminControlsLayout = findViewById(R.id.adminControlsLayout);
         String role = session.getRole();
+        
         if ("MEMBER".equalsIgnoreCase(role) || "DEVOTEE".equalsIgnoreCase(role)) {
-            btnAddNew.setVisibility(View.GONE);
-            btnProactiveUpgrade.setVisibility(View.GONE); // Devotees can't upgrade the workspace
+            // Read-only Transparency: Hide controls for standard users
+            if (adminControlsLayout != null) adminControlsLayout.setVisibility(View.GONE);
+            if (btnProactiveUpgrade != null) btnProactiveUpgrade.setVisibility(View.GONE);
         } else {
-            // Admin or Manager clicks proactive upgrade
-            btnProactiveUpgrade.setOnClickListener(v -> {
-                startActivity(new Intent(MemberActivity.this, UpgradeActivity.class));
+            // Admin/Manager Authority
+            if (adminControlsLayout != null) adminControlsLayout.setVisibility(View.VISIBLE);
+            
+            if (btnProactiveUpgrade != null) {
+                btnProactiveUpgrade.setOnClickListener(v -> {
+                    startActivity(new Intent(MemberActivity.this, UpgradeActivity.class));
+                });
+            }
+        }
+
+        if (btnAddNew != null) {
+            btnAddNew.setOnClickListener(v -> {
+                if ("FREE".equalsIgnoreCase(session.getPlan()) && currentMemberCount >= FREE_PLAN_LIMIT) {
+                    // ✨ UPGRADE: Material 3 Dialog
+                    new MaterialAlertDialogBuilder(this)
+                        .setTitle("Community Limit Reached!")
+                        .setMessage("Your Sanatani community is growing beautifully! You have reached the " + FREE_PLAN_LIMIT + " devotee limit on the Seva Plan.\n\nOffer Dakshina for SAMRAT PRO to welcome unlimited devotees.")
+                        .setPositiveButton("UPGRADE NOW", (dialog, which) -> {
+                            startActivity(new Intent(MemberActivity.this, UpgradeActivity.class));
+                        })
+                        .setNegativeButton("CANCEL", null)
+                        .show();
+                } else {
+                    startActivity(new Intent(this, AddMemberActivity.class));
+                }
             });
         }
 
-        btnAddNew.setOnClickListener(v -> {
-            if ("FREE".equalsIgnoreCase(session.getPlan()) && currentMemberCount >= FREE_PLAN_LIMIT) {
-                new AlertDialog.Builder(this)
-                    .setTitle("Community Limit Reached!")
-                    .setMessage("Your Sanatani community is growing beautifully! You have reached the " + FREE_PLAN_LIMIT + " devotee limit on the Seva Plan.\n\nOffer Dakshina for SAMRAT PRO to welcome unlimited devotees.")
-                    .setPositiveButton("UPGRADE NOW", (dialog, which) -> {
-                        startActivity(new Intent(MemberActivity.this, UpgradeActivity.class));
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-            } else {
-                startActivity(new Intent(this, AddMemberActivity.class));
-            }
-        });
-
-        findViewById(R.id.btnSharePdf).setOnClickListener(v -> {
-            if (!fullMemberList.isEmpty()) PdfReportService.generateMemberDirectory(this, session.getCommunityName(), fullMemberList);
-        });
+        View btnSharePdf = findViewById(R.id.btnSharePdf);
+        if (btnSharePdf != null) {
+            btnSharePdf.setOnClickListener(v -> {
+                if (!fullMemberList.isEmpty()) PdfReportService.generateMemberDirectory(this, session.getCommunityName(), fullMemberList);
+            });
+        }
 
         setupOfflineEngineAndLoadData();
         setupSearch();
@@ -110,13 +129,13 @@ public class MemberActivity extends AppCompatActivity {
                 // ✨ UI LOGIC: Hide button if they are already Premium
                 if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
                     tvPlanStatus.setText("Total Devotees: " + currentMemberCount + " (Samrat Pro: Unlimited)");
-                    tvPlanStatus.setTextColor(0xFF4CAF50);
-                    btnProactiveUpgrade.setVisibility(View.GONE);
+                    tvPlanStatus.setTextColor(0xFF2E7D32); // Deep Green for Premium Success
+                    if (btnProactiveUpgrade != null) btnProactiveUpgrade.setVisibility(View.GONE);
                 } else {
-                    tvPlanStatus.setText("Total Devotees: " + currentMemberCount + "/" + FREE_PLAN_LIMIT + " (Seva Free Plan)");
+                    tvPlanStatus.setText("Total Devotees: " + currentMemberCount + " / " + FREE_PLAN_LIMIT + " (Seva Free Plan)");
                     // Show upgrade button only if Admin/Manager
                     if (!"MEMBER".equalsIgnoreCase(session.getRole()) && !"DEVOTEE".equalsIgnoreCase(session.getRole())) {
-                        btnProactiveUpgrade.setVisibility(View.VISIBLE);
+                        if (btnProactiveUpgrade != null) btnProactiveUpgrade.setVisibility(View.VISIBLE);
                     }
                 }
 
@@ -138,7 +157,7 @@ public class MemberActivity extends AppCompatActivity {
                     Long ts = data.child("timestamp").getValue(Long.class);
                     Float amt = data.child("amount").getValue(Float.class);
                     if (name != null && ts != null && amt != null) {
-                        lastDonationTracker.put(name, "Last: ৳" + amt + " on " + sdf.format(new Date(ts)));
+                        lastDonationTracker.put(name, "Last: ৳" + new java.text.DecimalFormat("#,##0.00").format(amt) + " on " + sdf.format(new Date(ts)));
                     }
                 }
                 renderList(fullMemberList); 
@@ -179,7 +198,7 @@ public class MemberActivity extends AppCompatActivity {
             View view = LayoutInflater.from(this).inflate(R.layout.item_member, membersContainer, false);
 
             ((TextView) view.findViewById(R.id.tvMemberName)).setText(member.name);
-            ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Lifetime: ৳" + member.totalDonated);
+            ((TextView) view.findViewById(R.id.tvMemberDonation)).setText("Lifetime: ৳" + new java.text.DecimalFormat("#,##0.00").format(member.totalDonated));
             ((TextView) view.findViewById(R.id.tvMemberId)).setText(member.id);
             ((TextView) view.findViewById(R.id.tvMemberPhone)).setText("📞 " + (member.phone != null && !member.phone.isEmpty() ? member.phone : "N/A"));
             ((TextView) view.findViewById(R.id.tvMemberGotra)).setText("Gotra: " + (member.gotra != null && !member.gotra.isEmpty() ? member.gotra : "Not specified"));
@@ -202,10 +221,10 @@ public class MemberActivity extends AppCompatActivity {
                         intent.setData(Uri.parse("https://wa.me/" + phoneStr));
                         startActivity(intent);
                     } else {
-                        Toast.makeText(this, "No phone number available", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MemberActivity.this, "No phone number available", Toast.LENGTH_SHORT).show();
                     }
                 } catch (Exception e) {
-                    Toast.makeText(this, "WhatsApp not installed", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MemberActivity.this, "WhatsApp not installed", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -213,15 +232,16 @@ public class MemberActivity extends AppCompatActivity {
             if ("ADMIN".equals(session.getRole())) {
                 btnDelete.setVisibility(View.VISIBLE);
                 btnDelete.setOnClickListener(v -> {
-                    new AlertDialog.Builder(this)
+                    // ✨ UPGRADE: Material 3 Dialog
+                    new MaterialAlertDialogBuilder(MemberActivity.this)
                         .setTitle("Remove Devotee")
                         .setMessage("Are you sure you want to remove " + member.name + "?")
-                        .setPositiveButton("Remove", (dialog, which) -> {
+                        .setPositiveButton("REMOVE", (dialog, which) -> {
                             db.child("communities").child(session.getCommunityId())
                               .child("members").child(member.id).removeValue();
-                            Toast.makeText(this, "Devotee removed", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MemberActivity.this, "Devotee removed", Toast.LENGTH_SHORT).show();
                         })
-                        .setNegativeButton("Cancel", null)
+                        .setNegativeButton("CANCEL", null)
                         .show();
                 });
             } else {
