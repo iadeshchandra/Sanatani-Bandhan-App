@@ -453,6 +453,12 @@ public class DashboardActivity extends AppCompatActivity {
                     if (tithiOverride != null && !tithiOverride.isEmpty() && tvTithiAlert != null) {
                         tvTithiAlert.setText(tithiOverride);
                     }
+
+                    // ✨ NEW: Cache the live Shloka for the PdfReportService
+                    getSharedPreferences("SpiritualCache", Context.MODE_PRIVATE).edit()
+                        .putString("live_shloka_text", quoteText != null ? quoteText : "\"Dharma protects those who protect it.\"")
+                        .putString("live_shloka_source", quoteSource != null ? quoteSource : "- Manusmriti")
+                        .apply();
                 }
             }
             @Override
