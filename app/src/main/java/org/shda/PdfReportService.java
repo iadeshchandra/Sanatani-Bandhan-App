@@ -9,7 +9,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.ValueEventListener;
 import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.colors.DeviceRgb;
@@ -49,6 +48,7 @@ public class PdfReportService {
         }
     }
 
+    // ✨ UPGRADED: Dynamic Server-Driven PDF Limit 
     private static void checkMasterPdfLimitAndShare(Context context, File file) {
         SessionManager session = new SessionManager(context);
         if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
@@ -57,25 +57,45 @@ public class PdfReportService {
         }
 
         DatabaseReference db = FirebaseDatabase.getInstance().getReference();
-        db.child("communities").child(session.getCommunityId()).child("usage_tracking")
+        
+        // Fetch the Global Limit from Backend FIRST
+        db.child("app_config").child("global_settings").child("free_pdf_limit")
           .addListenerForSingleValueEvent(new ValueEventListener() {
               @Override
-              public void onDataChange(@NonNull DataSnapshot snapshot) {
-                  DashboardActivity.Usage usage = snapshot.getValue(DashboardActivity.Usage.class);
-                  String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
-
-                  if (usage == null || !currentMonth.equals(usage.current_month)) {
-                      sharePdf(context, file);
-                  } else if (usage.pdfs_generated >= 3) {
-                      new AlertDialog.Builder(context)
-                          .setTitle("🌟 Upgrade to Premium")
-                          .setMessage("You have reached the Free Plan limit of 3 Master PDF Reports per month.\n\nOffer Dakshina for SAMRAT PRO for unlimited professional exports.")
-                          .setPositiveButton("OK", null)
-                          .show();
-                      if(file.exists()) file.delete(); 
-                  } else {
-                      sharePdf(context, file);
+              public void onDataChange(@NonNull DataSnapshot limitSnapshot) {
+                  // Default to 3 if you haven't added the node in Firebase yet
+                  int freeLimit = 3; 
+                  if (limitSnapshot.exists() && limitSnapshot.getValue() != null) {
+                      freeLimit = limitSnapshot.getValue(Integer.class);
                   }
+                  final int finalLimit = freeLimit;
+
+                  // NOW verify the user's specific usage against the dynamic limit
+                  db.child("communities").child(session.getCommunityId()).child("usage_tracking")
+                    .addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            DashboardActivity.Usage usage = snapshot.getValue(DashboardActivity.Usage.class);
+                            String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
+
+                            if (usage == null || !currentMonth.equals(usage.current_month)) {
+                                sharePdf(context, file);
+                            } else if (usage.pdfs_generated >= finalLimit) {
+                                new AlertDialog.Builder(context)
+                                    .setTitle("🌟 Upgrade to Premium")
+                                    .setMessage("You have reached the Free Plan limit of " + finalLimit + " Master PDF Reports per month.\n\nOffer Dakshina for SAMRAT PRO for unlimited professional exports.")
+                                    .setPositiveButton("OK", null)
+                                    .show();
+                                if(file.exists()) file.delete(); // Delete the file if over limit
+                            } else {
+                                sharePdf(context, file);
+                            }
+                        }
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+                            sharePdf(context, file); 
+                        }
+                    });
               }
               @Override
               public void onCancelled(@NonNull DatabaseError error) {
@@ -90,13 +110,22 @@ public class PdfReportService {
         return new File(folder, fileName + "_" + System.currentTimeMillis() + ".pdf");
     }
 
-    private static void addSanataniHeader(Document document, String communityName, String reportTitle) {
+    // ✨ UPGRADED: Dynamic Live Shloka Injection
+    private static void addSanataniHeader(Context context, Document document, String communityName, String reportTitle) {
+        // Read the live Shloka saved by the DashboardActivity
+        android.content.SharedPreferences prefs = context.getSharedPreferences("SpiritualCache", Context.MODE_PRIVATE);
+        String quoteText = prefs.getString("live_shloka_text", "\"Ahimsa paramo dharma\" (Non-violence is the highest religion)");
+        String quoteSource = prefs.getString("live_shloka_source", "- Mahabharata");
+
         document.add(new Paragraph(communityName != null ? communityName.toUpperCase() : "SANATANI BANDHAN MANDIR")
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(22).setBold().setFontColor(SAFFRON));
-        document.add(new Paragraph("\"Ahimsa paramo dharma\" (Non-violence is the highest religion) - Mahabharata")
+        
+        document.add(new Paragraph(quoteText + " " + quoteSource)
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(10).setItalic().setFontColor(ColorConstants.GRAY));
+        
         document.add(new Paragraph(reportTitle.toUpperCase())
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(14).setBold().setBackgroundColor(ColorConstants.LIGHT_GRAY).setMarginTop(10));
+        
         document.add(new Paragraph("Generated: " + new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(new Date()))
                 .setTextAlignment(TextAlignment.CENTER).setFontSize(10).setItalic().setMarginBottom(15));
     }
@@ -106,7 +135,7 @@ public class PdfReportService {
         String footerText = "PREMIUM".equalsIgnoreCase(session.getPlan()) ? 
             "\nAuthorized & Generated via Sanatani Bandhan SAMRAT PRO" : 
             "\nGenerated by Sanatani Bandhan (Free Version) - Upgrade to Pro for unlimited exports.";
-        
+
         document.add(new Paragraph(footerText)
                 .setTextAlignment(TextAlignment.RIGHT).setFontSize(9).setItalic().setFontColor(ColorConstants.GRAY));
     }
@@ -120,13 +149,12 @@ public class PdfReportService {
     // ==========================================
     // MEMBER DIRECTORY & PROFILES
     // ==========================================
-    
-    // ✨ FIX: Now uses exactly org.shda.Member
+
     public static void generateMemberDirectory(Context context, String communityName, List<Member> members) {
         try {
             File file = createBaseFile(context, "Member_Directory");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Official Devotee Directory");
+            addSanataniHeader(context, document, communityName, "Official Devotee Directory");
             Table table = new Table(new float[]{3, 3, 2, 2}); table.setWidth(UnitValue.createPercentValue(100));
             table.addHeaderCell(new Cell().add(new Paragraph("Name").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
             table.addHeaderCell(new Cell().add(new Paragraph("ID / Phone").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
@@ -147,7 +175,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Devotee_Profile_" + m.id);
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Official Devotee Record");
+            addSanataniHeader(context, document, communityName, "Official Devotee Record");
             Table table = new Table(new float[]{1, 2}); table.setWidth(UnitValue.createPercentValue(100));
             table.addCell(new Cell().add(new Paragraph("Devotee Name").setBold())); table.addCell(new Paragraph(m.name).setBold());
             table.addCell(new Cell().add(new Paragraph("SB-ID").setBold())); table.addCell(new Paragraph(m.id).setFontColor(BLUE));
@@ -169,7 +197,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Secure_Credentials_" + memberId);
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Confidential Login Credentials");
+            addSanataniHeader(context, document, communityName, "Confidential Login Credentials");
 
             document.add(new Paragraph("Namaskar " + name + ",\nWelcome to the Sanatani Bandhan platform. Your profile has been created successfully. Please keep these credentials strictly confidential.")
                     .setMarginBottom(20).setFontSize(12));
@@ -196,7 +224,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Master_Donation_Ledger");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
+            addSanataniHeader(context, document, communityName, title);
             Table table = new Table(new float[]{2, 3, 2, 3}); table.setWidth(UnitValue.createPercentValue(100));
             table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
             table.addHeaderCell(new Cell().add(new Paragraph("Donor Name").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
@@ -216,7 +244,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Donation_Statement_" + gd.displayName.replaceAll("[^a-zA-Z0-9]", ""));
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Donor Contribution Statement");
+            addSanataniHeader(context, document, communityName, "Donor Contribution Statement");
             document.add(new Paragraph("Devotee: " + gd.displayName).setBold().setFontSize(14).setMarginBottom(10));
             Table table = new Table(new float[]{2, 2, 4, 2}); table.setWidth(UnitValue.createPercentValue(100));
             table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
@@ -241,7 +269,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Master_Utsav_Expense");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
+            addSanataniHeader(context, document, communityName, title);
             Table table = new Table(new float[]{2, 3, 2, 2}); table.setWidth(UnitValue.createPercentValue(100));
             table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
             table.addHeaderCell(new Cell().add(new Paragraph("Event & Item").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
@@ -264,7 +292,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Utsav_Statement_" + ge.eventDisplayName.replaceAll("[^a-zA-Z0-9]", ""));
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Specific Event Expense Report");
+            addSanataniHeader(context, document, communityName, "Specific Event Expense Report");
             document.add(new Paragraph("Event / Utsav: " + ge.eventDisplayName).setBold().setFontSize(14).setMarginBottom(10));
             Table table = new Table(new float[]{2, 4, 2, 2}); table.setWidth(UnitValue.createPercentValue(100));
             table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
@@ -290,7 +318,7 @@ public class PdfReportService {
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
             SimpleDateFormat titleSdf = new SimpleDateFormat("dd MMM yyyy", Locale.getDefault());
             String dateRange = titleSdf.format(new Date(startTs)) + " to " + titleSdf.format(new Date(endTs));
-            addSanataniHeader(document, communityName, "Income vs Expense Comparison\n(" + dateRange + ")");
+            addSanataniHeader(context, document, communityName, "Income vs Expense Comparison\n(" + dateRange + ")");
 
             document.add(new Paragraph("DONATIONS (INCOME)").setBold().setFontSize(14).setFontColor(GREEN).setMarginTop(10));
             Table incTable = new Table(new float[]{2, 4, 2}); incTable.setWidth(UnitValue.createPercentValue(100));
@@ -322,7 +350,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Master_Event_Calendar");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
+            addSanataniHeader(context, document, communityName, title);
             Table table = new Table(new float[]{2, 2, 2, 3}); table.setWidth(UnitValue.createPercentValue(100));
             table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
             table.addHeaderCell(new Cell().add(new Paragraph("Time").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
@@ -341,7 +369,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Mandir_Event_" + event.title.replaceAll("[^a-zA-Z0-9]", ""));
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Official Mandir Event Itinerary");
+            addSanataniHeader(context, document, communityName, "Official Mandir Event Itinerary");
             document.add(new Paragraph("Event: " + event.title).setBold().setFontSize(18).setFontColor(SAFFRON).setMarginBottom(10));
             Table table = new Table(new float[]{1, 3}); table.setWidth(UnitValue.createPercentValue(100));
             table.addCell(new Cell().add(new Paragraph("Date").setBold())); table.addCell(new Paragraph(event.dateStr));
@@ -359,7 +387,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Panchayat_Poll_Insight");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, "Sanatani Panchayat Poll Insight");
+            addSanataniHeader(context, document, communityName, "Sanatani Panchayat Poll Insight");
             document.add(new Paragraph("Question: " + poll.question).setBold().setFontSize(16).setMarginBottom(10));
             int totalVotes = poll.votes != null ? poll.votes.size() : 0;
             document.add(new Paragraph("Total Votes Cast: " + totalVotes).setBold().setMarginBottom(15));
@@ -387,7 +415,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Master_Polls_Report");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
+            addSanataniHeader(context, document, communityName, title);
             for (Poll poll : polls) {
                 document.add(new Paragraph("Q: " + poll.question).setBold().setFontSize(14).setMarginTop(15));
                 int totalVotes = poll.votes != null ? poll.votes.size() : 0;
@@ -413,7 +441,7 @@ public class PdfReportService {
         try {
             File file = createBaseFile(context, "Security_Audit_Report");
             Document document = new Document(new PdfDocument(new PdfWriter(new FileOutputStream(file))), PageSize.A4);
-            addSanataniHeader(document, communityName, title);
+            addSanataniHeader(context, document, communityName, title);
             Table table = new Table(new float[]{2, 2, 2, 4}); table.setWidth(UnitValue.createPercentValue(100));
             table.addHeaderCell(new Cell().add(new Paragraph("Date").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
             table.addHeaderCell(new Cell().add(new Paragraph("User").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY));
