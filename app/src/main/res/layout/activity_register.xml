@@ -1,51 +1,234 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#FFFBF2">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFDF8">
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+    <!-- ✨ The Divine Watermark -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="ॐ"
+        android:textSize="400sp"
+        android:textColor="#E65100"
+        android:alpha="0.03"
+        android:gravity="center"
+        android:importantForAccessibility="no" />
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register Workspace" android:textSize="28sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="8dp"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Create a dedicated portal for your Mandir or Community." android:textSize="14sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="24dp"/>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="12dp" app:cardElevation="3dp" android:layout_marginBottom="16dp" app:cardBackgroundColor="#FFFFFF">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Workspace Type:" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
-                <RadioGroup android:id="@+id/rgWorkspaceType" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-                    <RadioButton android:id="@+id/rbMandir" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Mandir" android:textColor="#424242" android:checked="true" android:layout_marginEnd="16dp"/>
-                    <RadioButton android:id="@+id/rbCommunity" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Community" android:textColor="#424242"/>
-                </RadioGroup>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <EditText android:id="@+id/inputCommName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Organization Name *" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputAdminName" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Super Admin Full Name *" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputEmail" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Email *" android:inputType="textEmailAddress" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        <EditText android:id="@+id/inputAdminPhone" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Official Phone Number *" android:inputType="phone" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
-        
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:hintEnabled="false"
-            app:passwordToggleEnabled="true"
-            app:passwordToggleTint="#E65100"
-            android:layout_marginBottom="24dp">
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center_vertical">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputPassword"
+            <!-- Header Branding -->
+            <TextView
                 android:layout_width="match_parent"
-                android:layout_height="55dp"
-                android:hint="Admin Password (Min 6 Chars) *"
-                android:inputType="textPassword"
-                android:background="#FFFFFF"
-                android:elevation="2dp"
-                android:padding="12dp"/>
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_height="wrap_content"
+                android:text="Sanatani Bandhan"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:textColor="#E65100"
+                android:gravity="center"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="4dp"/>
+                
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Establish Your Digital Mandir"
+                android:textSize="16sp"
+                android:textColor="#757575"
+                android:gravity="center"
+                android:layout_marginBottom="24dp"/>
 
-        <Button android:id="@+id/btnRegister" android:layout_width="match_parent" android:layout_height="60dp" android:text="CREATE SECURE WORKSPACE" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#2E7D32" android:layout_marginBottom="16dp"/>
-        
-        <TextView android:id="@+id/tvGoToLogin" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Already have a workspace? Log In Here." android:textSize="14sp" android:textStyle="bold" android:textColor="#1976D2" android:gravity="center" android:padding="12dp"/>
+            <!-- Main Registration Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_marginBottom="24dp">
+                
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
 
-    </LinearLayout>
-</ScrollView>
+                    <!-- Workspace Type Selector -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Workspace Type"
+                        android:textStyle="bold"
+                        android:textColor="#424242"
+                        android:layout_marginBottom="8dp"/>
+                        
+                    <RadioGroup
+                        android:id="@+id/rgWorkspaceType"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp">
+                        
+                        <RadioButton
+                            android:id="@+id/rbMandir"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Mandir"
+                            android:textColor="#212121"
+                            android:checked="true"
+                            app:buttonTint="#E65100"/>
+                            
+                        <RadioButton
+                            android:id="@+id/rbCommunity"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Community"
+                            android:textColor="#212121"
+                            app:buttonTint="#E65100"/>
+                    </RadioGroup>
+
+                    <!-- ✨ Modern Outlined Inputs -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Organization Name *"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp"
+                        app:boxStrokeColor="#E65100"
+                        android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputCommName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapWords" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Super Admin Full Name *"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp"
+                        app:boxStrokeColor="#E65100"
+                        android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputAdminName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPersonName" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Official Phone Number *"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp"
+                        app:boxStrokeColor="#E65100"
+                        android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputAdminPhone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Admin Email *"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp"
+                        app:boxStrokeColor="#E65100"
+                        android:layout_marginBottom="12dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputEmail"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textEmailAddress" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="Admin Password (Min 6 Chars) *"
+                        app:passwordToggleEnabled="true"
+                        app:passwordToggleTint="#E65100"
+                        app:boxCornerRadiusTopStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusBottomEnd="16dp"
+                        app:boxStrokeColor="#E65100"
+                        android:layout_marginBottom="24dp">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"/>
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRegister"
+                        android:layout_width="match_parent"
+                        android:layout_height="65dp"
+                        android:text="ESTABLISH WORKSPACE"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="16dp"
+                        app:backgroundTint="#E65100"
+                        app:elevation="2dp"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView 
+                android:id="@+id/tvGoToLogin" 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                android:text="Already registered? Return to Login" 
+                android:textSize="15sp" 
+                android:textStyle="bold" 
+                android:textColor="#E65100" 
+                android:gravity="center" 
+                android:padding="12dp"
+                android:layout_marginBottom="24dp"/>
+
+            <!-- ✨ The Spiritual Anchor for Unity/Community Building -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="&quot;Sangacchadhvam samvadadhvam...&quot;\n(May we move together, may we speak together)\n- Rig Veda"
+                android:textSize="12sp"
+                android:textStyle="italic"
+                android:textColor="#9E9E9E"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
