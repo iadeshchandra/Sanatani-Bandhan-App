@@ -1,48 +1,285 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="#FFFBF2" android:fillViewport="true">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFDF8">
 
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp" android:gravity="center">
+    <!-- ✨ The Divine Watermark (Subtle Background Om) -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="ॐ"
+        android:textSize="400sp"
+        android:textColor="#E65100"
+        android:alpha="0.03"
+        android:gravity="center"
+        android:importantForAccessibility="no" />
 
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Sanatani Bandhan" android:textSize="32sp" android:textStyle="bold" android:textColor="#E65100" android:gravity="center" android:layout_marginBottom="4dp"/>
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Universal Devotee Portal" android:textSize="16sp" android:textColor="#757575" android:gravity="center" android:layout_marginBottom="32dp"/>
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-        <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="wrap_content" app:cardCornerRadius="16dp" app:cardElevation="4dp" app:cardBackgroundColor="#FFFFFF" android:layout_marginBottom="24dp">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="20dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp"
+            android:gravity="center_vertical">
+
+            <!-- Header Branding -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sanatani Bandhan"
+                android:textSize="36sp"
+                android:textStyle="bold"
+                android:textColor="#E65100"
+                android:gravity="center"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="4dp"/>
                 
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="1. Workspace Details" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
-                <EditText android:id="@+id/inputWorkspace" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Admin Email OR Workspace ID" android:inputType="textEmailAddress" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="16dp"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Universal Devotee Portal"
+                android:textSize="16sp"
+                android:textColor="#757575"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"/>
 
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="2. Personal Credentials" android:textStyle="bold" android:textColor="#212121" android:layout_marginBottom="8dp"/>
-                <EditText android:id="@+id/inputUserId" android:layout_width="match_parent" android:layout_height="55dp" android:hint="User ID (Admins leave blank)" android:background="#F5F5F5" android:padding="12dp" android:layout_marginBottom="12dp"/>
+            <!-- ✨ SaaS Toggle Tabs (Devotee / Admin) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                app:cardBackgroundColor="#F0F0F0"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="0dp"
+                android:layout_marginBottom="24dp">
                 
-                <com.google.android.material.textfield.TextInputLayout
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:padding="4dp">
+                    
+                    <!-- Devotee Tab (Active by default in UI mock) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/tabDevotee"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="match_parent"
+                        app:cardBackgroundColor="#FFFFFF"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="2dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="🙏 Devotee"
+                            android:gravity="center"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#E65100"/>
+                    </com.google.android.material.card.MaterialCardView>
+                    
+                    <!-- Admin Tab (Inactive by default) -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/tabAdmin"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="match_parent"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="0dp">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:text="⚙️ Admin"
+                            android:gravity="center"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#757575"/>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Main Login Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_marginBottom="24dp">
+                
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:hintEnabled="false"
-                    app:passwordToggleEnabled="true"
-                    app:passwordToggleTint="#E65100"
-                    android:layout_marginBottom="8dp">
+                    android:orientation="vertical"
+                    android:padding="24dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/inputPin"
+                    <!-- ✨ DEVOTEE LOGIN FORM (Visible by default) -->
+                    <LinearLayout
+                        android:id="@+id/layoutDevoteeForm"
                         android:layout_width="match_parent"
-                        android:layout_height="55dp"
-                        android:hint="Password OR 4-Digit PIN"
-                        android:inputType="textPassword"
-                        android:background="#F5F5F5"
-                        android:padding="12dp"/>
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Mandir Workspace ID"
+                            app:boxCornerRadiusTopStart="16dp"
+                            app:boxCornerRadiusTopEnd="16dp"
+                            app:boxCornerRadiusBottomStart="16dp"
+                            app:boxCornerRadiusBottomEnd="16dp"
+                            app:boxStrokeColor="#E65100"
+                            android:layout_marginBottom="16dp">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/inputWorkspaceId"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textCapCharacters" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView android:id="@+id/tvForgotPassword" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Forgot Password?" android:textColor="#1976D2" android:textStyle="bold" android:layout_gravity="end" android:layout_marginBottom="24dp" android:padding="4dp"/>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Devotee ID"
+                            app:boxCornerRadiusTopStart="16dp"
+                            app:boxCornerRadiusTopEnd="16dp"
+                            app:boxCornerRadiusBottomStart="16dp"
+                            app:boxCornerRadiusBottomEnd="16dp"
+                            app:boxStrokeColor="#E65100"
+                            android:layout_marginBottom="16dp">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/inputUserId"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="number" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-                <Button android:id="@+id/btnLogin" android:layout_width="match_parent" android:layout_height="60dp" android:text="SECURE LOGIN" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#E65100"/>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="4-Digit Secure PIN"
+                            app:passwordToggleEnabled="true"
+                            app:passwordToggleTint="#E65100"
+                            app:boxCornerRadiusTopStart="16dp"
+                            app:boxCornerRadiusTopEnd="16dp"
+                            app:boxCornerRadiusBottomStart="16dp"
+                            app:boxCornerRadiusBottomEnd="16dp"
+                            app:boxStrokeColor="#E65100"
+                            android:layout_marginBottom="8dp">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/inputDevoteePin"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="numberPassword"
+                                android:maxLength="4"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
 
-        <TextView android:id="@+id/tvCreateWorkspace" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Register a New Mandir or Community Portal" android:textSize="14sp" android:textStyle="bold" android:textColor="#212121" android:gravity="center" android:padding="12dp"/>
+                    <!-- ✨ ADMIN LOGIN FORM (Hidden by default) -->
+                    <LinearLayout
+                        android:id="@+id/layoutAdminForm"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+                        
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Admin Email Address"
+                            app:boxCornerRadiusTopStart="16dp"
+                            app:boxCornerRadiusTopEnd="16dp"
+                            app:boxCornerRadiusBottomStart="16dp"
+                            app:boxCornerRadiusBottomEnd="16dp"
+                            app:boxStrokeColor="#E65100"
+                            android:layout_marginBottom="16dp">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/inputAdminEmail"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textEmailAddress" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
-    </LinearLayout>
-</ScrollView>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="Master Password"
+                            app:passwordToggleEnabled="true"
+                            app:passwordToggleTint="#E65100"
+                            app:boxCornerRadiusTopStart="16dp"
+                            app:boxCornerRadiusTopEnd="16dp"
+                            app:boxCornerRadiusBottomStart="16dp"
+                            app:boxCornerRadiusBottomEnd="16dp"
+                            app:boxStrokeColor="#E65100"
+                            android:layout_marginBottom="8dp">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/inputAdminPassword"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword"/>
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <TextView 
+                        android:id="@+id/tvForgotPassword" 
+                        android:layout_width="wrap_content" 
+                        android:layout_height="wrap_content" 
+                        android:text="Recover Access" 
+                        android:textColor="#E65100" 
+                        android:textStyle="bold" 
+                        android:layout_gravity="end" 
+                        android:layout_marginBottom="24dp" 
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLogin"
+                        android:layout_width="match_parent"
+                        android:layout_height="65dp"
+                        android:text="ENTER MANDIR"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:cornerRadius="16dp"
+                        app:backgroundTint="#E65100"
+                        app:elevation="2dp"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView 
+                android:id="@+id/tvCreateWorkspace" 
+                android:layout_width="match_parent" 
+                android:layout_height="wrap_content" 
+                android:text="Establish a New Mandir Portal" 
+                android:textSize="15sp" 
+                android:textStyle="bold" 
+                android:textColor="#212121" 
+                android:gravity="center" 
+                android:padding="12dp"
+                android:layout_marginBottom="32dp"/>
+
+            <!-- ✨ The Spiritual Anchor -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="&quot;Om Saha Navavatu, Saha Nau Bhunaktu&quot;\n(May the divine protect us both together, may He nourish us both together)"
+                android:textSize="12sp"
+                android:textStyle="italic"
+                android:textColor="#9E9E9E"
+                android:gravity="center"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="32dp"/>
+
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
