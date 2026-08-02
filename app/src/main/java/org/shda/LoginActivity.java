@@ -2,13 +2,18 @@ package org.shda;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.*;
 
@@ -18,8 +23,18 @@ public class LoginActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
 
-    private EditText inputWorkspace, inputUserId, inputPin;
+    // ✨ Tab UI Elements
+    private MaterialCardView tabDevotee, tabAdmin;
+    private LinearLayout layoutDevoteeForm, layoutAdminForm;
+    private TextView tvDevoteeText, tvAdminText;
+
+    // ✨ Input Elements
+    private TextInputEditText inputWorkspaceId, inputUserId, inputDevoteePin;
+    private TextInputEditText inputAdminEmail, inputAdminPassword;
     private Button btnLogin;
+
+    // State Tracker
+    private boolean isAdminMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,17 +50,37 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseDatabase.getInstance().getReference();
 
-        inputWorkspace = findViewById(R.id.inputWorkspace);
+        // Initialize Tab System
+        tabDevotee = findViewById(R.id.tabDevotee);
+        tabAdmin = findViewById(R.id.tabAdmin);
+        layoutDevoteeForm = findViewById(R.id.layoutDevoteeForm);
+        layoutAdminForm = findViewById(R.id.layoutAdminForm);
+        
+        // Grab the TextViews inside the tabs to change their colors
+        tvDevoteeText = (TextView) tabDevotee.getChildAt(0);
+        tvAdminText = (TextView) tabAdmin.getChildAt(0);
+
+        // Initialize Inputs
+        inputWorkspaceId = findViewById(R.id.inputWorkspaceId);
         inputUserId = findViewById(R.id.inputUserId);
-        inputPin = findViewById(R.id.inputPin);
+        inputDevoteePin = findViewById(R.id.inputDevoteePin);
+
+        inputAdminEmail = findViewById(R.id.inputAdminEmail);
+        inputAdminPassword = findViewById(R.id.inputAdminPassword);
+        
         btnLogin = findViewById(R.id.btnLogin);
 
+        // Set Click Listeners
+        tabDevotee.setOnClickListener(v -> switchTab(false));
+        tabAdmin.setOnClickListener(v -> switchTab(true));
+        
         btnLogin.setOnClickListener(v -> performLogin());
         findViewById(R.id.tvForgotPassword).setOnClickListener(v -> showForgotPasswordDialog());
 
         // ✨ CRASH PREVENTER
         findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> {
             try {
+                // Ensure your manifest has this exact activity name registered
                 startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class));
             } catch (Exception e) {
                 Toast.makeText(LoginActivity.this, "CRASH PREVENTED: Please declare 'RegisterCommunityActivity' inside your AndroidManifest.xml file!", Toast.LENGTH_LONG).show();
@@ -53,10 +88,50 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
+    // ✨ The UI Engine that smoothly swaps the forms
+    private void switchTab(boolean switchToAdmin) {
+        isAdminMode = switchToAdmin;
+        
+        if (switchToAdmin) {
+            layoutDevoteeForm.setVisibility(View.GONE);
+            layoutAdminForm.setVisibility(View.VISIBLE);
+            
+            tabAdmin.setCardBackgroundColor(Color.parseColor("#FFFFFF"));
+            tabAdmin.setCardElevation(4f);
+            tvAdminText.setTextColor(Color.parseColor("#E65100"));
+
+            tabDevotee.setCardBackgroundColor(Color.TRANSPARENT);
+            tabDevotee.setCardElevation(0f);
+            tvDevoteeText.setTextColor(Color.parseColor("#757575"));
+        } else {
+            layoutAdminForm.setVisibility(View.GONE);
+            layoutDevoteeForm.setVisibility(View.VISIBLE);
+            
+            tabDevotee.setCardBackgroundColor(Color.parseColor("#FFFFFF"));
+            tabDevotee.setCardElevation(4f);
+            tvDevoteeText.setTextColor(Color.parseColor("#E65100"));
+
+            tabAdmin.setCardBackgroundColor(Color.TRANSPARENT);
+            tabAdmin.setCardElevation(0f);
+            tvAdminText.setTextColor(Color.parseColor("#757575"));
+        }
+    }
+
     private void showForgotPasswordDialog() {
+        if (!isAdminMode) {
+            // Devotees don't use Firebase Auth, so they must contact their Mandir Admin
+            androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+            builder.setTitle("🙏 Recover Access");
+            builder.setMessage("For security reasons, Devotee PINs cannot be reset via email. Please contact your Mandir's Chief Admin to issue you a new 4-Digit PIN.");
+            builder.setPositiveButton("UNDERSTOOD", null);
+            builder.show();
+            return;
+        }
+
+        // Admin Flow (Firebase Auth)
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-        builder.setTitle("Reset Admin Password");
-        builder.setMessage("Enter your Admin Email to receive a password reset link. (Staff members must ask their Admin to reset their PINs).");
+        builder.setTitle("Reset Master Password");
+        builder.setMessage("Enter your Admin Email to receive a secure password reset link.");
 
         final EditText input = new EditText(this);
         input.setHint("Registered Admin Email");
@@ -85,17 +160,31 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void performLogin() {
-        String workspace = inputWorkspace.getText().toString().trim();
-        String userId = inputUserId.getText().toString().trim();
-        String secret = inputPin.getText().toString().trim(); 
+        String workspace, userId, secret;
 
-        if (workspace.isEmpty() || secret.isEmpty()) {
-            Toast.makeText(this, "Workspace/Email and Password/PIN are required", Toast.LENGTH_SHORT).show(); return;
+        // Route data based on which tab is active
+        if (isAdminMode) {
+            workspace = inputAdminEmail.getText() != null ? inputAdminEmail.getText().toString().trim() : "";
+            userId = "admin"; // Magic string to trigger Firebase Auth logic below
+            secret = inputAdminPassword.getText() != null ? inputAdminPassword.getText().toString().trim() : "";
+        } else {
+            workspace = inputWorkspaceId.getText() != null ? inputWorkspaceId.getText().toString().trim() : "";
+            userId = inputUserId.getText() != null ? inputUserId.getText().toString().trim() : "";
+            secret = inputDevoteePin.getText() != null ? inputDevoteePin.getText().toString().trim() : "";
         }
 
-        btnLogin.setEnabled(false); btnLogin.setText("AUTHENTICATING...");
+        if (workspace.isEmpty() || secret.isEmpty() || (!isAdminMode && userId.isEmpty())) {
+            Toast.makeText(this, "Please fill out all required fields.", Toast.LENGTH_SHORT).show(); 
+            return;
+        }
 
-        if (userId.isEmpty() || userId.equalsIgnoreCase("admin")) {
+        btnLogin.setEnabled(false); 
+        btnLogin.setText("AUTHENTICATING...");
+
+        if (isAdminMode || userId.equalsIgnoreCase("admin")) {
+            // ==========================================
+            // ADMIN FIREBASE AUTH ROUTE
+            // ==========================================
             mAuth.signInWithEmailAndPassword(workspace, secret).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String uid = mAuth.getCurrentUser().getUid();
@@ -114,7 +203,6 @@ public class LoginActivity extends AppCompatActivity {
                                 startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
                             } else { attemptOfflineLogin(workspace, userId, secret, "Admin Profile missing."); }
                         }
-                        // ✨ FIX: Now shows the REAL Firebase error!
                         @Override public void onCancelled(@NonNull DatabaseError error) { 
                             attemptOfflineLogin(workspace, userId, secret, "Server Rejected: " + error.getMessage()); 
                         }
@@ -123,6 +211,9 @@ public class LoginActivity extends AppCompatActivity {
             });
 
         } else {
+            // ==========================================
+            // DEVOTEE REALTIME DATABASE ROUTE
+            // ==========================================
             db.child("communities").addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                     String targetCommId = null; String targetCommName = null;
@@ -137,7 +228,7 @@ public class LoginActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    if (targetCommId == null) { attemptOfflineLogin(workspace, userId, secret, "Workspace not found."); return; }
+                    if (targetCommId == null) { attemptOfflineLogin(workspace, userId, secret, "Workspace ID not found."); return; }
 
                     String dbPin = snapshot.child(targetCommId).child("logins").child(userId).getValue(String.class);
                     if (dbPin != null && dbPin.equals(secret)) {
@@ -145,12 +236,11 @@ public class LoginActivity extends AppCompatActivity {
                         if (m != null) {
                             saveOfflineCredentials(workspace, userId, secret, targetCommId, m.role, targetCommName, m.name);
                             session.createLoginSession(targetCommId, m.role, targetCommName, m.name, m.id, m.email != null ? m.email : "");
-                            Toast.makeText(LoginActivity.this, "Staff Login Successful!", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(LoginActivity.this, "🙏 Welcome to the Mandir Portal!", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
                         } else { attemptOfflineLogin(workspace, userId, secret, "Devotee Profile not found."); }
                     } else { attemptOfflineLogin(workspace, userId, secret, "Invalid Devotee ID or PIN."); }
                 }
-                // ✨ FIX: Now shows the REAL Firebase error!
                 @Override public void onCancelled(@NonNull DatabaseError error) { 
                     attemptOfflineLogin(workspace, userId, secret, "Server Rejected: " + error.getMessage()); 
                 }
@@ -186,7 +276,7 @@ public class LoginActivity extends AppCompatActivity {
             String finalUserId = (userId.isEmpty() || userId.equalsIgnoreCase("admin")) ? "ADMIN-001" : userId;
 
             session.createLoginSession(commId, role, commName, name, finalUserId, workspace);
-            Toast.makeText(this, "🔐 Logged in via Secure Offline Cache", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "🔐 Logged in securely via Offline Cache", Toast.LENGTH_LONG).show();
             startActivity(new Intent(this, DashboardActivity.class));
             finish();
         } else {
@@ -196,6 +286,7 @@ public class LoginActivity extends AppCompatActivity {
 
     private void fail(String msg) {
         Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-        btnLogin.setEnabled(true); btnLogin.setText("SECURE LOGIN");
+        btnLogin.setEnabled(true); 
+        btnLogin.setText("ENTER MANDIR");
     }
 }
