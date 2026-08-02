@@ -132,7 +132,7 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvDashboardTitle)).setText(session.getCommunityName());
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
         ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
-        
+
         // These will be overridden by fetchDynamicUI() if data exists, but we set safe fallbacks here.
         tvTithiAlert.setText("Today's Tithi: Loading...");
         shlokaText.setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"");
@@ -153,19 +153,20 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
 
+        // ✨ UPGRADED: Dynamic Limits Fetched from Backend
         findViewById(R.id.cardComms).setOnClickListener(v -> 
-            checkQuotaAndProceed("sandesh_sent", 1, () -> startActivity(new Intent(this, CommsActivity.class)))
+            checkQuotaAndProceed("sandesh_sent", "free_sandesh_limit", 5, () -> startActivity(new Intent(this, CommsActivity.class)))
         );
 
         btnGenerateReports.setOnClickListener(v -> 
-            checkQuotaAndProceed("pdfs_generated", 3, this::showGlobalPdfGeneratorDialog)
+            checkQuotaAndProceed("pdfs_generated", "free_pdf_limit", 3, this::showGlobalPdfGeneratorDialog)
         );
 
         if (!"ADMIN".equals(session.getRole())) {
             findViewById(R.id.btnDownloadAudit).setVisibility(View.GONE);
         } else {
             findViewById(R.id.btnDownloadAudit).setOnClickListener(v -> 
-                checkQuotaAndProceed("audits_downloaded", 1, () -> {
+                checkQuotaAndProceed("audits_downloaded", "free_audit_limit", 1, () -> {
                     new AlertDialog.Builder(this)
                         .setTitle(getString(R.string.btn_security_audit))
                         .setItems(new String[]{"Specific Date Range", "All Time"}, (dialog, which) -> {
@@ -510,47 +511,72 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    private void checkQuotaAndProceed(String feature, int freeLimit, Runnable action) {
+    // ✨ UPGRADED: Dynamic Limits Fetched from Backend
+    private void checkQuotaAndProceed(String feature, String limitKey, int fallbackLimit, Runnable action) {
         if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
             action.run(); 
             return;
         }
 
-        String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
-        DatabaseReference usageRef = db.child("communities").child(session.getCommunityId()).child("usage_tracking");
+        // 1. Fetch the Live Limit from your Web Backend
+        db.child("app_config").child("global_settings").child(limitKey)
+          .addListenerForSingleValueEvent(new ValueEventListener() {
+              @Override
+              public void onDataChange(@NonNull DataSnapshot limitSnapshot) {
+                  int finalLimit = fallbackLimit;
+                  if (limitSnapshot.exists() && limitSnapshot.getValue() != null) {
+                      finalLimit = limitSnapshot.getValue(Integer.class);
+                  }
+                  
+                  final int limitToCompare = finalLimit;
+                  String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
+                  DatabaseReference usageRef = db.child("communities").child(session.getCommunityId()).child("usage_tracking");
 
-        usageRef.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                Usage usage = snapshot.getValue(Usage.class);
-                if (usage == null || !currentMonth.equals(usage.current_month)) {
-                    usage = new Usage();
-                    usage.current_month = currentMonth;
-                }
+                  // 2. Fetch the Mandir's Monthly Usage
+                  usageRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                      @Override
+                      public void onDataChange(@NonNull DataSnapshot snapshot) {
+                          Usage usage = snapshot.getValue(Usage.class);
+                          if (usage == null || !currentMonth.equals(usage.current_month)) {
+                              usage = new Usage();
+                              usage.current_month = currentMonth;
+                          }
 
-                int currentUsage = 0;
-                if (feature.equals("pdfs_generated")) currentUsage = usage.pdfs_generated;
-                else if (feature.equals("sandesh_sent")) currentUsage = usage.sandesh_sent;
-                else if (feature.equals("audits_downloaded")) currentUsage = usage.audits_downloaded;
+                          int currentUsage = 0;
+                          if (feature.equals("pdfs_generated")) currentUsage = usage.pdfs_generated;
+                          else if (feature.equals("sandesh_sent")) currentUsage = usage.sandesh_sent;
+                          else if (feature.equals("audits_downloaded")) currentUsage = usage.audits_downloaded;
 
-                if (currentUsage < freeLimit) {
-                    if (feature.equals("pdfs_generated")) usage.pdfs_generated++;
-                    else if (feature.equals("sandesh_sent")) usage.sandesh_sent++;
-                    else if (feature.equals("audits_downloaded")) usage.audits_downloaded++;
+                          // 3. Enforce the Limit
+                          if (currentUsage < limitToCompare) {
+                              if (feature.equals("pdfs_generated")) usage.pdfs_generated++;
+                              else if (feature.equals("sandesh_sent")) usage.sandesh_sent++;
+                              else if (feature.equals("audits_downloaded")) usage.audits_downloaded++;
 
-                    usageRef.setValue(usage);
-                    int remaining = freeLimit - (currentUsage + 1);
-                    Toast.makeText(DashboardActivity.this, "Free Seva Limit: " + remaining + " remaining this month.", Toast.LENGTH_SHORT).show();
-                    action.run();
-                } else {
-                    startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class));
-                }
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Toast.makeText(DashboardActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
-            }
-        });
+                              usageRef.setValue(usage);
+                              int remaining = limitToCompare - (currentUsage + 1);
+                              Toast.makeText(DashboardActivity.this, "Free Seva Limit: " + remaining + " remaining this month.", Toast.LENGTH_SHORT).show();
+                              action.run();
+                          } else {
+                              new AlertDialog.Builder(DashboardActivity.this)
+                                  .setTitle("🌟 Upgrade to Premium")
+                                  .setMessage("You have reached the free plan limit for this feature.\n\nOffer Dakshina for SAMRAT PRO to unlock unlimited access.")
+                                  .setPositiveButton("UPGRADE NOW", (dialog, which) -> startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class)))
+                                  .setNegativeButton("LATER", null)
+                                  .show();
+                          }
+                      }
+                      @Override
+                      public void onCancelled(@NonNull DatabaseError error) {
+                          Toast.makeText(DashboardActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
+                      }
+                  });
+              }
+              @Override
+              public void onCancelled(@NonNull DatabaseError error) {
+                  Toast.makeText(DashboardActivity.this, "Network Error", Toast.LENGTH_SHORT).show();
+              }
+          });
     }
 
     private void showChartDateFilterDialog() {
