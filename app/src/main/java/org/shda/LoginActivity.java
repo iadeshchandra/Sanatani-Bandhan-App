@@ -23,17 +23,14 @@ public class LoginActivity extends AppCompatActivity {
     private DatabaseReference db;
     private SessionManager session;
 
-    // ✨ Tab UI Elements
     private MaterialCardView tabDevotee, tabAdmin;
     private LinearLayout layoutDevoteeForm, layoutAdminForm;
     private TextView tvDevoteeText, tvAdminText;
 
-    // ✨ Input Elements
     private TextInputEditText inputWorkspaceId, inputUserId, inputDevoteePin;
     private TextInputEditText inputAdminEmail, inputAdminPassword;
     private Button btnLogin;
 
-    // State Tracker
     private boolean isAdminMode = false;
 
     @Override
@@ -50,17 +47,14 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseDatabase.getInstance().getReference();
 
-        // Initialize Tab System
         tabDevotee = findViewById(R.id.tabDevotee);
         tabAdmin = findViewById(R.id.tabAdmin);
         layoutDevoteeForm = findViewById(R.id.layoutDevoteeForm);
         layoutAdminForm = findViewById(R.id.layoutAdminForm);
 
-        // Grab the TextViews inside the tabs to change their colors
         tvDevoteeText = (TextView) tabDevotee.getChildAt(0);
         tvAdminText = (TextView) tabAdmin.getChildAt(0);
 
-        // Initialize Inputs
         inputWorkspaceId = findViewById(R.id.inputWorkspaceId);
         inputUserId = findViewById(R.id.inputUserId);
         inputDevoteePin = findViewById(R.id.inputDevoteePin);
@@ -70,14 +64,12 @@ public class LoginActivity extends AppCompatActivity {
 
         btnLogin = findViewById(R.id.btnLogin);
 
-        // Set Click Listeners
         tabDevotee.setOnClickListener(v -> switchTab(false));
         tabAdmin.setOnClickListener(v -> switchTab(true));
 
         btnLogin.setOnClickListener(v -> performLogin());
         findViewById(R.id.tvForgotPassword).setOnClickListener(v -> showForgotPasswordDialog());
 
-        // ✨ CRASH PREVENTER
         findViewById(R.id.tvCreateWorkspace).setOnClickListener(v -> {
             try {
                 startActivity(new Intent(LoginActivity.this, RegisterCommunityActivity.class));
@@ -119,7 +111,8 @@ public class LoginActivity extends AppCompatActivity {
         if (!isAdminMode) {
             androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
             builder.setTitle("🙏 Recover Access");
-            builder.setMessage("For security reasons, Devotee PINs cannot be reset via email. Please contact your Mandir's Chief Admin to issue you a new 4-Digit PIN.");
+            // ✨ UPGRADED MESSAGE
+            builder.setMessage("For security reasons, Devotee Passwords cannot be reset via email. Please contact your Mandir's Chief Admin to issue you a new temporary password.");
             builder.setPositiveButton("UNDERSTOOD", null);
             builder.show();
             return;
@@ -177,9 +170,6 @@ public class LoginActivity extends AppCompatActivity {
         btnLogin.setText("AUTHENTICATING...");
 
         if (isAdminMode || userId.equalsIgnoreCase("admin")) {
-            // ==========================================
-            // ADMIN FIREBASE AUTH ROUTE
-            // ==========================================
             mAuth.signInWithEmailAndPassword(workspace, secret).addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     String uid = mAuth.getCurrentUser().getUid();
@@ -191,12 +181,11 @@ public class LoginActivity extends AppCompatActivity {
                                 String role = snapshot.child("role").getValue(String.class);
                                 String name = snapshot.child("name").getValue(String.class);
 
-                                // ✨ GOD-MODE: Verify Workspace is not Banned/Suspended before letting Admin in
                                 db.child("communities").child(commId).child("info").child("status").addListenerForSingleValueEvent(new ValueEventListener() {
                                     @Override
                                     public void onDataChange(@NonNull DataSnapshot statusSnap) {
                                         String status = statusSnap.getValue(String.class);
-                                        
+
                                         if ("BANNED".equalsIgnoreCase(status)) {
                                             mAuth.signOut();
                                             fail("🚫 ACCESS DENIED: Your workspace is permanently banned for violating terms.");
@@ -228,9 +217,6 @@ public class LoginActivity extends AppCompatActivity {
             });
 
         } else {
-            // ==========================================
-            // DEVOTEE REALTIME DATABASE ROUTE
-            // ==========================================
             db.child("communities").addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override public void onDataChange(@NonNull DataSnapshot snapshot) {
                     String targetCommId = null; String targetCommName = null;
@@ -247,10 +233,9 @@ public class LoginActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    
+
                     if (targetCommId == null) { attemptOfflineLogin(workspace, userId, secret, "Workspace ID not found."); return; }
 
-                    // ✨ GOD-MODE: Intercept the Devotee Login if the Workspace is Locked
                     String status = targetCommSnap.child("info").child("status").getValue(String.class);
                     if ("BANNED".equalsIgnoreCase(status)) {
                         fail("🚫 ACCESS DENIED: This Mandir has been permanently removed from the network.");
@@ -269,8 +254,14 @@ public class LoginActivity extends AppCompatActivity {
                             session.createLoginSession(targetCommId, m.role, targetCommName, m.name, m.id, m.email != null ? m.email : "");
                             Toast.makeText(LoginActivity.this, "🙏 Welcome to the Mandir Portal!", Toast.LENGTH_SHORT).show();
                             startActivity(new Intent(LoginActivity.this, DashboardActivity.class)); finish();
-                        } else { attemptOfflineLogin(workspace, userId, secret, "Devotee Profile not found."); }
-                    } else { attemptOfflineLogin(workspace, userId, secret, "Invalid Devotee ID or PIN."); }
+                        } else { 
+                            // ✨ UPGRADED MESSAGING
+                            attemptOfflineLogin(workspace, userId, secret, "Phone number not registered in this Workspace."); 
+                        }
+                    } else { 
+                        // ✨ UPGRADED MESSAGING
+                        attemptOfflineLogin(workspace, userId, secret, "Invalid Phone Number or Password."); 
+                    }
                 }
                 @Override public void onCancelled(@NonNull DatabaseError error) { 
                     attemptOfflineLogin(workspace, userId, secret, "Server Rejected: " + error.getMessage()); 
