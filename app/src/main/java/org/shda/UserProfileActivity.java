@@ -1,11 +1,15 @@
 package org.shda;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.database.*;
 import java.util.HashMap;
@@ -18,6 +22,9 @@ public class UserProfileActivity extends AppCompatActivity {
     private TextView tvMyName, tvMyId, tvMyDonated;
     private EditText inputMyPhone, inputMyGotra, inputMyBlood, inputMyAddress;
     private Button btnUpdateProfile;
+    
+    // ✨ NEW BUTTON FOR CHANGING PASSWORD
+    private Button btnChangePassword; 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +45,12 @@ public class UserProfileActivity extends AppCompatActivity {
         inputMyBlood = findViewById(R.id.inputMyBlood);
         inputMyAddress = findViewById(R.id.inputMyAddress);
         btnUpdateProfile = findViewById(R.id.btnUpdateProfile);
+        
+        // ✨ Look for your new button in the XML
+        btnChangePassword = findViewById(R.id.btnChangePassword); 
+        if (btnChangePassword != null) {
+            btnChangePassword.setOnClickListener(v -> showChangePasswordDialog());
+        }
 
         loadMyData();
 
@@ -82,11 +95,65 @@ public class UserProfileActivity extends AppCompatActivity {
 
         Toast.makeText(this, "Profile Updated Successfully!", Toast.LENGTH_SHORT).show();
         
-        // Re-enable button
         new android.os.Handler().postDelayed(() -> {
             btnUpdateProfile.setEnabled(true);
             btnUpdateProfile.setText("💾 UPDATE MY PROFILE");
         }, 2000);
+    }
+
+    // ✨ THE NEW CHANGE PASSWORD ENGINE
+    private void showChangePasswordDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Update Secure Password");
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(50, 40, 50, 20);
+
+        final EditText inputNew = new EditText(this);
+        inputNew.setHint("New Password");
+        inputNew.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        layout.addView(inputNew);
+
+        final EditText inputConfirm = new EditText(this);
+        inputConfirm.setHint("Confirm Password");
+        inputConfirm.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 30, 0, 0);
+        inputConfirm.setLayoutParams(params);
+        layout.addView(inputConfirm);
+
+        builder.setView(layout);
+
+        builder.setPositiveButton("UPDATE", (dialog, which) -> {
+            String p1 = inputNew.getText().toString().trim();
+            String p2 = inputConfirm.getText().toString().trim();
+
+            if (p1.isEmpty() || p1.length() < 6) {
+                Toast.makeText(this, "Password must be at least 6 characters.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (!p1.equals(p2)) {
+                Toast.makeText(this, "Passwords do not match.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Target the Devotee's secure /logins/ node directly
+            db.child("communities").child(session.getCommunityId()).child("logins").child(session.getUserId()).setValue(p1)
+                .addOnSuccessListener(aVoid -> {
+                    Toast.makeText(this, "Password Updated Successfully!", Toast.LENGTH_SHORT).show();
+                    logAudit("PASSWORD_CHANGE", session.getUserName() + " updated their secure password.");
+                    
+                    // Update the offline cache so they aren't locked out later
+                    SharedPreferences.Editor editor = getSharedPreferences("OfflineLogins", MODE_PRIVATE).edit();
+                    editor.putString("secret", p1);
+                    editor.apply();
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        });
+        builder.setNegativeButton("CANCEL", null);
+        builder.show();
     }
 
     private void logAudit(String actionType, String description) {
