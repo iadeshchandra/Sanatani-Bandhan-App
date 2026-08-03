@@ -24,7 +24,11 @@
         <EditText android:id="@+id/inputMyBlood" android:layout_width="match_parent" android:layout_height="55dp" android:hint="Blood Group" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:layout_marginBottom="12dp"/>
         <EditText android:id="@+id/inputMyAddress" android:layout_width="match_parent" android:layout_height="80dp" android:hint="Full Address" android:background="#FFFFFF" android:elevation="2dp" android:padding="12dp" android:gravity="top" android:layout_marginBottom="24dp"/>
 
-        <Button android:id="@+id/btnUpdateProfile" android:layout_width="match_parent" android:layout_height="60dp" android:text="💾 UPDATE MY PROFILE" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#2E7D32" android:layout_marginBottom="24dp"/>
+        <!-- Adjusted bottom margin from 24dp to 16dp to make room for the new button -->
+        <Button android:id="@+id/btnUpdateProfile" android:layout_width="match_parent" android:layout_height="60dp" android:text="💾 UPDATE MY PROFILE" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#2E7D32" android:layout_marginBottom="16dp"/>
+
+        <!-- ✨ NEW: Password Change Button added here to fix the build error! -->
+        <Button android:id="@+id/btnChangePassword" android:layout_width="match_parent" android:layout_height="60dp" android:text="🔐 CHANGE SECURE PASSWORD" android:textSize="16sp" android:textStyle="bold" android:backgroundTint="#E65100" android:layout_marginBottom="24dp"/>
 
     </LinearLayout>
 </ScrollView>
