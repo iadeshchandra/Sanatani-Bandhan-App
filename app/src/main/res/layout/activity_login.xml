@@ -39,7 +39,7 @@
                 android:gravity="center"
                 android:layout_marginTop="32dp"
                 android:layout_marginBottom="4dp"/>
-                
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -49,7 +49,7 @@
                 android:gravity="center"
                 android:layout_marginBottom="32dp"/>
 
-            <!-- ✨ SaaS Toggle Tabs (Devotee / Admin) -->
+            <!-- ✨ SaaS Toggle Tabs -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
@@ -57,14 +57,13 @@
                 app:cardCornerRadius="28dp"
                 app:cardElevation="0dp"
                 android:layout_marginBottom="24dp">
-                
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:orientation="horizontal"
                     android:padding="4dp">
-                    
-                    <!-- Devotee Tab (Active by default in UI mock) -->
+
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/tabDevotee"
                         android:layout_width="0dp"
@@ -82,8 +81,7 @@
                             android:textStyle="bold"
                             android:textColor="#E65100"/>
                     </com.google.android.material.card.MaterialCardView>
-                    
-                    <!-- Admin Tab (Inactive by default) -->
+
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/tabAdmin"
                         android:layout_width="0dp"
@@ -112,20 +110,20 @@
                 app:cardElevation="4dp"
                 app:cardBackgroundColor="#FFFFFF"
                 android:layout_marginBottom="24dp">
-                
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="24dp">
 
-                    <!-- ✨ DEVOTEE LOGIN FORM (Visible by default) -->
+                    <!-- ✨ DEVOTEE LOGIN FORM (Upgraded for Phone/Password) -->
                     <LinearLayout
                         android:id="@+id/layoutDevoteeForm"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
-                        
+
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
@@ -141,14 +139,14 @@
                                 android:id="@+id/inputWorkspaceId"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="textCapCharacters" />
+                                android:inputType="textVisiblePassword" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="Devotee ID"
+                            android:hint="Registered Phone Number"
                             app:boxCornerRadiusTopStart="16dp"
                             app:boxCornerRadiusTopEnd="16dp"
                             app:boxCornerRadiusBottomStart="16dp"
@@ -159,14 +157,14 @@
                                 android:id="@+id/inputUserId"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="number" />
+                                android:inputType="textEmailAddress|phone" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="4-Digit Secure PIN"
+                            android:hint="Secure Password"
                             app:passwordToggleEnabled="true"
                             app:passwordToggleTint="#E65100"
                             app:boxCornerRadiusTopStart="16dp"
@@ -179,19 +177,18 @@
                                 android:id="@+id/inputDevoteePin"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="numberPassword"
-                                android:maxLength="4"/>
+                                android:inputType="textPassword"/>
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
 
-                    <!-- ✨ ADMIN LOGIN FORM (Hidden by default) -->
+                    <!-- ✨ ADMIN LOGIN FORM -->
                     <LinearLayout
                         android:id="@+id/layoutAdminForm"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:visibility="gone">
-                        
+
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                             android:layout_width="match_parent"
@@ -268,7 +265,6 @@
                 android:padding="12dp"
                 android:layout_marginBottom="32dp"/>
 
-            <!-- ✨ The Spiritual Anchor -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
