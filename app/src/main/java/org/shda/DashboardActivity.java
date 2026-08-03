@@ -68,6 +68,7 @@ public class DashboardActivity extends AppCompatActivity {
 
     // ✨ System Control Elements
     private AlertDialog maintenanceDialog;
+    private AlertDialog suspendedDialog; // 🚨 NEW: Security Dialog
 
     private Long chartStartTs = null;
     private Long chartEndTs = null;
@@ -133,12 +134,12 @@ public class DashboardActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvDateEnglish)).setText("🕉 " + new SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.ENGLISH).format(new Date()));
         ((TextView) findViewById(R.id.tvDateBengali)).setText("শুভ দিন: " + new SimpleDateFormat("EEEE, dd MMMM yyyy", new Locale("bn", "BD")).format(new Date()));
 
-        // These will be overridden by fetchDynamicUI() if data exists, but we set safe fallbacks here.
         tvTithiAlert.setText("Today's Tithi: Loading...");
         shlokaText.setText("\"Karmanye vadhikaraste Ma Phaleshu Kadachana\"");
         tvShlokaSource.setText("- Bhagavad Gita");
 
         // ✨ INITIALIZE ALL REMOTE DATA SYNC ✨
+        enforceSecurityControls(); // 🚨 NEW: Start the God-Mode Security Listener
         syncWorkspacePlan();
         fetchDynamicUI();
         listenForGlobalBroadcasts();
@@ -153,7 +154,6 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.cardPolls).setOnClickListener(v -> startActivity(new Intent(this, PollActivity.class)));
         findViewById(R.id.cardEvents).setOnClickListener(v -> startActivity(new Intent(this, EventActivity.class)));
 
-        // ✨ UPGRADED: Dynamic Limits Fetched from Backend
         findViewById(R.id.cardComms).setOnClickListener(v -> 
             checkQuotaAndProceed("sandesh_sent", "free_sandesh_limit", 5, () -> startActivity(new Intent(this, CommsActivity.class)))
         );
@@ -185,22 +185,80 @@ public class DashboardActivity extends AppCompatActivity {
         findViewById(R.id.btnHelpSupport).setOnClickListener(v -> contactSupport());
         findViewById(R.id.btnWorkspaceSettings).setOnClickListener(v -> startActivity(new Intent(this, CommunityInfoActivity.class)));
 
-        findViewById(R.id.btnLogout).setOnClickListener(v -> {
-            try {
-                com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
-                session.logout(); 
-                Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-            } catch (Exception e) {
-                Toast.makeText(this, "Logout processed with minor errors", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Call our new unified logout method
+        findViewById(R.id.btnLogout).setOnClickListener(v -> forceLogout());
 
         loadWorkspaceType();
         loadFinancialData();
     }
+
+    // ==========================================
+    // 🚨 THE GOD-MODE LIVE KILL-SWITCH ENGINE 🚨
+    // ==========================================
+    private void enforceSecurityControls() {
+        DatabaseReference statusRef = db.child("communities").child(session.getCommunityId()).child("info").child("status");
+        statusRef.keepSynced(true);
+        statusRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    String status = snapshot.getValue(String.class);
+                    
+                    if ("BANNED".equalsIgnoreCase(status)) {
+                        // Level 1 Red Alert: Instant Kickout
+                        Toast.makeText(DashboardActivity.this, "🚫 WORKSPACE BANNED. Session terminated.", Toast.LENGTH_LONG).show();
+                        forceLogout();
+                    } 
+                    else if ("SUSPENDED".equalsIgnoreCase(status)) {
+                        // Level 2 Orange Alert: Freeze the App Interface
+                        showSuspendedLock();
+                    } 
+                    else {
+                        // All clear, restore access
+                        hideSuspendedLock();
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void showSuspendedLock() {
+        if (suspendedDialog != null && suspendedDialog.isShowing()) return;
+        suspendedDialog = new AlertDialog.Builder(this)
+            .setTitle("🟠 WORKSPACE SUSPENDED")
+            .setMessage("This Mandir's workspace has been suspended.\n\nIf you are the Admin, please open the Upgrade page or contact Sanatani Bandhan Support to restore access.")
+            .setCancelable(false)
+            .setPositiveButton("UPGRADE / SUPPORT", (dialog, which) -> {
+                startActivity(new Intent(DashboardActivity.this, UpgradeActivity.class));
+                suspendedDialog.show(); // Reshow the dialog so they can't bypass it by hitting back
+            })
+            .setNegativeButton("LOGOUT", (dialog, which) -> forceLogout())
+            .create();
+        suspendedDialog.show();
+    }
+
+    private void hideSuspendedLock() {
+        if (suspendedDialog != null && suspendedDialog.isShowing()) {
+            suspendedDialog.dismiss();
+        }
+    }
+
+    private void forceLogout() {
+        try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().signOut();
+            session.logout(); 
+            Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        } catch (Exception e) {
+            Toast.makeText(this, "Logout processed", Toast.LENGTH_SHORT).show();
+        }
+    }
+    // ==========================================
+
 
     private void fetchGlobalConfig() {
         DatabaseReference configRef = db.child("app_config").child("global_settings");
@@ -434,7 +492,6 @@ public class DashboardActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
 
-        // ✨ SERVER-DRIVEN SPIRITUAL DASHBOARD LISTENER ✨
         DatabaseReference dashboardConfigRef = db.child("communities").child(session.getCommunityId()).child("dashboard_config");
         dashboardConfigRef.keepSynced(true);
         dashboardConfigRef.addValueEventListener(new ValueEventListener() {
@@ -455,7 +512,6 @@ public class DashboardActivity extends AppCompatActivity {
                         tvTithiAlert.setText(tithiOverride);
                     }
 
-                    // ✨ NEW: Cache the live Shloka for the PdfReportService
                     getSharedPreferences("SpiritualCache", Context.MODE_PRIVATE).edit()
                         .putString("live_shloka_text", quoteText != null ? quoteText : "\"Dharma protects those who protect it.\"")
                         .putString("live_shloka_source", quoteSource != null ? quoteSource : "- Manusmriti")
@@ -511,14 +567,12 @@ public class DashboardActivity extends AppCompatActivity {
         }
     }
 
-    // ✨ UPGRADED: Dynamic Limits Fetched from Backend
     private void checkQuotaAndProceed(String feature, String limitKey, int fallbackLimit, Runnable action) {
         if ("PREMIUM".equalsIgnoreCase(session.getPlan())) {
             action.run(); 
             return;
         }
 
-        // 1. Fetch the Live Limit from your Web Backend
         db.child("app_config").child("global_settings").child(limitKey)
           .addListenerForSingleValueEvent(new ValueEventListener() {
               @Override
@@ -527,12 +581,11 @@ public class DashboardActivity extends AppCompatActivity {
                   if (limitSnapshot.exists() && limitSnapshot.getValue() != null) {
                       finalLimit = limitSnapshot.getValue(Integer.class);
                   }
-                  
+
                   final int limitToCompare = finalLimit;
                   String currentMonth = new SimpleDateFormat("MM-yyyy", Locale.getDefault()).format(new Date());
                   DatabaseReference usageRef = db.child("communities").child(session.getCommunityId()).child("usage_tracking");
 
-                  // 2. Fetch the Mandir's Monthly Usage
                   usageRef.addListenerForSingleValueEvent(new ValueEventListener() {
                       @Override
                       public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -547,7 +600,6 @@ public class DashboardActivity extends AppCompatActivity {
                           else if (feature.equals("sandesh_sent")) currentUsage = usage.sandesh_sent;
                           else if (feature.equals("audits_downloaded")) currentUsage = usage.audits_downloaded;
 
-                          // 3. Enforce the Limit
                           if (currentUsage < limitToCompare) {
                               if (feature.equals("pdfs_generated")) usage.pdfs_generated++;
                               else if (feature.equals("sandesh_sent")) usage.sandesh_sent++;
