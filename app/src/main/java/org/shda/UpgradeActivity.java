@@ -38,9 +38,7 @@ public class UpgradeActivity extends AppCompatActivity {
     private TextView tvPriceBdt, tvPriceUsd;
     private SessionManager session;
 
-    // Paste your Wise or Payoneer Request Link here
     private final String INTL_PAYMENT_LINK = "https://wise.com/pay/me/adeshc"; 
-    // Your exact TaliPay Number
     private final String MERCHANT_NUMBER = "01701987744"; 
 
     // Cached live limits for dynamic feature cards
@@ -61,17 +59,14 @@ public class UpgradeActivity extends AppCompatActivity {
 
         session = new SessionManager(this);
 
-        // UI Sections
         layoutPayment = findViewById(R.id.layoutPayment);
         layoutRestricted = findViewById(R.id.layoutRestricted);
         btnGoBack = findViewById(R.id.btnGoBack);
 
-        // ✨ Dynamic Targets for Live Pricing & Limits
         tvPriceBdt = findViewById(R.id.tvPriceBdt);
         tvPriceUsd = findViewById(R.id.tvPriceUsd);
         layoutDynamicFeatures = findViewById(R.id.layoutDynamicFeatures);
 
-        // Payment Buttons
         btnPayBD = findViewById(R.id.btnPayBD);
         btnPayIntl = findViewById(R.id.btnPayIntl);
         cardBanglaQR = findViewById(R.id.cardBanglaQR);
@@ -81,7 +76,6 @@ public class UpgradeActivity extends AppCompatActivity {
         btnCopyNumber = findViewById(R.id.btnCopyNumber);
         btnHowToPay = findViewById(R.id.btnHowToPay);
 
-        // ✨ ROLE-BASED ACCESS CONTROL (RBAC) ✨
         String userRole = session.getRole();
         if ("MEMBER".equalsIgnoreCase(userRole) || "DEVOTEE".equalsIgnoreCase(userRole)) {
             layoutPayment.setVisibility(View.GONE);
@@ -89,33 +83,29 @@ public class UpgradeActivity extends AppCompatActivity {
         } else {
             layoutPayment.setVisibility(View.VISIBLE);
             layoutRestricted.setVisibility(View.GONE);
-            // Fetch live config if user is admin/manager
             fetchLiveSaaSConfig();
         }
 
         btnGoBack.setOnClickListener(v -> finish());
 
-        // Toggle to Bangladesh QR View
         btnPayBD.setOnClickListener(v -> {
             cardBanglaQR.setVisibility(View.VISIBLE);
             cardIntlPayment.setVisibility(View.GONE);
-            btnPayBD.setBackgroundColor(0xFF2E7D32); // Green
+            btnPayBD.setBackgroundColor(0xFF2E7D32); 
             btnPayBD.setTextColor(0xFFFFFFFF);
-            btnPayIntl.setBackgroundColor(0xFFE0E0E0); // Gray
+            btnPayIntl.setBackgroundColor(0xFFE0E0E0); 
             btnPayIntl.setTextColor(0xFF424242);
         });
 
-        // Toggle to International Link View
         btnPayIntl.setOnClickListener(v -> {
             cardBanglaQR.setVisibility(View.GONE);
             cardIntlPayment.setVisibility(View.VISIBLE);
-            btnPayIntl.setBackgroundColor(0xFF1976D2); // Blue
+            btnPayIntl.setBackgroundColor(0xFF1976D2); 
             btnPayIntl.setTextColor(0xFFFFFFFF);
-            btnPayBD.setBackgroundColor(0xFFE0E0E0); // Gray
+            btnPayBD.setBackgroundColor(0xFFE0E0E0); 
             btnPayBD.setTextColor(0xFF424242);
         });
 
-        // Clipboard Logic for TaliPay Number
         btnCopyNumber.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
             ClipData clip = ClipData.newPlainText("TaliPay Number", MERCHANT_NUMBER);
@@ -125,10 +115,10 @@ public class UpgradeActivity extends AppCompatActivity {
             }
         });
 
-        // Pop up the Instruction Manual Image 
+        // ✨ Pop up the EXACT Instruction Manual Image 
         btnHowToPay.setOnClickListener(v -> {
             ImageView instructionImage = new ImageView(this);
-            instructionImage.setImageResource(R.mipmap.ic_launcher); // Replace with your Talipay instructions drawable
+            instructionImage.setImageResource(R.drawable.talipay_instructions); 
             instructionImage.setAdjustViewBounds(true);
             instructionImage.setPadding(20, 20, 20, 20);
 
@@ -139,24 +129,19 @@ public class UpgradeActivity extends AppCompatActivity {
                 .show();
         });
 
-        // Open Wise/Payoneer Link
         btnCheckoutLink.setOnClickListener(v -> {
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(INTL_PAYMENT_LINK));
             startActivity(browserIntent);
         });
 
-        // The Backend Verification Bridge
         btnVerifyPayment.setOnClickListener(v -> showVerificationDialog());
 
-        // ✨ FIRE THE SMART AUTO-SELECTION ENGINE
         autoSelectPaymentTab();
     }
 
-    // ✨ GOD-MODE LIVE CONFIG SYNC (Prices + Slider Limits)
     private void fetchLiveSaaSConfig() {
         FirebaseDatabase db = FirebaseDatabase.getInstance();
 
-        // 1. Fetch Global Limits first
         db.getReference("app_config/global_settings").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -170,7 +155,6 @@ public class UpgradeActivity extends AppCompatActivity {
                     if (snapshot.child("free_audit_limit").getValue(Long.class) != null) 
                         liveAuditLimit = snapshot.child("free_audit_limit").getValue(Long.class);
                 }
-                // Refresh the feature card with updated limits
                 fetchLivePricingAndFeatures(db);
             }
 
@@ -199,12 +183,20 @@ public class UpgradeActivity extends AppCompatActivity {
                     if (layoutDynamicFeatures != null) {
                         layoutDynamicFeatures.removeAllViews();
 
-                        // Render dynamic feature lines incorporating real-time web limits
                         addFeatureRow("✅ Unlimited Devotees (Free: Max " + liveMemberLimit + ")");
                         addFeatureRow("✅ Unlimited Master PDFs (Free: " + livePdfLimit + "/mo)");
                         addFeatureRow("✅ Unlimited Mass Sandesh (Free: " + liveSandeshLimit + "/mo)");
                         addFeatureRow("✅ Security Audit Logs (Free: " + liveAuditLimit + "/mo)");
                         addFeatureRow("✅ Priority Developer Support");
+
+                        if (snapshot.hasChild("features")) {
+                            for (DataSnapshot featureSnap : snapshot.child("features").getChildren()) {
+                                String text = featureSnap.getValue(String.class);
+                                if (text != null && !text.isEmpty() && !text.toLowerCase().contains("devotee")) {
+                                    addFeatureRow("✅ " + text);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -228,21 +220,16 @@ public class UpgradeActivity extends AppCompatActivity {
         layoutDynamicFeatures.addView(tv);
     }
 
-    // ✨ THE NEW GEOLOCATION DETECTOR ENGINE
     private void autoSelectPaymentTab() {
         String countryCode = "";
         try {
             TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
             if (tm != null) {
-                // Attempt 1: Get the ISO country code from the connected mobile network
                 countryCode = tm.getNetworkCountryIso();
-
-                // Attempt 2: If network fails, check the physical SIM card's country
                 if (countryCode == null || countryCode.isEmpty()) {
                     countryCode = tm.getSimCountryIso();
                 }
             }
-            // Attempt 3: Ultimate fallback for tablets or devices on Wi-Fi without SIM cards
             if (countryCode == null || countryCode.isEmpty()) {
                 countryCode = Locale.getDefault().getCountry();
             }
@@ -250,7 +237,6 @@ public class UpgradeActivity extends AppCompatActivity {
             countryCode = Locale.getDefault().getCountry();
         }
 
-        // Programmatically tap the correct tab based on the detected country
         if (countryCode != null && countryCode.equalsIgnoreCase("bd")) {
             btnPayBD.performClick();
         } else {
