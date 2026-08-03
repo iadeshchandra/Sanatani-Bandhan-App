@@ -65,20 +65,14 @@
                     android:gravity="center"
                     android:layout_marginBottom="12dp"/>
 
-                <!-- ✨ DYNAMIC FEATURES CONTAINER -->
+                <!-- ✨ FULLY DYNAMIC FEATURES & LIMITS CONTAINER -->
                 <LinearLayout
                     android:id="@+id/layoutDynamicFeatures"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:layout_marginBottom="16dp">
-
-                    <!-- Fallback items if offline -->
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Unlimited Devotees (Free: Max 50)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Unlimited Master PDFs (Free: 3/mo)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Unlimited Mass Sandesh (Free: 1/mo)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Security Audit Logs (Free: 1/mo)" android:textColor="#212121" android:textSize="13sp" android:layout_marginBottom="6dp"/>
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✅ Priority Developer Support" android:textColor="#212121" android:textSize="13sp" android:textStyle="bold"/>
+                    <!-- Populated dynamically via Java -->
                 </LinearLayout>
 
                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#FFCC80" android:layout_marginBottom="12dp"/>
@@ -86,7 +80,6 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:weightSum="2">
                     <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Bangladesh" android:textSize="12sp" android:textColor="#757575"/>
-                        <!-- ✨ DYNAMIC BDT PRICE TARGET -->
                         <TextView 
                             android:id="@+id/tvPriceBdt"
                             android:layout_width="wrap_content" 
@@ -99,7 +92,6 @@
                     <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#FFCC80"/>
                     <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="International" android:textSize="12sp" android:textColor="#757575"/>
-                        <!-- ✨ DYNAMIC USD PRICE TARGET -->
                         <TextView 
                             android:id="@+id/tvPriceUsd"
                             android:layout_width="wrap_content" 
@@ -114,6 +106,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Restricted and Payment Layouts remain identical -->
         <LinearLayout
             android:id="@+id/layoutRestricted"
             android:layout_width="match_parent"
