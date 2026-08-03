@@ -16,27 +16,38 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.card.MaterialCardView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
+import com.google.firebase.database.ValueEventListener;
 import java.util.HashMap;
 import java.util.Locale;
 
 public class UpgradeActivity extends AppCompatActivity {
 
-    private LinearLayout layoutPayment, layoutRestricted;
+    private LinearLayout layoutPayment, layoutRestricted, layoutDynamicFeatures;
     private Button btnGoBack;
-    
+
     private Button btnPayBD, btnPayIntl, btnCheckoutLink, btnVerifyPayment, btnCopyNumber, btnHowToPay;
     private MaterialCardView cardBanglaQR, cardIntlPayment;
+    private TextView tvPriceBdt, tvPriceUsd;
     private SessionManager session;
 
     // Paste your Wise or Payoneer Request Link here
     private final String INTL_PAYMENT_LINK = "https://wise.com/pay/me/adeshc"; 
     // Your exact TaliPay Number
     private final String MERCHANT_NUMBER = "01701987744"; 
+
+    // Cached live limits for dynamic feature cards
+    private long liveMemberLimit = 50;
+    private long livePdfLimit = 3;
+    private long liveSandeshLimit = 1;
+    private long liveAuditLimit = 1;
 
     @Override
     protected void attachBaseContext(Context newBase) {
@@ -54,6 +65,11 @@ public class UpgradeActivity extends AppCompatActivity {
         layoutPayment = findViewById(R.id.layoutPayment);
         layoutRestricted = findViewById(R.id.layoutRestricted);
         btnGoBack = findViewById(R.id.btnGoBack);
+
+        // ✨ Dynamic Targets for Live Pricing & Limits
+        tvPriceBdt = findViewById(R.id.tvPriceBdt);
+        tvPriceUsd = findViewById(R.id.tvPriceUsd);
+        layoutDynamicFeatures = findViewById(R.id.layoutDynamicFeatures);
 
         // Payment Buttons
         btnPayBD = findViewById(R.id.btnPayBD);
@@ -73,6 +89,8 @@ public class UpgradeActivity extends AppCompatActivity {
         } else {
             layoutPayment.setVisibility(View.VISIBLE);
             layoutRestricted.setVisibility(View.GONE);
+            // Fetch live config if user is admin/manager
+            fetchLiveSaaSConfig();
         }
 
         btnGoBack.setOnClickListener(v -> finish());
@@ -96,7 +114,7 @@ public class UpgradeActivity extends AppCompatActivity {
             btnPayBD.setBackgroundColor(0xFFE0E0E0); // Gray
             btnPayBD.setTextColor(0xFF424242);
         });
-        
+
         // Clipboard Logic for TaliPay Number
         btnCopyNumber.setOnClickListener(v -> {
             ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
@@ -134,6 +152,82 @@ public class UpgradeActivity extends AppCompatActivity {
         autoSelectPaymentTab();
     }
 
+    // ✨ GOD-MODE LIVE CONFIG SYNC (Prices + Slider Limits)
+    private void fetchLiveSaaSConfig() {
+        FirebaseDatabase db = FirebaseDatabase.getInstance();
+
+        // 1. Fetch Global Limits first
+        db.getReference("app_config/global_settings").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    if (snapshot.child("free_member_limit").getValue(Long.class) != null) 
+                        liveMemberLimit = snapshot.child("free_member_limit").getValue(Long.class);
+                    if (snapshot.child("free_pdf_limit").getValue(Long.class) != null) 
+                        livePdfLimit = snapshot.child("free_pdf_limit").getValue(Long.class);
+                    if (snapshot.child("free_sandesh_limit").getValue(Long.class) != null) 
+                        liveSandeshLimit = snapshot.child("free_sandesh_limit").getValue(Long.class);
+                    if (snapshot.child("free_audit_limit").getValue(Long.class) != null) 
+                        liveAuditLimit = snapshot.child("free_audit_limit").getValue(Long.class);
+                }
+                // Refresh the feature card with updated limits
+                fetchLivePricingAndFeatures(db);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                fetchLivePricingAndFeatures(db);
+            }
+        });
+    }
+
+    private void fetchLivePricingAndFeatures(FirebaseDatabase db) {
+        db.getReference("platform_settings/samrat_pro").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    Long bdtPrice = snapshot.child("price_bdt").getValue(Long.class);
+                    Long usdPrice = snapshot.child("price_usd").getValue(Long.class);
+
+                    if (tvPriceBdt != null && bdtPrice != null) {
+                        tvPriceBdt.setText("৳" + bdtPrice + " / Year");
+                    }
+                    if (tvPriceUsd != null && usdPrice != null) {
+                        tvPriceUsd.setText("$" + usdPrice + " / Year");
+                    }
+
+                    if (layoutDynamicFeatures != null) {
+                        layoutDynamicFeatures.removeAllViews();
+
+                        // Render dynamic feature lines incorporating real-time web limits
+                        addFeatureRow("✅ Unlimited Devotees (Free: Max " + liveMemberLimit + ")");
+                        addFeatureRow("✅ Unlimited Master PDFs (Free: " + livePdfLimit + "/mo)");
+                        addFeatureRow("✅ Unlimited Mass Sandesh (Free: " + liveSandeshLimit + "/mo)");
+                        addFeatureRow("✅ Security Audit Logs (Free: " + liveAuditLimit + "/mo)");
+                        addFeatureRow("✅ Priority Developer Support");
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void addFeatureRow(String text) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextColor(Color.parseColor("#212121"));
+        tv.setTextSize(13f);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(0, 0, 0, 6);
+        tv.setLayoutParams(params);
+        layoutDynamicFeatures.addView(tv);
+    }
+
     // ✨ THE NEW GEOLOCATION DETECTOR ENGINE
     private void autoSelectPaymentTab() {
         String countryCode = "";
@@ -142,7 +236,7 @@ public class UpgradeActivity extends AppCompatActivity {
             if (tm != null) {
                 // Attempt 1: Get the ISO country code from the connected mobile network
                 countryCode = tm.getNetworkCountryIso();
-                
+
                 // Attempt 2: If network fails, check the physical SIM card's country
                 if (countryCode == null || countryCode.isEmpty()) {
                     countryCode = tm.getSimCountryIso();
@@ -166,7 +260,7 @@ public class UpgradeActivity extends AppCompatActivity {
 
     private void showVerificationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        
+
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(50, 40, 50, 20);
@@ -190,7 +284,7 @@ public class UpgradeActivity extends AppCompatActivity {
         inputContact.setBackgroundResource(android.R.drawable.edit_text);
         inputContact.setPadding(30, 30, 30, 30);
         layout.addView(inputContact);
-        
+
         View spacer = new View(this);
         spacer.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 20));
         layout.addView(spacer);
@@ -226,7 +320,7 @@ public class UpgradeActivity extends AppCompatActivity {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText("Verifying...");
 
             String pushKey = FirebaseDatabase.getInstance().getReference().child("upgrade_requests").push().getKey();
-            
+
             HashMap<String, Object> requestData = new HashMap<>();
             requestData.put("requestId", pushKey);
             requestData.put("communityId", session.getCommunityId());
